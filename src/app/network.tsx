@@ -1,0 +1,203 @@
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Image, Pressable, TextInput } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ArrowLeft, Search, CheckCircle2 } from 'lucide-react-native';
+
+export default function NetworkScreen() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'followers' | 'following'>('followers');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Mock Data
+  const networkUsers = [
+    {
+      id: '1',
+      name: 'Elena Vance',
+      username: '@elenav_visuals',
+      avatar: 'https://i.pravatar.cc/150?img=47',
+      isFollowing: true,
+      verified: true,
+      hasStory: true
+    },
+    {
+      id: '2',
+      name: 'Marcus Thorne',
+      username: '@mthorne_ux',
+      avatar: 'https://i.pravatar.cc/150?img=11',
+      isFollowing: true,
+      verified: false,
+      hasStory: false
+    },
+    {
+      id: '3',
+      name: 'Sasha Neon',
+      username: '@sasha_n',
+      avatar: 'https://i.pravatar.cc/150?img=44',
+      isFollowing: false,
+      verified: true,
+      hasStory: true
+    },
+    {
+      id: '4',
+      name: 'Julian Grey',
+      username: '@jgrey_art',
+      avatar: 'https://i.pravatar.cc/150?img=12',
+      isFollowing: false,
+      verified: false,
+      hasStory: false
+    },
+    {
+      id: '5',
+      name: 'David K.',
+      username: '@dk_motion',
+      avatar: 'https://i.pravatar.cc/150?img=13',
+      isFollowing: true,
+      verified: false,
+      hasStory: false
+    },
+    {
+      id: '6',
+      name: 'Maya Sterling',
+      username: '@sterling_maya',
+      avatar: 'https://i.pravatar.cc/150?img=45',
+      isFollowing: false,
+      verified: false,
+      hasStory: false
+    }
+  ];
+
+  const suggestedUsers = [
+    {
+      id: 's1',
+      name: 'Clara J.',
+      username: '@clara_glow',
+      avatar: 'https://i.pravatar.cc/150?img=41'
+    },
+    {
+      id: 's2',
+      name: 'Leo Fitz',
+      username: '@fitz_tech',
+      avatar: 'https://i.pravatar.cc/150?img=14'
+    },
+    {
+      id: 's3',
+      name: 'Isla',
+      username: '@isla_vibes',
+      avatar: 'https://i.pravatar.cc/150?img=42'
+    }
+  ];
+
+  return (
+    <View className="flex-1 bg-[#12081E] pt-14">
+      {/* HEADER */}
+      <View className="flex-row items-center px-4 pb-4">
+        <Pressable onPress={() => router.back()} className="p-2 -ml-2">
+          <ArrowLeft size={20} color="#FFFFFF" />
+        </Pressable>
+        <Text className="text-white font-bold text-base ml-2">Network</Text>
+      </View>
+
+      {/* TOGGLE PILLS */}
+      <View className="px-4 mb-5">
+        <View className="bg-[#1A0E2C] rounded-xl flex-row p-1 border border-white/5">
+          <Pressable 
+            onPress={() => setActiveTab('followers')}
+            className={`flex-1 py-2.5 items-center justify-center rounded-lg ${activeTab === 'followers' ? 'bg-[#2D1B4E]' : 'bg-transparent'}`}
+          >
+            <Text className={`text-xs font-bold ${activeTab === 'followers' ? 'text-[#A855F7]' : 'text-neutral-grey'}`}>
+              Followers (1.2k)
+            </Text>
+          </Pressable>
+          <Pressable 
+            onPress={() => setActiveTab('following')}
+            className={`flex-1 py-2.5 items-center justify-center rounded-lg ${activeTab === 'following' ? 'bg-[#2D1B4E]' : 'bg-transparent'}`}
+          >
+            <Text className={`text-xs font-bold ${activeTab === 'following' ? 'text-[#A855F7]' : 'text-neutral-grey'}`}>
+              Following (850)
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* SEARCH BAR */}
+      <View className="px-4 mb-6">
+        <View className="bg-[#1A0E2C] border border-white/5 rounded-2xl h-11 flex-row items-center px-4 space-x-2">
+          <Search size={16} color="#6B7280" />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search people..."
+            placeholderTextColor="#6B7280"
+            className="flex-1 text-white text-sm font-medium"
+          />
+        </View>
+      </View>
+
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        
+        {/* USERS LIST */}
+        <View className="px-4 space-y-3 mb-8">
+          {networkUsers.map((user) => (
+            <View key={user.id} className="bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 flex-row items-center justify-between">
+              
+              <View className="flex-row items-center space-x-3.5 flex-1 pr-2">
+                <View className="relative">
+                  <View className={`w-12 h-12 rounded-full border-2 ${user.hasStory ? 'border-[#A855F7]' : 'border-transparent'} p-[1px]`}>
+                    <Image source={{ uri: user.avatar }} className="w-full h-full rounded-full" />
+                  </View>
+                  {user.verified && (
+                    <View className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full">
+                      <CheckCircle2 size={16} color="#A855F7" fill="#FFFFFF" />
+                    </View>
+                  )}
+                </View>
+
+                <View className="flex-1">
+                  <View className="flex-row items-center space-x-1">
+                    <Text className="text-white font-bold text-sm" numberOfLines={1}>{user.name}</Text>
+                    {user.verified && <CheckCircle2 size={14} color="#A855F7" fill="#FFFFFF" />}
+                  </View>
+                  <Text className="text-neutral-grey text-xs mt-0.5">{user.username}</Text>
+                </View>
+              </View>
+
+              <Pressable 
+                className={`px-4 py-1.5 rounded-full items-center justify-center border ${
+                  user.isFollowing 
+                  ? 'bg-transparent border-[#A855F7]' 
+                  : 'bg-[#A855F7] border-[#A855F7]'
+                }`}
+              >
+                <Text className={`text-[10px] font-bold ${user.isFollowing ? 'text-[#A855F7]' : 'text-white'}`}>
+                  {user.isFollowing ? 'Unfollow' : 'Follow'}
+                </Text>
+              </Pressable>
+
+            </View>
+          ))}
+        </View>
+
+        {/* SUGGESTED FOR YOU */}
+        <View>
+          <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest pl-5 mb-4">Suggested For You</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4 pr-4 pb-4">
+            {suggestedUsers.map((user) => (
+              <View key={user.id} className="bg-[#2D1B4E] rounded-2xl p-4 items-center w-32 mr-3 border border-white/5 shadow-md shadow-black/20">
+                <Image source={{ uri: user.avatar }} className="w-14 h-14 rounded-full mb-3" />
+                <Text className="text-white font-bold text-xs" numberOfLines={1}>{user.name}</Text>
+                <Text className="text-[#9CA3AF] text-[10px] mb-4" numberOfLines={1}>{user.username}</Text>
+                
+                <Pressable className="w-full bg-[#1A0E2C] py-2 rounded-full items-center border border-white/5 active:scale-95 transition-all">
+                  <Text className="text-[#A855F7] text-[10px] font-bold">Follow</Text>
+                </Pressable>
+              </View>
+            ))}
+            {/* Empty space at end for scroll padding */}
+            <View className="w-4" />
+          </ScrollView>
+        </View>
+
+      </ScrollView>
+    </View>
+  );
+}
