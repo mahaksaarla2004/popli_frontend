@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, Pressable, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Settings, AlignLeft, LayoutGrid, Heart, Film, Play } from 'lucide-react-native';
-import { useAuthStore, useFeedStore } from '../../store';
+import { Settings, AlignLeft, LayoutGrid, Heart, Play, Plus } from 'lucide-react-native';
+import { useAuthStore, useFeedStore, useStoryHighlightStore } from '../../store';
 import { formatSocialCount } from '../../utils';
+import StoryRing from '../../components/StoryRing';
 
 const { width } = Dimensions.get('window');
 
@@ -13,41 +14,54 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { userProfile } = useAuthStore();
   const { reels } = useFeedStore();
+  const { highlights, fetchHighlights } = useStoryHighlightStore();
 
   const [activeTab, setActiveTab] = useState<ProfileTabType>('reels');
 
-  // Hardcoded as per Figma for now to match the visual exactly
+  React.useEffect(() => {
+    if (userProfile.id) {
+      fetchHighlights(userProfile.id);
+    }
+  }, [userProfile.id]);
+
+  // Dynamically fetch reels for the logged-in user from the global store
+  const userPostedReels = reels.filter((r) => r.creatorUsername === userProfile.username);
+  
+  const totalLikes = userPostedReels.reduce((acc, reel) => acc + reel.likesCount, 0);
+
   const displayProfile = {
-    username: 'Sonali_1234',
-    roles: 'Entertainer | Musician | Fitness Freak',
-    bio: 'Living the life your style with your rules',
+    username: userProfile.username,
+    roles: userProfile.category ? userProfile.category.toUpperCase() + ' CREATOR' : 'CREATOR',
+    bio: userProfile.bio || 'Living the life your style with your rules',
     link: 'www.appyhigh.com/projects',
-    posts: 102,
-    following: 91,
-    followers: 1200000,
-    likes: 30000000,
-    avatar: 'https://i.pravatar.cc/300?img=47' // random female avatar for demo
+    posts: userPostedReels.length, // Real stat
+    following: userProfile.followingCount || 0,
+    followers: userProfile.followersCount || 0,
+    likes: totalLikes, // Real stat
+    avatar: userProfile.avatar
   };
 
-  const userReels = [
-    { id: '1', thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 1200000 },
-    { id: '2', thumbnailUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 840000 },
-    { id: '3', thumbnailUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 2500000 },
-    { id: '4', thumbnailUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 450000 },
-    { id: '5', thumbnailUrl: 'https://images.unsplash.com/photo-1517365830460-955ce3ccd263?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 900000 },
-    { id: '6', thumbnailUrl: 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 150000 }
+  // If the user hasn't posted anything yet, we show some default mock reels just to keep the profile looking good
+  // However, any newly posted reel will show up here at the top!
+  const defaultMockReels = [
+    { id: 'mock_1', thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 1200000 },
+    { id: 'mock_2', thumbnailUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 840000 },
+    { id: 'mock_3', thumbnailUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 2500000 },
+    { id: 'mock_4', thumbnailUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 450000 },
+    { id: 'mock_5', thumbnailUrl: 'https://images.unsplash.com/photo-1517365830460-955ce3ccd263?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 900000 },
+    { id: 'mock_6', thumbnailUrl: 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 150000 }
   ];
+
+  const displayReels = userPostedReels.length > 0 ? userPostedReels : defaultMockReels;
   const likedReels = reels.filter((r) => r.isLiked);
 
-  const activeGridData = activeTab === 'reels' ? userReels : likedReels;
+  const activeGridData = activeTab === 'reels' ? displayReels : likedReels;
 
   return (
     <View className="flex-1 bg-[#12081E] pt-12">
       {/* 1. HEADER */}
-      <View className="flex-row items-center justify-between px-6 pb-3 border-b border-white/5">
-        <Pressable className="p-2 -ml-2">
-          <AlignLeft size={24} color="#FFFFFF" />
-        </Pressable>
+      <View className="flex-row items-center justify-between px-4 pb-6 border-b border-white/5">
+        <View className="w-10" />
         
         <Text className="text-white font-bold text-lg">Appyhigh live</Text>
         
@@ -65,10 +79,26 @@ export default function ProfileScreen() {
         contentContainerStyle={{ paddingBottom: 110 }}
       >
         
+        {/* INCOMPLETE PROFILE BANNER */}
+        {!userProfile.isProfileComplete && (
+          <Pressable 
+            onPress={() => router.push('/(auth)/profile-setup')}
+            className="mx-4 mt-4 bg-primary-purple/20 border border-primary-purple p-3 rounded-xl flex-row items-center justify-between active:scale-[0.98]"
+          >
+            <View className="flex-1 mr-2">
+              <Text className="text-white font-bold text-sm">Profile Incomplete</Text>
+              <Text className="text-white/70 text-[11px] mt-0.5">Complete your profile to unlock all features.</Text>
+            </View>
+            <View className="bg-primary-purple px-3 py-1.5 rounded-full">
+              <Text className="text-white font-bold text-[10px] uppercase">Complete Now</Text>
+            </View>
+          </Pressable>
+        )}
+
         {/* 2. AVATAR & BIO BLOCK */}
-        <View className="items-center px-6 py-6">
-          <View className="w-24 h-24 rounded-full border-[3px] border-[#A855F7] p-0.5 mb-4">
-            <Image source={{ uri: displayProfile.avatar }} className="w-full h-full rounded-full" />
+        <View className="items-center px-4 py-6">
+          <View className="mb-4">
+            <StoryRing userId={displayProfile.username} avatarUrl={displayProfile.avatar} size={96} />
           </View>
 
           <Text className="text-white font-bold text-lg mb-1">@{displayProfile.username}</Text>
@@ -87,18 +117,40 @@ export default function ProfileScreen() {
               <Text className="text-neutral-grey text-[9px] font-bold uppercase mt-1">Following</Text>
             </Pressable>
             <Pressable onPress={() => router.push('/network')} className="items-center">
-              <Text className="text-white font-black text-[15px]">1.2M</Text>
+              <Text className="text-white font-black text-[15px]">{formatSocialCount(displayProfile.followers)}</Text>
               <Text className="text-neutral-grey text-[9px] font-bold uppercase mt-1">Followers</Text>
             </Pressable>
             <View className="items-center">
-              <Text className="text-white font-black text-[15px]">30M</Text>
+              <Text className="text-white font-black text-[15px]">{formatSocialCount(displayProfile.likes)}</Text>
               <Text className="text-neutral-grey text-[9px] font-bold uppercase mt-1">Likes</Text>
             </View>
           </View>
         </View>
 
+        {/* 2.5 STORY HIGHLIGHTS */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="py-2 px-4 mb-4" contentContainerStyle={{ gap: 16 }}>
+          <Pressable 
+            onPress={() => router.push('/story-archive')}
+            className="items-center"
+          >
+            <View className="w-16 h-16 rounded-full border border-white/20 items-center justify-center mb-1">
+              <Plus size={24} color="#FFFFFF" />
+            </View>
+            <Text className="text-white text-[10px]">New</Text>
+          </Pressable>
+
+          {highlights.map(highlight => (
+            <Pressable key={highlight.id} className="items-center">
+              <View className="w-16 h-16 rounded-full border border-white/10 p-0.5 mb-1 bg-black/50">
+                <Image source={{ uri: highlight.coverUrl }} className="w-full h-full rounded-full" />
+              </View>
+              <Text className="text-white text-[10px]">{highlight.title}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
         {/* 3. TABS SEGMENTS */}
-        <View className="flex-row border-t border-b border-white/5 py-2 mt-2">
+        <View className="flex-row border-t border-b border-white/5 py-2">
           <Pressable
             onPress={() => setActiveTab('reels')}
             className={`flex-1 items-center justify-center py-2 ${activeTab === 'reels' ? 'border-b-2 border-[#A855F7]' : ''}`}
@@ -129,7 +181,7 @@ export default function ProfileScreen() {
                 className="w-[33.33%] h-44 border-[0.5px] border-black active:opacity-80"
               >
                 <Image source={{ uri: reel.thumbnailUrl }} className="w-full h-full" resizeMode="cover" />
-                <View className="absolute bottom-2 left-2 flex-row items-center space-x-1">
+                <View className="absolute bottom-2 left-2 flex-row items-center gap-1">
                   <Play size={10} color="#FFFFFF" fill="#FFFFFF" />
                   <Text className="text-white text-[10px] font-bold drop-shadow-md">
                     {formatSocialCount(reel.likesCount)}

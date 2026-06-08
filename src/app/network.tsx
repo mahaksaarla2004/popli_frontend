@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, Pressable, TextInput } from 'react-native';
+import { View, Text, ScrollView, Image, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Search, CheckCircle2 } from 'lucide-react-native';
+import StoryRing from '../components/StoryRing';
 
 export default function NetworkScreen() {
   const router = useRouter();
@@ -88,7 +89,7 @@ export default function NetworkScreen() {
   ];
 
   return (
-    <View className="flex-1 bg-[#12081E] pt-14">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
       {/* HEADER */}
       <View className="flex-row items-center px-4 pb-4">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
@@ -121,7 +122,7 @@ export default function NetworkScreen() {
 
       {/* SEARCH BAR */}
       <View className="px-4 mb-6">
-        <View className="bg-[#1A0E2C] border border-white/5 rounded-2xl h-11 flex-row items-center px-4 space-x-2">
+        <View className="bg-[#1A0E2C] border border-white/5 rounded-2xl h-12 flex-row items-center px-4 gap-2">
           <Search size={16} color="#6B7280" />
           <TextInput
             value={searchQuery}
@@ -136,15 +137,13 @@ export default function NetworkScreen() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         
         {/* USERS LIST */}
-        <View className="px-4 space-y-3 mb-8">
+        <View className="px-4 gap-3 mb-8">
           {networkUsers.map((user) => (
             <View key={user.id} className="bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 flex-row items-center justify-between">
               
-              <View className="flex-row items-center space-x-3.5 flex-1 pr-2">
+              <View className="flex-row items-center gap-4 flex-1 pr-2">
                 <View className="relative">
-                  <View className={`w-12 h-12 rounded-full border-2 ${user.hasStory ? 'border-[#A855F7]' : 'border-transparent'} p-[1px]`}>
-                    <Image source={{ uri: user.avatar }} className="w-full h-full rounded-full" />
-                  </View>
+                  <StoryRing userId={user.username.replace('@','')} avatarUrl={user.avatar} size={48} />
                   {user.verified && (
                     <View className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full">
                       <CheckCircle2 size={16} color="#A855F7" fill="#FFFFFF" />
@@ -153,11 +152,11 @@ export default function NetworkScreen() {
                 </View>
 
                 <View className="flex-1">
-                  <View className="flex-row items-center space-x-1">
+                  <View className="flex-row items-center gap-1">
                     <Text className="text-white font-bold text-sm" numberOfLines={1}>{user.name}</Text>
                     {user.verified && <CheckCircle2 size={14} color="#A855F7" fill="#FFFFFF" />}
                   </View>
-                  <Text className="text-neutral-grey text-xs mt-0.5">{user.username}</Text>
+                  <Text className="text-neutral-grey text-xs mt-1">{user.username}</Text>
                 </View>
               </View>
 
@@ -183,7 +182,9 @@ export default function NetworkScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4 pr-4 pb-4">
             {suggestedUsers.map((user) => (
               <View key={user.id} className="bg-[#2D1B4E] rounded-2xl p-4 items-center w-32 mr-3 border border-white/5 shadow-md shadow-black/20">
-                <Image source={{ uri: user.avatar }} className="w-14 h-14 rounded-full mb-3" />
+                <View className="mb-3">
+                  <StoryRing userId={user.username.replace('@','')} avatarUrl={user.avatar} size={56} />
+                </View>
                 <Text className="text-white font-bold text-xs" numberOfLines={1}>{user.name}</Text>
                 <Text className="text-[#9CA3AF] text-[10px] mb-4" numberOfLines={1}>{user.username}</Text>
                 
@@ -198,6 +199,6 @@ export default function NetworkScreen() {
         </View>
 
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

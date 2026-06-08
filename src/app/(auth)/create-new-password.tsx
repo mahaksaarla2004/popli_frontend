@@ -93,9 +93,9 @@ export default function CreateNewPasswordScreen() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: 'timing', duration: 300 }}
-                className="space-y-6"
+                className="gap-6"
               >
-                <View className="space-y-2 mb-4">
+                <View className="gap-2 mb-4">
                   <Text className="text-white font-black text-3xl tracking-tight">
                     Create New Password
                   </Text>
@@ -105,12 +105,12 @@ export default function CreateNewPasswordScreen() {
                 </View>
 
                 {/* Form fields */}
-                <View className="space-y-4">
+                <View className="gap-4">
                   {/* New Password input card */}
-                  <View className="space-y-2">
+                  <View className="gap-2">
                     <Text className="text-white/80 text-xs font-semibold px-2">New Password</Text>
                     <View className="bg-[#1D1037]/45 border border-primary-purple/20 rounded-full px-5 flex-row items-center justify-between h-14">
-                      <View className="flex-row items-center space-x-3 flex-1">
+                      <View className="flex-row items-center gap-3 flex-1">
                         <Lock size={16} color="rgba(255, 255, 255, 0.4)" />
                         <TextInput
                           value={newPassword}
@@ -134,10 +134,10 @@ export default function CreateNewPasswordScreen() {
                   </View>
 
                   {/* Confirm Password input card */}
-                  <View className="space-y-2">
+                  <View className="gap-2">
                     <Text className="text-white/80 text-xs font-semibold px-2">Confirm Password</Text>
                     <View className="bg-[#1D1037]/45 border border-primary-purple/20 rounded-full px-5 flex-row items-center justify-between h-14">
-                      <View className="flex-row items-center space-x-3 flex-1">
+                      <View className="flex-row items-center gap-3 flex-1">
                         <Lock size={16} color="rgba(255, 255, 255, 0.4)" />
                         <TextInput
                           value={confirmPassword}
@@ -162,14 +162,14 @@ export default function CreateNewPasswordScreen() {
                 </View>
 
                 {/* Password strength dynamic validator indicators */}
-                <View className="bg-[#1D1037]/25 border border-primary-purple/10 rounded-2xl p-4 space-y-3 mt-1">
+                <View className="bg-[#1D1037]/25 border border-primary-purple/10 rounded-2xl p-4 gap-3 mt-1">
                   <Text className="text-white/80 text-[11px] font-black uppercase tracking-wider mb-1">
                     Security Checklist
                   </Text>
                   
                   {/* Strength indicators layout list */}
-                  <View className="space-y-2.5">
-                    <View className="flex-row items-center space-x-2">
+                  <View className="gap-3">
+                    <View className="flex-row items-center gap-2">
                       {hasMinLength ? (
                         <CheckCircle2 size={13} color="#10B981" />
                       ) : (
@@ -180,7 +180,7 @@ export default function CreateNewPasswordScreen() {
                       </Text>
                     </View>
 
-                    <View className="flex-row items-center space-x-2">
+                    <View className="flex-row items-center gap-2">
                       {hasNumber ? (
                         <CheckCircle2 size={13} color="#10B981" />
                       ) : (
@@ -191,7 +191,7 @@ export default function CreateNewPasswordScreen() {
                       </Text>
                     </View>
 
-                    <View className="flex-row items-center space-x-2">
+                    <View className="flex-row items-center gap-2">
                       {isMatching ? (
                         <CheckCircle2 size={13} color="#10B981" />
                       ) : (
@@ -212,7 +212,7 @@ export default function CreateNewPasswordScreen() {
                     opacity: (!isValid || isResetting) ? 0.55 : pressed ? 0.95 : 1,
                     transform: [{ scale: (isValid && !isResetting && pressed) ? 0.98 : 1 }]
                   })}
-                  className={`h-14 rounded-full items-center justify-center flex-row space-x-2 transition-all mt-4 ${
+                  className={`h-14 rounded-full items-center justify-center flex-row gap-2 transition-all mt-4 ${
                     isValid && !isResetting
                       ? 'bg-primary-purple shadow-lg shadow-primary-purple/40'
                       : 'bg-white/5 border border-white/5'
@@ -230,7 +230,7 @@ export default function CreateNewPasswordScreen() {
                 from={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', damping: 12 }}
-                className="items-center space-y-6"
+                className="items-center gap-6"
               >
                 <MotiView
                   from={{ scale: 0.5, opacity: 0 }}
@@ -241,7 +241,7 @@ export default function CreateNewPasswordScreen() {
                   <ShieldCheck size={40} color="#10B981" strokeWidth={2.5} />
                 </MotiView>
 
-                <View className="space-y-2 items-center">
+                <View className="gap-2 items-center">
                   <Text className="text-white font-black text-2xl tracking-tight text-center">
                     Reset Successful!
                   </Text>

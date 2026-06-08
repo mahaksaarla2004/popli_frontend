@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, Platform } from 'react-native';
 import { Home, Compass, Plus, MessageSquare, User, Award } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function TabLayout() {
   return (
@@ -58,24 +59,38 @@ export default function TabLayout() {
       <Tabs.Screen
         name="create"
         options={{
-          title: 'Create',
+          title: '', // Remove text for a clean popup look
+          tabBarStyle: { display: 'none' },
           tabBarIcon: ({ focused }) => (
-            <View 
-              className="items-center justify-center bg-[#8B5CF6] rounded-xl shadow-lg shadow-primary-purple/40"
+            <View
+              className="items-center justify-center shadow-2xl shadow-[#EC4899]"
               style={{
-                width: 44,
-                height: 44,
-                marginTop: 4,
+                width: 52,
+                height: 52,
+                top: -18,
+                borderRadius: 26,
+                borderWidth: 4,
+                borderColor: '#0B001A', // Matches app background
               }}
             >
-              <Plus size={24} color="#FFFFFF" strokeWidth={3} />
+              <LinearGradient
+                colors={['#EC4899', '#8B5CF6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: 26,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Plus size={26} color="#FFFFFF" strokeWidth={3} />
+              </LinearGradient>
             </View>
           ),
           tabBarLabelStyle: {
-            fontSize: 10,
-            fontFamily: 'SF Pro Rounded',
-            fontWeight: '600',
-            marginTop: 4,
+            display: 'none',
           }
         }}
       />
@@ -101,6 +116,12 @@ export default function TabLayout() {
               {focused && <View className="h-[3px] w-[3px] rounded-full bg-primary-pink mt-1" />}
             </View>
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="inbox"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

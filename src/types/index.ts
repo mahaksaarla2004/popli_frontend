@@ -21,13 +21,14 @@ export interface Creator {
 export interface Comment {
   id: string;
   reelId: string;
-  username: string;
-  avatar: string;
+  userId: string;
   text: string;
-  createdAt: string; // Relative time, e.g., '2h ago'
   likesCount: number;
-  isCreator?: boolean;
-  isTopGifter?: boolean;
+  isLiked?: boolean;
+  createdAt: string;
+  user?: Pick<Creator, 'id' | 'name' | 'username' | 'avatar' | 'isVerified'>;
+  parentId?: string | null;
+  replies?: Comment[];
 }
 
 export interface Reel {
@@ -40,6 +41,7 @@ export interface Reel {
   thumbnailUrl: string;
   description: string;
   musicName: string;
+  viewsCount: number;
   likesCount: number;
   commentsCount: number;
   sharesCount: number;
@@ -55,6 +57,9 @@ export interface Reel {
   };
   rewardEarned?: number; // in Rupees/Coins
   distanceKm?: number; // Calculated dynamically via GPS
+  layersData?: any;
+  createdAt?: string;
+  mediaUrl?: string;
 }
 
 export type GiftType = 'rose' | 'crown' | 'rocket' | 'fire' | 'diamond' | 'lion' | 'heart' | 'party' | 'sparkle' | 'star';
@@ -102,7 +107,7 @@ export interface Chat {
 
 export interface NotificationItem {
   id: string;
-  type: 'like' | 'comment' | 'follow' | 'gift' | 'viral_alert' | 'nearby_trend';
+  type: 'like' | 'comment' | 'follow' | 'gift' | 'viral_alert' | 'nearby_trend' | 'milestone';
   senderName?: string;
   senderAvatar?: string;
   title: string;

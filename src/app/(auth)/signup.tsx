@@ -2,25 +2,32 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKYCStore, useAuthStore } from '../../store';
-import { User, Phone, Lock, ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
+import { User, Phone, Lock, ChevronLeft, Eye, EyeOff, AtSign } from 'lucide-react-native';
 import { MotiView } from 'moti';
+
+import { sendFirebaseOTP } from '../../lib/firebase';
+import { apiClient } from '../../api/client';
 
 export default function SignupScreen() {
   const router = useRouter();
   const kyc = useKYCStore();
 
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [dob, setDob] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
     fullName?: string;
+    username?: string;
     mobile?: string;
     password?: string;
     dob?: string;
     agreeTerms?: string;
+    api?: string;
   }>({});
 
   const validateDOB = (dobStr: string): string | null => {
@@ -44,8 +51,8 @@ export default function SignupScreen() {
     if (m < 0 || (m === 0 && today.getDate() < day)) {
       age--;
     }
-    if (age < 18) {
-      return 'You must be at least 18 years old to create an account.';
+    if (age < 13) {
+      return 'You must be at least 13 years old to use Popli.';
     }
     return null;
   };
@@ -69,7 +76,9 @@ export default function SignupScreen() {
     if (errors.dob) setErrors(prev => ({ ...prev, dob: undefined }));
   };
 
-  const handleSignupSubmit = () => {
+  // ... (keep validateDOB and handleDOBChange intact)
+
+  const handleSignupSubmit = async () => {
     const newErrors: typeof errors = {};
 
     const nameTrimmed = fullName.trim();
@@ -79,6 +88,15 @@ export default function SignupScreen() {
       newErrors.fullName = 'Name must be at least 2 characters.';
     } else if (!/^[a-zA-Z\s]+$/.test(nameTrimmed)) {
       newErrors.fullName = 'Name can only contain letters and spaces.';
+    }
+
+    const usernameTrimmed = username.trim().toLowerCase();
+    if (!usernameTrimmed) {
+      newErrors.username = 'Please enter a username.';
+    } else if (usernameTrimmed.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters.';
+    } else if (!/^[a-z0-9_]+$/.test(usernameTrimmed)) {
+      newErrors.username = 'Username can only contain lowercase letters, numbers, and underscores.';
     }
 
     const mobileTrimmed = mobile.trim();
@@ -94,9 +112,9 @@ export default function SignupScreen() {
       newErrors.password = 'Password must be at least 6 characters.';
     }
 
-    const dobErrorMsg = validateDOB(dob.trim());
-    if (dobErrorMsg) {
-      newErrors.dob = dobErrorMsg;
+    const dobError = validateDOB(dob);
+    if (dobError) {
+      newErrors.dob = dobError;
     }
 
     if (!agreeTerms) {
@@ -109,22 +127,55 @@ export default function SignupScreen() {
     }
 
     setErrors({});
+    setIsLoading(true);
 
-    // Save details to store
-    kyc.updateKYCField({
-      fullName,
-      fullName_reg: fullName,
-    } as any);
+    try {
+      const targetPhone = `+91${mobileTrimmed}`;
+      
+      // 1. Check if user already exists
+      const checkRes = await apiClient.post('/auth/check-user', { 
+        identifier: targetPhone,
+        username: usernameTrimmed 
+      });
+      
+      if (checkRes.data.exists) {
+        setIsLoading(false);
+        if (checkRes.data.field === 'username') {
+          setErrors({ username: checkRes.data.message });
+        } else {
+          setErrors({ mobile: checkRes.data.message });
+        }
+        return;
+      }
 
-    const { registerMockUser } = useAuthStore.getState();
-    registerMockUser(mobileTrimmed);
-    registerMockUser(fullName.toLowerCase().replace(/\s+/g, ''));
-    
-    // Route user to OTP confirmation
-    router.push({
-      pathname: '/(auth)/otp',
-      params: { target: `+91 ${mobile}`, isSignup: 'true' }
-    });
+      // 2. Send Firebase OTP
+      try {
+        await sendFirebaseOTP(targetPhone);
+      } catch (err) {
+        console.error('Firebase error:', err);
+        setIsLoading(false);
+        setErrors({ api: 'Firebase Auth failed. Ensure native modules are configured.' });
+        return;
+      }
+
+      setIsLoading(false);
+      // Route user to OTP confirmation
+      router.push({
+        pathname: '/(auth)/otp',
+        params: { 
+          target: targetPhone, 
+          isSignup: 'true',
+          name: nameTrimmed,
+          username: usernameTrimmed,
+          phone: targetPhone,
+          dob: dob
+        }
+      });
+    } catch (error: any) {
+      setIsLoading(false);
+      console.error('Check User Error:', error);
+      setErrors({ api: error?.response?.data?.message || 'Failed to connect to server. Please try again.' });
+    }
   };
 
   return (
@@ -134,37 +185,38 @@ export default function SignupScreen() {
     >
       <ScrollView 
         className="flex-1 px-6"
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40, paddingTop: Platform.OS === 'ios' ? 60 : 40 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100, paddingTop: Platform.OS === 'ios' ? 60 : 40 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <MotiView 
           from={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'timing', duration: 400 }}
-          className="space-y-6"
+          className="gap-6"
         >
           {/* Custom Header with Back Button */}
-          <View className="flex-row items-center justify-between w-full pb-2">
+          <View className="flex-row items-center justify-between w-full pb-4 mt-2">
             <Pressable 
               onPress={() => router.back()}
-              className="w-10 h-10 rounded-full bg-white/5 border border-white/5 items-center justify-center active:scale-[0.9] transition-all"
+              className="w-11 h-11 rounded-full bg-[#2D1B4E] items-center justify-center active:scale-[0.9] transition-all"
             >
-              <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
+              <ChevronLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
             </Pressable>
           </View>
 
           {/* Header titles */}
-          <View className="mb-2">
-            <Text className="text-white font-extrabold text-3xl tracking-tight">Create Account</Text>
-            <Text className="text-white/60 text-xs font-semibold mt-1">Join the community and start sharing your vibe.</Text>
+          <View className="mb-6">
+            <Text className="text-white font-bold text-[28px] tracking-tight">Create Account</Text>
+            <Text className="text-white/60 text-[14px] mt-1">Join the community and start sharing your vibe.</Text>
           </View>
 
           {/* Form Fields */}
-          <View className="flex-col" style={{ gap: 14 }}>
+          <View className="flex-col gap-4">
             {/* Full Name input */}
             <View className="flex-col">
-              <View className={`bg-[#1D1037]/45 border rounded-2xl px-4 flex-row items-center space-x-3 h-12 ${errors.fullName ? 'border-red-500' : 'border-primary-purple/20'}`}>
-                <User size={16} color="rgba(255, 255, 255, 0.4)" />
+              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.fullName ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
+                <User size={20} color="#A78BFA" strokeWidth={2} />
                 <TextInput
                   value={fullName}
                   onChangeText={(val) => {
@@ -172,19 +224,40 @@ export default function SignupScreen() {
                     if (errors.fullName) setErrors(prev => ({ ...prev, fullName: undefined }));
                   }}
                   placeholder="Full Name"
-                  placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                  className="flex-1 text-white text-xs font-normal py-2"
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  className="flex-1 text-white text-[14px] py-2"
                 />
               </View>
               {errors.fullName && (
-                <Text className="text-red-500 text-[10px] pl-1 mt-1 font-semibold">{errors.fullName}</Text>
+                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.fullName}</Text>
+              )}
+            </View>
+
+            {/* Username input */}
+            <View className="flex-col">
+              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.username ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
+                <AtSign size={20} color="#A78BFA" strokeWidth={2} />
+                <TextInput
+                  value={username}
+                  onChangeText={(val) => {
+                    setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+                    if (errors.username) setErrors(prev => ({ ...prev, username: undefined }));
+                  }}
+                  placeholder="username_123"
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  autoCapitalize="none"
+                  className="flex-1 text-white text-[14px] py-2"
+                />
+              </View>
+              {errors.username && (
+                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.username}</Text>
               )}
             </View>
 
             {/* Mobile Number input */}
             <View className="flex-col">
-              <View className={`bg-[#1D1037]/45 border rounded-2xl px-4 flex-row items-center space-x-3 h-12 ${errors.mobile ? 'border-red-500' : 'border-primary-purple/20'}`}>
-                <Phone size={16} color="rgba(255, 255, 255, 0.4)" />
+              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.mobile ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
+                <Phone size={20} color="#A78BFA" strokeWidth={2} />
                 <TextInput
                   value={mobile}
                   onChangeText={(val) => {
@@ -192,22 +265,22 @@ export default function SignupScreen() {
                     if (errors.mobile) setErrors(prev => ({ ...prev, mobile: undefined }));
                   }}
                   placeholder="+91 9876543210"
-                  placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
                   keyboardType="phone-pad"
                   maxLength={10}
-                  className="flex-1 text-white text-xs font-normal py-2"
+                  className="flex-1 text-white text-[14px] py-2"
                 />
               </View>
               {errors.mobile && (
-                <Text className="text-red-500 text-[10px] pl-1 mt-1 font-semibold">{errors.mobile}</Text>
+                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.mobile}</Text>
               )}
             </View>
 
             {/* Password input */}
             <View className="flex-col">
-              <View className={`bg-[#1D1037]/45 border rounded-2xl px-4 flex-row items-center justify-between h-12 ${errors.password ? 'border-red-500' : 'border-primary-purple/20'}`}>
-                <View className="flex-row items-center space-x-3 flex-1">
-                  <Lock size={16} color="rgba(255, 255, 255, 0.4)" />
+              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center justify-between h-14 ${errors.password ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
+                <View className="flex-row items-center gap-4 flex-1">
+                  <Lock size={20} color="#A78BFA" strokeWidth={2} />
                   <TextInput
                     value={password}
                     onChangeText={(val) => {
@@ -216,60 +289,60 @@ export default function SignupScreen() {
                     }}
                     secureTextEntry={!showPassword}
                     placeholder="••••••••"
-                    placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                    className="flex-1 text-white text-xs font-normal py-2"
+                    placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                    className="flex-1 text-white text-[14px] py-2"
                     autoCapitalize="none"
                   />
                 </View>
-                <Pressable onPress={() => setShowPassword(!showPassword)} className="p-2">
+                <Pressable onPress={() => setShowPassword(!showPassword)} className="p-2 -mr-2">
                   {showPassword ? (
-                    <EyeOff size={16} color="rgba(255, 255, 255, 0.4)" />
+                    <EyeOff size={20} color="rgba(255, 255, 255, 0.4)" />
                   ) : (
-                    <Eye size={16} color="rgba(255, 255, 255, 0.4)" />
+                    <Eye size={20} color="rgba(255, 255, 255, 0.4)" />
                   )}
                 </Pressable>
               </View>
-                {errors.password && (
-                <Text className="text-red-500 text-[10px] pl-1 mt-1 font-semibold">{errors.password}</Text>
+              {errors.password && (
+                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.password}</Text>
               )}
             </View>
 
             {/* DOB input */}
             <View className="flex-col">
-              <View className={`bg-[#1D1037]/45 border rounded-2xl px-4 flex-row items-center space-x-3 h-12 ${errors.dob ? 'border-red-500' : 'border-primary-purple/20'}`}>
-                <User size={16} color="rgba(255, 255, 255, 0.4)" />
+              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.dob ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
+                <User size={20} color="#A78BFA" strokeWidth={2} />
                 <TextInput
                   value={dob}
                   onChangeText={handleDOBChange}
                   placeholder="DD/MM/YYYY"
-                  placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                  keyboardType="number-pad"
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  keyboardType="numeric"
                   maxLength={10}
-                  className="flex-1 text-white text-xs font-normal py-2"
+                  className="flex-1 text-white text-[14px] py-2"
                 />
               </View>
               {errors.dob && (
-                <Text className="text-red-500 text-[10px] pl-1 mt-1 font-semibold">{errors.dob}</Text>
+                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.dob}</Text>
               )}
             </View>
           </View>
 
           {/* Terms checkbox */}
-          <View className="flex-col">
+          <View className="flex-col mt-5 mb-2">
             <Pressable 
               onPress={() => {
                 setAgreeTerms(!agreeTerms);
                 if (errors.agreeTerms) setErrors(prev => ({ ...prev, agreeTerms: undefined }));
               }}
-              className="flex-row items-start space-x-3 px-1 py-1"
+              className="flex-row items-center gap-4 px-1"
             >
-              <View className={`w-5 h-5 rounded-md border items-center justify-center mt-0.5 ${
-                agreeTerms ? 'bg-primary-pink border-primary-pink' : errors.agreeTerms ? 'border-red-500 bg-[#1D1037]/45' : 'border-white/20 bg-[#1D1037]/45'
+              <View className={`w-[18px] h-[18px] rounded-full border items-center justify-center ${
+                agreeTerms ? 'bg-[#2D1B4E] border-[#A78BFA]' : errors.agreeTerms ? 'border-red-500 bg-[#1D1037]/45' : 'border-[#3E2B5C] bg-[#1D1037]/45'
               }`}>
-                {agreeTerms && <Text className="text-white text-[10px] font-bold">✓</Text>}
+                {agreeTerms && <Text className="text-[#A78BFA] text-[10px] font-bold">✓</Text>}
               </View>
-              <Text className="text-white/60 text-xs flex-1 leading-4">
-                I agree to the <Text className="text-primary-pink font-semibold">Terms of Service</Text> and <Text className="text-primary-pink font-semibold">Privacy Policy</Text>.
+              <Text className="text-white/60 text-[13px] flex-1">
+                I agree to the <Text className="text-[#A78BFA]">Terms of Service</Text> and <Text className="text-[#A78BFA]">Privacy Policy</Text>.
               </Text>
             </Pressable>
             {errors.agreeTerms && (
@@ -280,47 +353,47 @@ export default function SignupScreen() {
           {/* CTA Submit Button */}
           <Pressable
             onPress={handleSignupSubmit}
-            className="bg-primary-purple py-4 rounded-2xl items-center justify-center shadow-lg shadow-primary-purple/40 active:scale-[0.98] transition-all"
+            className="bg-[#A855F7] h-14 mt-4 rounded-full items-center justify-center shadow-lg shadow-primary-purple/40 active:scale-[0.98] transition-all"
           >
-            <Text className="text-white text-sm font-bold uppercase tracking-wider">Sign Up</Text>
+            <Text className="text-white text-[16px] font-bold">Sign Up</Text>
           </Pressable>
 
           {/* Social connections */}
-          <View className="items-center space-y-4 pt-1">
-            <View className="flex-row items-center justify-center space-x-2 w-full px-2">
+          <View className="items-center gap-4 pt-6">
+            <View className="flex-row items-center justify-center gap-2 w-full px-4">
               <View className="flex-1 h-[1px] bg-white/5" />
-              <Text className="text-white/40 text-[9px] font-bold uppercase tracking-wider">Or Connect With</Text>
+              <Text className="text-white/40 text-[11px] uppercase tracking-wider">Or Connect With</Text>
               <View className="flex-1 h-[1px] bg-white/5" />
             </View>
             
-            <View className="flex-row justify-center space-x-4 w-full">
+            <View className="flex-row justify-center gap-4 w-full mt-1">
               <Pressable 
                 onPress={handleSignupSubmit}
-                className="flex-1 flex-row bg-[#1D1037]/30 border border-white/10 py-3 rounded-2xl items-center justify-center space-x-2 h-12 active:scale-[0.97]"
+                className="flex-1 flex-row bg-[#1D1037]/80 border border-[#3E2B5C] h-14 rounded-full items-center justify-center gap-2 active:scale-[0.97]"
               >
-                <Text className="text-white text-sm font-black mr-0.5">G</Text>
-                <Text className="text-white text-xs font-bold">Google</Text>
+                <Text className="text-white text-[15px] font-bold mr-1">G</Text>
+                <Text className="text-white text-[15px]">Google</Text>
               </Pressable>
               
               <Pressable 
                 onPress={handleSignupSubmit}
-                className="flex-1 flex-row bg-[#1D1037]/30 border border-white/10 py-3 rounded-2xl items-center justify-center space-x-2 h-12 active:scale-[0.97]"
+                className="flex-1 flex-row bg-[#1D1037]/80 border border-[#3E2B5C] h-14 rounded-full items-center justify-center gap-2 active:scale-[0.97]"
               >
-                <Text className="text-white text-sm font-black mr-0.5">f</Text>
-                <Text className="text-white text-xs font-bold">Facebook</Text>
+                <Text className="text-white text-[15px] font-bold mr-1">f</Text>
+                <Text className="text-white text-[15px]">Facebook</Text>
               </Pressable>
             </View>
 
             {/* Footer Navigation */}
-            <View className="flex-row items-center justify-center space-x-1 pt-2">
-              <Text className="text-white/50 text-xs">Already have an account?</Text>
+            <View className="flex-row items-center justify-center gap-1 pt-4">
+              <Text className="text-white/50 text-[14px]">Already have an account?</Text>
               <Pressable 
                 onPress={() => router.push('/(auth)/login')}
                 hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                 style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                 className="py-1 px-1.5"
               >
-                <Text className="text-primary-pink text-xs font-bold hover:underline">Log in</Text>
+                <Text className="text-[#A78BFA] text-[14px] font-bold">Log in</Text>
               </Pressable>
             </View>
           </View>

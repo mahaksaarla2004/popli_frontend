@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Coins, ArrowUpRight, TrendingUp, Landmark, ShieldCheck, Wallet, ArrowDownLeft } from 'lucide-react-native';
 import { useWalletStore, useKYCStore } from '../store';
@@ -23,7 +23,11 @@ export default function WalletScreen() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [customUpi, setCustomUpi] = useState(upiId || '');
 
-  const handleWithdraw = () => {
+  React.useEffect(() => {
+    useWalletStore.getState().fetchWallet();
+  }, []);
+
+  const handleWithdraw = async () => {
     if (!kycCompleted) {
       return Alert.alert('KYC Required', 'Please complete your KYC verification profile first to enable bank withdrawals.', [
         { text: 'Verify Now', onPress: () => router.push('/kyc') }
@@ -43,18 +47,20 @@ export default function WalletScreen() {
       return Alert.alert('Error', 'Please enter your UPI ID.');
     }
 
-    const success = withdrawEarnings(amountNum, customUpi.trim());
+    const success = await withdrawEarnings(amountNum, customUpi.trim());
     if (success) {
       Alert.alert(
         'Withdrawal Requested! 💸',
         `₹${amountNum.toLocaleString()} has been queued for transfer. Standard settlement takes 24 hours.`
       );
       setWithdrawAmount('');
+    } else {
+      Alert.alert('Withdrawal Failed', 'There was an error processing your withdrawal.');
     }
   };
 
   return (
-    <View className="flex-1 bg-background-plum pt-12">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-background-plum pt-12">
       {/* Header bar */}
       <View className="flex-row items-center justify-between px-4 pb-3 border-b border-white/5 bg-background-card/15">
         <Pressable onPress={() => router.back()} className="p-1">
@@ -64,10 +70,10 @@ export default function WalletScreen() {
         <View className="w-5" />
       </View>
 
-      <ScrollView className="flex-1 px-4 py-4 space-y-5" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 px-4 py-4 gap-6" showsVerticalScrollIndicator={false}>
         
         {/* Double Balances Cards */}
-        <View className="flex-row justify-between space-x-3.5 mt-2">
+        <View className="flex-row justify-between gap-4 mt-2">
           {/* A. INR Cash Earnings Card */}
           <View className="flex-1 bg-background-card/70 border border-white/10 rounded-3xl p-4 shadow shadow-primary-purple/10">
             <View className="w-8 h-8 rounded-full bg-primary-pink/15 items-center justify-center border border-primary-pink/30 mb-3">
@@ -96,7 +102,7 @@ export default function WalletScreen() {
         {/* Dynamic visual graph for coin earnings progress weekly */}
         <View className="bg-background-card/50 border border-white/5 rounded-3xl p-5">
           <View className="flex-row items-center justify-between pb-4 border-b border-white/5">
-            <View className="flex-row items-center space-x-2">
+            <View className="flex-row items-center gap-2">
               <TrendingUp size={16} color="#D946EF" />
               <Text className="text-white font-bold text-xs">Earnings Performance Graph</Text>
             </View>
@@ -114,7 +120,7 @@ export default function WalletScreen() {
               { day: 'Sat', coins: 80, active: false },
               { day: 'Sun', coins: 150, active: true }
             ].map((bar, i) => (
-              <View key={i} className="items-center space-y-2 flex-1">
+              <View key={i} className="items-center gap-2 flex-1">
                 <View className="w-4 bg-white/5 rounded-full h-20 justify-end overflow-hidden">
                   <View 
                     style={{ height: `${(bar.coins / 150) * 100}%` }}
@@ -130,14 +136,14 @@ export default function WalletScreen() {
         </View>
 
         {/* Withdrawal Section */}
-        <View className="bg-background-card/50 border border-white/5 rounded-3xl p-5 space-y-4">
-          <View className="flex-row items-center space-x-2 pb-2 border-b border-white/5">
+        <View className="bg-background-card/50 border border-white/5 rounded-3xl p-6 gap-4">
+          <View className="flex-row items-center gap-2 pb-2 border-b border-white/5">
             <Landmark size={16} color="#8B5CF6" />
             <Text className="text-white font-bold text-xs">Request Cash Withdrawal</Text>
           </View>
 
-          <View className="space-y-5">
-            <View className="space-y-2">
+          <View className="gap-6">
+            <View className="gap-2">
               <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Withdrawal Amount (Min ₹500)</Text>
               <TextInput
                 value={withdrawAmount}
@@ -149,7 +155,7 @@ export default function WalletScreen() {
               />
             </View>
 
-            <View className="space-y-2">
+            <View className="gap-2">
               <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Recipient UPI ID</Text>
               <TextInput
                 value={customUpi}
@@ -162,7 +168,7 @@ export default function WalletScreen() {
 
             <Pressable
               onPress={handleWithdraw}
-              className="bg-primary-purple h-12 rounded-2xl items-center justify-center shadow shadow-primary-purple/35 flex-row space-x-2"
+              className="bg-primary-purple h-12 rounded-2xl items-center justify-center shadow shadow-primary-purple/35 flex-row gap-2"
             >
               <Text className="text-white text-xs font-black uppercase tracking-wider">Submit Cash Withdrawal</Text>
             </Pressable>
@@ -170,19 +176,23 @@ export default function WalletScreen() {
         </View>
 
         {/* Coin Packages Recharge */}
-        <View className="space-y-3.5">
+        <View className="gap-4">
           <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Recharge Coin Packages</Text>
           <View className="flex-row flex-wrap justify-between gap-y-3">
             {COIN_PACKS.map((pack) => (
               <Pressable
                 key={pack.coins}
-                onPress={() => {
-                  rechargeCoins(pack.coins);
-                  Alert.alert('Recharge Success! 🎉', `Added ${pack.coins} coins to your balance.`);
+                onPress={async () => {
+                  const success = await rechargeCoins(pack.coins);
+                  if (success) {
+                    Alert.alert('Recharge Success! 🎉', `Added ${pack.coins} coins to your balance.`);
+                  } else {
+                    Alert.alert('Recharge Failed', 'Could not process payment.');
+                  }
                 }}
                 className="w-[48%] bg-background-card/50 border border-white/5 rounded-3xl p-4 items-center justify-center active:scale-[0.98]"
               >
-                <View className="flex-row items-center space-x-1">
+                <View className="flex-row items-center gap-1">
                   <Coins size={14} color="#FCD34D" fill="#F59E0B" />
                   <Text className="text-accent-yellow font-black text-sm">{pack.coins.toLocaleString()}</Text>
                 </View>
@@ -195,9 +205,9 @@ export default function WalletScreen() {
         </View>
 
         {/* Transaction History ledger */}
-        <View className="space-y-3.5 pb-24">
+        <View className="gap-4 pb-24">
           <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Transaction History</Text>
-          <View className="space-y-2.5">
+          <View className="gap-3">
             {transactions.map((tx) => {
               const isIncome = tx.type === 'gift_receive' || tx.type === 'coin_recharge';
               return (
@@ -205,7 +215,7 @@ export default function WalletScreen() {
                   key={tx.id}
                   className="bg-background-card/40 border border-white/5 rounded-2xl p-4 flex-row items-center justify-between"
                 >
-                  <View className="flex-row items-center space-x-3 flex-1 pr-4">
+                  <View className="flex-row items-center gap-3 flex-1 pr-4">
                     <View className={`w-9 h-9 rounded-full items-center justify-center border ${
                       isIncome 
                         ? 'bg-green-500/10 border-green-500/25' 
@@ -218,7 +228,7 @@ export default function WalletScreen() {
                       )}
                     </View>
 
-                    <View className="flex-1 space-y-0.5">
+                    <View className="flex-1 gap-1">
                       <Text className="text-white text-xs font-bold" numberOfLines={1}>{tx.description}</Text>
                       <Text className="text-neutral-grey text-[9px] font-semibold">{tx.timestamp}</Text>
                     </View>
@@ -237,6 +247,6 @@ export default function WalletScreen() {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 
@@ -40,7 +40,7 @@ export default function ChangePasswordScreen() {
   );
 
   return (
-    <View className="flex-1 bg-[#12081E] pt-14">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
       {/* Header */}
       <View className="flex-row items-center px-4 pb-4">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
@@ -85,6 +85,6 @@ export default function ChangePasswordScreen() {
         </Pressable>
 
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

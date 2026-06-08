@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Pressable, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
+import { apiClient } from '../../api/client';
 import { ChevronLeft, Sparkles, ChevronRight, Check } from 'lucide-react-native';
 import { MotiView } from 'moti';
 
@@ -22,7 +23,26 @@ const INTERESTS = [
 export default function InterestsScreen() {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [interests, setInterests] = useState<any[]>(INTERESTS);
+  const [isSaving, setIsSaving] = useState(false);
   const { updateProfile } = useAuthStore();
+
+  useEffect(() => {
+    apiClient.get('/interests')
+      .then(res => {
+        if (res.data && res.data.length > 0) {
+          // Mapping backend structure to frontend structure
+          const mapped = res.data.map((i: any) => ({
+            id: i.id, // backend UUID
+            label: i.name,
+            emoji: i.emoji || '✨',
+            description: i.description || ''
+          }));
+          setInterests(mapped);
+        }
+      })
+      .catch(err => console.log('Interests fetch failed', err));
+  }, []);
 
   const handleToggleInterest = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -32,17 +52,41 @@ export default function InterestsScreen() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (selectedIds.length < 3) return;
+    setIsSaving(true);
 
-    // Cache preferences into active profile
-    updateProfile({
-      category: selectedIds[0], // Primary interest as category
-      selectedInterests: selectedIds, // Save all interests dynamically
-    } as any);
+    try {
+      const authState = useAuthStore.getState();
+      const profile = authState.userProfile;
+      
+      // Map selectedIds to their actual string labels/names
+      const selectedNames = selectedIds.map(id => {
+        const found = interests.find(i => i.id === id);
+        return found ? found.label : id;
+      });
 
-    // Navigate smoothly to location configuration page
-    router.push('/(auth)/location');
+      // Save full profile and interests to backend
+      await apiClient.put('/users/me', {
+        bio: profile.bio,
+        category: profile.category,
+        avatar: profile.avatar,
+        interestNames: selectedNames
+      });
+
+      // Cache preferences into active profile
+      updateProfile({
+        selectedInterests: selectedIds, // Save all interests dynamically
+      } as any);
+
+      setIsSaving(false);
+      // Navigate smoothly to location configuration page
+      router.push('/(auth)/location');
+    } catch (error) {
+      setIsSaving(false);
+      console.error('Failed to update profile:', error);
+      alert('Failed to save profile. Please try again.');
+    }
   };
 
   const isMinSelected = selectedIds.length >= 3;
@@ -59,7 +103,7 @@ export default function InterestsScreen() {
         >
           <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
         </Pressable>
-        <View className="flex-row items-center space-x-1.5 bg-primary-pink/15 px-3 py-1.5 rounded-full border border-primary-pink/20">
+        <View className="flex-row items-center gap-2 bg-primary-pink/15 px-3 py-1.5 rounded-full border border-primary-pink/20">
           <Sparkles size={11} color="#EC4899" />
           <Text className="text-primary-pink text-[9px] font-black uppercase tracking-wider">Step 2 of 4</Text>
         </View>
@@ -67,7 +111,7 @@ export default function InterestsScreen() {
 
       {/* Main Container */}
       <View className="flex-1 justify-center my-4">
-        <View className="space-y-1 mb-4">
+        <View className="gap-2 mb-4">
           <Text className="text-white font-black text-3xl tracking-tight">Choose Interests</Text>
           <Text className="text-white/50 text-xs">
             {isMinSelected 
@@ -84,7 +128,7 @@ export default function InterestsScreen() {
           contentContainerStyle={{ paddingBottom: 10 }}
         >
           <View className="flex-row flex-wrap gap-3 py-2 justify-between">
-            {INTERESTS.map((item) => {
+            {interests.map((item) => {
               const isSelected = selectedIds.includes(item.id);
               
               return (
@@ -121,7 +165,7 @@ export default function InterestsScreen() {
                     )}
                   </View>
 
-                  <View className="space-y-0.5">
+                  <View className="gap-1">
                     <Text className="text-white font-black text-sm">{item.label}</Text>
                     <Text className="text-white/40 text-[9px] font-medium" numberOfLines={1}>
                       {item.description}
@@ -139,16 +183,22 @@ export default function InterestsScreen() {
         <Pressable
           onPress={handleNext}
           disabled={!isMinSelected}
-          className={`py-4 rounded-2xl items-center justify-center flex-row space-x-2 transition-all ${
+          className={`py-4 rounded-2xl items-center justify-center flex-row gap-2 transition-all ${
             isMinSelected
               ? 'bg-primary-purple active:scale-[0.98] shadow-lg shadow-primary-purple/40'
               : 'bg-white/5 border border-white/5 opacity-55'
           }`}
         >
-          <Text className="text-white text-sm font-bold uppercase tracking-wider">
-            {isMinSelected ? 'Continue to Location' : `Choose ${remaining} More`}
-          </Text>
-          {isMinSelected && <ChevronRight size={16} color="#FFFFFF" strokeWidth={3} />}
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Text className="text-white text-sm font-bold uppercase tracking-wider">
+                {isMinSelected ? 'Continue to Location' : `Choose ${remaining} More`}
+              </Text>
+              {isMinSelected && <ChevronRight size={16} color="#FFFFFF" strokeWidth={3} />}
+            </>
+          )}
         </Pressable>
       </View>
 

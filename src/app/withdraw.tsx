@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, QrCode, Landmark, Info, ArrowRight } from 'lucide-react-native';
 import { useWalletStore } from '../store';
@@ -16,7 +16,7 @@ export default function WithdrawScreen() {
     setAmount(inrEarnings.toString());
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum) || amountNum < 500) {
       return Alert.alert('Invalid Amount', 'Minimum withdrawal limit is ₹500.');
@@ -26,7 +26,7 @@ export default function WithdrawScreen() {
     }
     
     // Using a fake UPI ID for demo purposes since we don't have the full KYC flow tied here
-    const success = withdrawEarnings(amountNum, 'user@upi');
+    const success = await withdrawEarnings(amountNum, 'user@upi');
     if (success) {
       Alert.alert(
         'Withdrawal Requested! 💸',
@@ -37,7 +37,7 @@ export default function WithdrawScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#12081E] pt-14">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
       {/* Header */}
       <View className="flex-row items-center px-4 pb-4">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
@@ -46,10 +46,10 @@ export default function WithdrawScreen() {
         <Text className="text-white font-bold text-base ml-2">Withdraw</Text>
       </View>
 
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
+      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 112 }}>
         
         {/* Total Balance Card */}
-        <View className="bg-[#1A0E2C] rounded-2xl p-6 mt-2 border border-white/5 items-center shadow-lg shadow-[#A855F7]/5" style={{ gap: 8 }}>
+        <View className="bg-[#1A0E2C] rounded-2xl p-6 mt-2 border border-white/5 items-center shadow-lg shadow-[#A855F7]/5 gap-2">
           <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest mb-1">Total Balance</Text>
           <Text 
             className="text-[#FACC15] font-black text-[32px]" 
@@ -61,14 +61,13 @@ export default function WithdrawScreen() {
         </View>
 
         {/* Select Method */}
-        <View className="mt-8 mb-6" style={{ gap: 12 }}>
+        <View className="mt-8 mb-6 gap-3">
           <Text className="text-white text-sm font-bold ml-1">Select Withdrawal Method</Text>
           
-          <View className="flex-row justify-between" style={{ gap: 12 }}>
+          <View className="flex-row justify-between gap-3">
             <Pressable 
               onPress={() => setMethod('upi')}
-              className={`flex-1 rounded-2xl p-4 border ${method === 'upi' ? 'bg-[#1A0E2C] border-[#A855F7]' : 'bg-[#150B24] border-white/5'} justify-between shadow-sm`}
-              style={{ minHeight: 110 }}
+              className={`flex-1 rounded-2xl p-4 border ${method === 'upi' ? 'bg-[#1A0E2C] border-[#A855F7]' : 'bg-[#150B24] border-white/5'} justify-between shadow-sm min-h-[112px]`}
             >
               <View className="w-10 h-10 bg-[#06B6D4]/10 rounded-xl items-center justify-center mb-3">
                 <QrCode size={20} color="#06B6D4" />
@@ -81,8 +80,7 @@ export default function WithdrawScreen() {
 
             <Pressable 
               onPress={() => setMethod('bank')}
-              className={`flex-1 rounded-2xl p-4 border ${method === 'bank' ? 'bg-[#1A0E2C] border-[#A855F7]' : 'bg-[#150B24] border-white/5'} justify-between shadow-sm`}
-              style={{ minHeight: 110 }}
+              className={`flex-1 rounded-2xl p-4 border ${method === 'bank' ? 'bg-[#1A0E2C] border-[#A855F7]' : 'bg-[#150B24] border-white/5'} justify-between shadow-sm min-h-[112px]`}
             >
               <View className="w-10 h-10 bg-[#10B981]/10 rounded-xl items-center justify-center mb-3">
                 <Landmark size={20} color="#10B981" />
@@ -96,7 +94,7 @@ export default function WithdrawScreen() {
         </View>
 
         {/* Enter Amount */}
-        <View className="mt-2" style={{ gap: 12 }}>
+        <View className="mt-2 gap-3">
           <Text className="text-white text-sm font-bold ml-1">Enter Amount</Text>
           
           <View className="bg-[#150B24] border border-white/5 rounded-2xl flex-row items-center px-4 h-16">
@@ -147,6 +145,6 @@ export default function WithdrawScreen() {
         </View>
 
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

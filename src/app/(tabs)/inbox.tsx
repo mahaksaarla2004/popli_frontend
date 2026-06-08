@@ -1,78 +1,34 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, Pressable, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Image, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
   ArrowLeft, Edit, Search, MessageSquare, Bell, 
   Heart, Award, ShieldAlert, Sparkles, ChevronRight, Video
 } from 'lucide-react-native';
 import { useChatStore } from '../../store';
+import StoryRing from '../../components/StoryRing';
 
 export default function InboxScreen() {
   const router = useRouter();
-  const { chats } = useChatStore();
+  const { chats, fetchChats, connectSocket } = useChatStore();
 
-  // Mock Active Friends data based on Figma
-  const activeFriends = [
-    { id: '1', name: 'Alex', avatar: 'https://i.pravatar.cc/150?img=11', active: true, selected: true },
-    { id: '2', name: 'Jordan', avatar: 'https://i.pravatar.cc/150?img=12', active: true },
-    { id: '3', name: 'Taylor', avatar: 'https://i.pravatar.cc/150?img=13', active: true },
-    { id: '4', name: 'Morgan', avatar: 'https://i.pravatar.cc/150?img=14', active: true },
-    { id: '5', name: 'Casey', avatar: 'https://i.pravatar.cc/150?img=15', active: false },
-  ];
+  useEffect(() => {
+    connectSocket();
+    fetchChats();
+  }, []);
 
-  // Mock Messages list based on Figma
-  const figmaMessages = [
-    {
-      id: 'c1',
-      creatorName: 'Riley Cooper',
-      creatorAvatar: 'https://i.pravatar.cc/150?img=33',
-      lastMessage: 'Check out this new video I posted! 🔥',
-      lastMessageTime: '2m ago',
-      unreadCount: 1, // Will show white dot
-      isVideo: false
-    },
-    {
-      id: 'c2',
-      creatorName: 'Jamie Smith',
-      creatorAvatar: 'https://i.pravatar.cc/150?img=34',
-      lastMessage: 'That edit was insane, teach me!',
-      lastMessageTime: '1h ago',
-      unreadCount: 0,
-      isVideo: false
-    },
-    {
-      id: 'c3',
-      creatorName: 'Sam Wilson',
-      creatorAvatar: 'https://i.pravatar.cc/150?img=35',
-      lastMessage: 'Sent a video clip',
-      lastMessageTime: '4h ago',
-      unreadCount: 0,
-      isVideo: true // Will show video icon
-    },
-    {
-      id: 'c4',
-      creatorName: 'Sarah Jenkins',
-      creatorAvatar: 'https://i.pravatar.cc/150?img=36',
-      lastMessage: 'Are we still meeting at the studio?',
-      lastMessageTime: 'Yesterday',
-      unreadCount: 1, // Will show white dot
-      isVideo: false
-    },
-    {
-      id: 'c5',
-      creatorName: 'Chris Evans',
-      creatorAvatar: 'https://i.pravatar.cc/150?img=37',
-      lastMessage: 'Haha for sure!',
-      lastMessageTime: 'Tue',
-      unreadCount: 0,
-      isVideo: false
-    }
-  ];
+  // Map active friends from existing chats (fallback logic until real presence is added)
+  const activeFriends = chats.slice(0, 5).map((chat) => ({
+    id: chat.creatorId,
+    name: chat.creatorName.split(' ')[0],
+    avatar: chat.creatorAvatar,
+    active: Math.random() > 0.5 // Simulated online status for now
+  }));
 
   return (
-    <View className="flex-1 bg-[#12081E] pt-14">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
       {/* HEADER */}
-      <View className="flex-row items-center justify-between px-4 pb-2">
+      <View className="flex-row items-center justify-between px-4 pb-6">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
           <ArrowLeft size={20} color="#FFFFFF" />
         </Pressable>
@@ -95,8 +51,8 @@ export default function InboxScreen() {
             ========================================== */}
         <View>
           {/* Search Bar */}
-          <View className="px-4 pt-4 pb-2">
-            <View className="bg-[#2D1B4E] h-10 rounded-2xl flex-row items-center px-4 space-x-2">
+          <View className="px-4 mb-6">
+            <View className="bg-[#2D1B4E] h-10 rounded-2xl flex-row items-center px-4 gap-2">
                 <Search size={16} color="#9CA3AF" />
                 <TextInput
                   placeholder="Search messages"
@@ -107,13 +63,13 @@ export default function InboxScreen() {
             </View>
 
             {/* Active Friends Horizontal List */}
-            <View className="pt-4 pb-2">
-              <Text className="text-white/60 text-[10px] font-bold uppercase tracking-widest pl-5 mb-3">Active Friends</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4 pr-4">
+            <View className="mb-6">
+              <Text className="text-white/60 text-[10px] font-bold uppercase tracking-widest px-4 mb-4">Active Friends</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
                 {activeFriends.map((friend) => (
-                  <View key={friend.id} className="items-center mr-5">
-                    <View className={`relative rounded-full ${friend.selected ? 'border-2 border-[#A855F7] p-0.5' : ''}`}>
-                      <Image source={{ uri: friend.avatar }} className="w-14 h-14 rounded-full" />
+                  <View key={friend.id} className="items-center">
+                    <View className="relative">
+                      <StoryRing userId={friend.name} avatarUrl={friend.avatar} size={56} />
                       {friend.active && (
                         <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#10B981] rounded-full border-[2.5px] border-[#12081E]" />
                       )}
@@ -125,41 +81,50 @@ export default function InboxScreen() {
             </View>
 
             {/* Messages List */}
-            <View className="px-4 pt-4">
-              {figmaMessages.map((chat) => (
-                <Pressable
-                  key={chat.id}
-                  onPress={() => router.push(`/chat/${chat.id}`)}
-                  className="flex-row items-center justify-between mb-6 active:scale-[0.99]"
-                >
-                  <View className="flex-row items-center space-x-3.5 flex-1 pr-4">
-                    <Image source={{ uri: chat.creatorAvatar }} className="w-12 h-12 rounded-full" />
-                    
-                    <View className="flex-1 justify-center space-y-1">
-                      <Text className="text-white font-bold text-sm" numberOfLines={1}>
-                        {chat.creatorName}
-                      </Text>
-                      <Text className={`${chat.unreadCount > 0 ? 'text-white font-medium' : 'text-neutral-grey font-medium'} text-xs`} numberOfLines={1}>
-                        {chat.lastMessage}
-                      </Text>
+            <View className="px-4 gap-6">
+              {chats.length === 0 ? (
+                <View className="items-center justify-center py-10">
+                  <MessageSquare size={48} color="#9CA3AF" />
+                  <Text className="text-white font-bold mt-4 text-center">No messages yet</Text>
+                  <Text className="text-[#9CA3AF] text-sm mt-2 text-center px-6">
+                    Start a conversation with your friends or favorite creators.
+                  </Text>
+                </View>
+              ) : (
+                chats.map((chat) => (
+                  <Pressable
+                    key={chat.id}
+                    onPress={() => router.push(`/chat/${chat.id}`)}
+                    className="flex-row items-center justify-between active:scale-[0.99]"
+                  >
+                    <View className="flex-row items-center gap-3 flex-1 pr-4">
+                      <StoryRing userId={chat.creatorId} avatarUrl={chat.creatorAvatar} size={48} />
+                      
+                      <View className="flex-1 justify-center gap-1">
+                        <Text className="text-white font-bold text-sm" numberOfLines={1}>
+                          {chat.creatorName}
+                        </Text>
+                        <Text className={`${chat.unreadCount && chat.unreadCount > 0 ? 'text-white font-medium' : 'text-neutral-grey font-medium'} text-xs`} numberOfLines={1}>
+                          {chat.lastMessage}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
 
-                  <View className="items-end space-y-2">
-                    <Text className={`${chat.unreadCount > 0 ? 'text-white' : 'text-neutral-grey'} text-[10px] font-medium`}>{chat.lastMessageTime}</Text>
-                    
-                    {chat.unreadCount > 0 && (
-                      <View className="w-2.5 h-2.5 bg-white rounded-full mt-1" />
-                    )}
-                    {chat.isVideo && (
-                      <Video size={14} color="#9CA3AF" className="mt-1" />
-                    )}
-                  </View>
-                </Pressable>
-              ))}
+                    <View className="items-end gap-1">
+                      <Text className={`${chat.unreadCount && chat.unreadCount > 0 ? 'text-white' : 'text-neutral-grey'} text-[10px] font-medium`}>
+                        {chat.lastMessageTime}
+                      </Text>
+                      
+                      {chat.unreadCount && chat.unreadCount > 0 ? (
+                        <View className="w-2.5 h-2.5 bg-white rounded-full mt-1" />
+                      ) : null}
+                    </View>
+                  </Pressable>
+                ))
+              )}
             </View>
           </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

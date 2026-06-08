@@ -1,60 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useAuthStore, useChatStore } from '../../store';
 import { 
   ChevronLeft, Video, Info, Plus, Mic, Image as ImageIcon, 
-  Sticker, Play, CheckCheck
+  Sticker, Play, CheckCheck, Send
 } from 'lucide-react-native';
+import StoryRing from '../../components/StoryRing';
+import { formatRelativeTime } from '../../utils';
 
 export default function ChatScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [inputText, setInputText] = useState('');
 
-  // Mock messages matching Figma design exactly
-  const mockMessages = [
-    {
-      id: 'm1',
-      type: 'received',
-      text: 'Yo! Just saw your latest reel. The color grading is insane.',
-      time: '10:42 AM',
-      senderAvatar: 'https://i.pravatar.cc/150?img=44' // Peach/orange placeholder
-    },
-    {
-      id: 'm2',
-      type: 'sent',
-      text: 'Thanks Alex! Spent way too long on those transitions. 😅',
-      isSeen: false
-    },
-    {
-      id: 'm3',
-      type: 'sent',
-      text: 'Thinking of dropping a tutorial on it soon.',
-      isSeen: true
-    },
-    {
-      id: 'm4',
-      type: 'sent',
-      attachment: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      isVideo: true
+  const { userProfile } = useAuthStore();
+  const { messages: storeMessages, fetchMessages, sendMessage, isTyping } = useChatStore();
+  
+  // Only show messages for this chat
+  const messages = storeMessages.filter(m => m.chatId === id);
+
+  useEffect(() => {
+    if (id) {
+      fetchMessages(id as string);
     }
-  ];
+  }, [id]);
+
+  const handleSend = async () => {
+    if (inputText.trim()) {
+      const textToSend = inputText.trim();
+      setInputText('');
+      await sendMessage(id as string, textToSend);
+    }
+  };
+
+  // Keep scroll view at bottom (handled with contentContainerStyle or a ref)
+  const scrollViewRef = useRef<ScrollView>(null);
+  
+  // Format messages to UI structure
+  const formattedMessages = messages.map(m => ({
+    id: m.id,
+    type: m.senderId === userProfile?.username || m.senderId === userProfile?.id ? 'sent' : 'received',
+    text: m.text,
+    time: m.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    senderAvatar: m.senderId === userProfile?.id ? userProfile?.avatar : 'https://i.pravatar.cc/150', // We might need to pull the other user's avatar from chat info
+    isSeen: m.status === 'seen'
+  }));
 
   return (
     <KeyboardAvoidingView 
       style={{ flex: 1, backgroundColor: '#12081E' }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 25}
     >
       {/* HEADER */}
       <View className="flex-row items-center justify-between px-4 pt-14 pb-3 border-b border-white/5 bg-[#12081E] z-10">
-        <View className="flex-row items-center space-x-3">
+        <View className="flex-row items-center gap-3">
           <Pressable onPress={() => router.back()} className="p-1 -ml-1">
             <ChevronLeft size={28} color="#FFFFFF" />
           </Pressable>
           
           <View className="relative">
-            {/* Dark grey avatar placeholder like Figma */}
-            <View className="w-10 h-10 rounded-full bg-[#4B5563] border border-white/10" />
+            <StoryRing userId="Alex" avatarUrl="https://i.pravatar.cc/150?img=44" size={40} />
             <View className="absolute bottom-0 right-0 w-3 h-3 bg-[#10B981] rounded-full border-2 border-[#12081E]" />
           </View>
           
@@ -64,7 +71,7 @@ export default function ChatScreen() {
           </View>
         </View>
 
-        <View className="flex-row items-center space-x-4">
+        <View className="flex-row items-center gap-4">
           <Pressable>
             <Video size={22} color="#FFFFFF" />
           </Pressable>
@@ -87,15 +94,15 @@ export default function ChatScreen() {
         </View>
 
         {/* MESSAGES */}
-        <View className="space-y-4">
-          {mockMessages.map((msg, index) => {
+        <View className="gap-4">
+          {formattedMessages.map((msg, index) => {
             const isSent = msg.type === 'sent';
-            const isLastSent = isSent && (index === mockMessages.length - 1 || mockMessages[index + 1].type !== 'sent');
+            const isLastSent = isSent && (index === formattedMessages.length - 1 || formattedMessages[index + 1].type !== 'sent');
 
             if (!isSent) {
               return (
                 <View key={msg.id} className="mb-4">
-                  <View className="flex-row items-end space-x-3">
+                  <View className="flex-row items-end gap-3">
                     <Image source={{ uri: msg.senderAvatar }} className="w-8 h-8 rounded-full bg-[#F59E0B]/20" />
                     <View className="bg-[#2D1B4E] px-4 py-3 rounded-2xl rounded-bl-sm max-w-[75%]">
                       <Text className="text-white/90 text-[15px] leading-6">{msg.text}</Text>
@@ -131,7 +138,7 @@ export default function ChatScreen() {
                   )}
 
                   {msg.isSeen && (
-                    <View className="flex-row items-center space-x-1 mt-1.5 mb-2">
+                    <View className="flex-row items-center gap-1 mt-1.5 mb-2">
                       <Text className="text-[#6B7280] text-[10px]">Seen</Text>
                       <CheckCheck size={12} color="#A855F7" />
                     </View>
@@ -144,7 +151,7 @@ export default function ChatScreen() {
       </ScrollView>
 
       {/* BOTTOM INPUT BAR */}
-      <View className="flex-row items-center px-4 py-3 bg-[#12081E] border-t border-white/5 space-x-3 pb-8">
+      <View className="flex-row items-center px-4 py-3 bg-[#12081E] border-t border-white/5 gap-3 pb-8">
         {/* Plus Button */}
         <Pressable className="w-10 h-10 rounded-full bg-[#1A0E2C] items-center justify-center border border-white/5">
           <Plus size={20} color="#9CA3AF" />
@@ -164,16 +171,27 @@ export default function ChatScreen() {
           </Pressable>
         </View>
 
-        {/* Mic */}
-        <Pressable className="p-1">
-          <Mic size={20} color="#9CA3AF" />
-        </Pressable>
+        {inputText.trim().length > 0 ? (
+          <Pressable 
+            onPress={handleSend}
+            className="w-10 h-10 rounded-full bg-[#D946EF] items-center justify-center shadow-lg shadow-[#D946EF]/50 ml-1"
+          >
+            <Send size={18} color="#FFFFFF" className="mr-0.5 mt-0.5" />
+          </Pressable>
+        ) : (
+          <>
+            {/* Mic */}
+            <Pressable className="p-1">
+              <Mic size={20} color="#9CA3AF" />
+            </Pressable>
 
-        {/* Glowing Gallery Button */}
-        <Pressable className="w-10 h-10 rounded-full bg-[#A855F7] items-center justify-center shadow-lg shadow-[#A855F7]/50">
-          <View className="absolute inset-0 bg-[#D946EF] rounded-full opacity-50" />
-          <ImageIcon size={18} color="#FFFFFF" className="z-10" />
-        </Pressable>
+            {/* Glowing Gallery Button */}
+            <Pressable className="w-10 h-10 rounded-full bg-[#A855F7] items-center justify-center shadow-lg shadow-[#A855F7]/50">
+              <View className="absolute inset-0 bg-[#D946EF] rounded-full opacity-50" />
+              <ImageIcon size={18} color="#FFFFFF" className="z-10" />
+            </Pressable>
+          </>
+        )}
       </View>
     </KeyboardAvoidingView>
   );

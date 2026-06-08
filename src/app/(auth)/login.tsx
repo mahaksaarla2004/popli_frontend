@@ -1,42 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Image, Pressable, KeyboardAvoidingView, ScrollView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, Image, Pressable, KeyboardAvoidingView, ScrollView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { User, Lock, Eye, EyeOff, Play } from 'lucide-react-native';
 import { MotiView } from 'moti';
+import { apiClient } from '../../api/client';
+import { sendFirebaseOTP } from '../../lib/firebase';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { setLogin, setFirstLogin, mockRegisteredUsers } = useAuthStore();
   const [identifier, setIdentifier] = useState('');
+  // Password state kept for UI structure but unused for OTP flow
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
     identifier?: string;
     password?: string;
+    api?: string;
   }>({});
   const [accountNotFound, setAccountNotFound] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const newErrors: typeof errors = {};
 
     const identTrimmed = identifier.trim();
     if (!identTrimmed) {
       newErrors.identifier = 'Please enter phone, email or username.';
-    } else if (/^\d+$/.test(identTrimmed)) {
-      if (identTrimmed.length !== 10) {
-        newErrors.identifier = 'Phone number must be exactly 10 digits.';
-      }
-    } else if (identTrimmed.includes('@')) {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identTrimmed)) {
-        newErrors.identifier = 'Please enter a valid email address.';
-      }
-    }
-
-    if (!password) {
-      newErrors.password = 'Please enter your password.';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters.';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -46,19 +37,40 @@ export default function LoginScreen() {
 
     setErrors({});
     setAccountNotFound(false);
-    
-    // TODO: Replace with actual API check
-    // Simulating user not found error for demo purposes
-    const isMockRegistered = mockRegisteredUsers?.includes(identTrimmed.toLowerCase());
-    if (identTrimmed !== 'demo@popli.com' && identTrimmed !== '9876543210' && !isMockRegistered) {
-      setAccountNotFound(true);
-      return;
-    }
+    setIsLoading(true);
 
-    // Simulate successful login session
-    setFirstLogin(false);
-    setLogin(true);
-    // Note: _layout.tsx will intercept this and route to /(tabs)
+    try {
+      // 1. Check if user exists
+      const checkRes = await apiClient.post('/auth/check-user', { identifier: identTrimmed });
+      
+      if (!checkRes.data.exists) {
+        // User not found -> Direct them to signup
+        setIsLoading(false);
+        setAccountNotFound(true);
+        return;
+      }
+
+      // 2. Existing user -> Send Firebase OTP
+      try {
+        await sendFirebaseOTP(identTrimmed);
+      } catch (err: any) {
+        console.error('Firebase error:', err);
+        setIsLoading(false);
+        setErrors({ api: 'Firebase Auth failed. Ensure native modules are configured and the phone format is correct (+91...).' });
+        return;
+      }
+
+      setIsLoading(false);
+      // Navigate to OTP screen
+      router.push({
+        pathname: '/(auth)/otp',
+        params: { target: identTrimmed, type: identTrimmed.includes('@') ? 'email' : 'phone', phone: identTrimmed, isSignup: 'false' }
+      });
+    } catch (error: any) {
+      setIsLoading(false);
+      console.error('Check User Error:', error);
+      setErrors({ api: error?.response?.data?.message || 'Failed to connect to server. Please try again.' });
+    }
   };
 
   return (
@@ -67,7 +79,8 @@ export default function LoginScreen() {
       className="flex-1 bg-[#0B001A]"
     >
       <ScrollView 
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 40 }}
+        className="flex-1 px-6"
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 100, paddingTop: Platform.OS === 'ios' ? 60 : 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -79,14 +92,14 @@ export default function LoginScreen() {
           from={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'timing', duration: 400 }}
-          className="w-full"
-          style={{ gap: 24 }}
+          className="w-full gap-6"
         >
           {/* Brand Logo & Headline */}
           <View className="items-center mb-2 mt-4">
             <Image 
-              source={require('../../../assets/images/brand_logo.png')} 
-              className="w-32 h-32 mb-1"
+              source={require('../../../assets/images/popli_logo.png')} 
+              className="mb-1"
+              style={{ width: 200, height: 200 }}
               resizeMode="contain"
             />
             
@@ -95,11 +108,11 @@ export default function LoginScreen() {
           </View>
 
           {/* Inputs section in stadium pill shape layout */}
-          <View className="flex-col" style={{ gap: 14 }}>
+          <View className="flex-col gap-4">
             
             {/* Identifier Input */}
             <View className="flex-col">
-              <View className={`bg-[#1D1037]/45 border rounded-2xl px-4 flex-row items-center space-x-3 h-12 ${errors.identifier ? 'border-red-500' : 'border-primary-purple/20'}`}>
+              <View className={`bg-[#1D1037]/45 border rounded-2xl px-4 flex-row items-center gap-3 h-12 ${errors.identifier ? 'border-red-500' : 'border-primary-purple/20'}`}>
                 <User size={16} color="rgba(255, 255, 255, 0.4)" />
                 <TextInput
                   value={identifier}
@@ -118,12 +131,15 @@ export default function LoginScreen() {
               {errors.identifier && (
                 <Text className="text-red-500 text-[10px] pl-1 mt-1 font-semibold">{errors.identifier}</Text>
               )}
+              {errors.api && (
+                <Text className="text-red-500 text-[12px] pl-1 mt-2 font-bold">{errors.api}</Text>
+              )}
             </View>
 
             {/* Password Input */}
             <View className="flex-col">
               <View className={`bg-[#1D1037]/45 border rounded-2xl px-4 flex-row items-center justify-between h-12 ${errors.password ? 'border-red-500' : 'border-primary-purple/20'}`}>
-                <View className="flex-row items-center space-x-3 flex-1">
+                <View className="flex-row items-center gap-3 flex-1">
                   <Lock size={16} color="rgba(255, 255, 255, 0.4)" />
                   <TextInput
                     value={password}
@@ -192,7 +208,7 @@ export default function LoginScreen() {
 
           {/* Divider */}
           <View className="items-center mt-2 w-full">
-            <View className="flex-row items-center justify-center space-x-3 w-full px-2">
+            <View className="flex-row items-center justify-center gap-3 w-full px-2">
               <View className="flex-1 h-[1px] bg-white/5" />
               <Text className="text-white/30 text-[9px] font-black uppercase tracking-widest">Or Connect With</Text>
               <View className="flex-1 h-[1px] bg-white/5" />
@@ -200,10 +216,10 @@ export default function LoginScreen() {
           </View>
             
           {/* Social login buttons */}
-          <View className="flex-row justify-center space-x-4 w-full">
+          <View className="flex-row justify-center gap-5 w-full mt-2">
             <Pressable 
               onPress={() => { setLogin(true); }}
-              className="flex-1 flex-row bg-[#1D1037]/30 border border-white/10 py-3 rounded-2xl items-center justify-center space-x-2 h-12 active:scale-[0.97]"
+              className="flex-1 flex-row bg-[#1D1037]/30 border border-white/10 py-3 rounded-2xl items-center justify-center gap-2 h-12 active:scale-[0.97]"
             >
               <Text className="text-white text-sm font-black mr-0.5">G</Text>
               <Text className="text-white text-xs font-bold">Google</Text>
@@ -211,7 +227,7 @@ export default function LoginScreen() {
             
             <Pressable 
               onPress={() => { setLogin(true); }}
-              className="flex-1 flex-row bg-[#1D1037]/30 border border-white/10 py-3 rounded-2xl items-center justify-center space-x-2 h-12 active:scale-[0.97]"
+              className="flex-1 flex-row bg-[#1D1037]/30 border border-white/10 py-3 rounded-2xl items-center justify-center gap-2 h-12 active:scale-[0.97]"
             >
               <Text className="text-white text-sm font-black mr-0.5">f</Text>
               <Text className="text-white text-xs font-bold">Facebook</Text>
@@ -219,7 +235,7 @@ export default function LoginScreen() {
           </View>
 
           {/* Footer links */}
-          <View className="flex-row items-center justify-center space-x-1 mt-4">
+          <View className="flex-row items-center justify-center gap-1 mt-4">
             <Text className="text-white/50 text-xs">Don&apos;t have an account?</Text>
             <Pressable 
               onPress={() => router.push('/(auth)/signup')}
@@ -227,7 +243,7 @@ export default function LoginScreen() {
               style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
               className="py-1 px-1.5"
             >
-              <Text className="text-primary-pink text-xs font-bold">Sign Up</Text>
+              <Text className="text-primary-purple text-xs font-bold">Sign Up</Text>
             </Pressable>
           </View>
         </MotiView>

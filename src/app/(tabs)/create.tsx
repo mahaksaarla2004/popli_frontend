@@ -1,462 +1,412 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Image, Switch, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, Pressable, ScrollView, Dimensions, Image, Alert, Platform } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { CameraView, useCameraPermissions, useMicrophonePermissions, CameraType, FlashMode } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { X, Settings, RotateCw, RefreshCcw, Gauge, Wand2, Timer, Sparkles, Sliders, Globe, ShieldAlert, MessageCircle, GitCompare, Download, Music, Play, Banknote, Gift, Aperture, Smile } from 'lucide-react-native';
-import { useFeedStore, useAuthStore } from '../../store';
+import { X, Settings, RefreshCcw, Zap, ZapOff, Aperture, Timer, Wand2, Music, ChevronDown, MonitorPlay, AlignCenter, Type, Mic, ListVideo, Scissors, SlidersHorizontal, Volume2 } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
+import CameraSettingsSheet from '../../components/CameraSettingsSheet';
+import EffectsSheet from '../../components/sheets/EffectsSheet';
+import { useCameraSettingsStore } from '../../store';
+import { useAudioPlayer } from 'expo-audio';
+
+const { width } = Dimensions.get('window');
+
+type CameraMode = 'POST' | 'STORY' | 'REEL' | 'LIVE';
+
+const MODES: CameraMode[] = ['POST', 'STORY', 'REEL', 'LIVE'];
 
 export default function CreateScreen() {
   const router = useRouter();
-  const { addLocalReel, gpsCity } = useFeedStore();
-  const { userProfile } = useAuthStore();
-
-  // Screen state toggle: 'camera' | 'settings'
-  const [screenMode, setScreenMode] = useState<'camera' | 'settings'>('camera');
-  const [captureMode, setCaptureMode] = useState<'photo' | 'video'>('video');
-  const [selectedVideoUri, setSelectedVideoUri] = useState<string | null>(null);
   
-  // Post settings form state
-  const [caption, setCaption] = useState('');
-  const [monetization, setMonetization] = useState(true);
-  const [allowGifting, setAllowGifting] = useState(true);
-  const [visibility, setVisibility] = useState<'Public' | 'Friends' | 'Private'>('Public');
-  const [allowComments, setAllowComments] = useState(true);
-  const [allowDuet, setAllowDuet] = useState(false);
-  const [saveToDevice, setSaveToDevice] = useState(true);
-  const [isPosting, setIsPosting] = useState(false);
+  // Camera Permissions
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [micPermission, requestMicPermission] = useMicrophonePermissions();
 
-  // Gallery Picker Trigger
-  const handleSelectVideo = async () => {
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        return Alert.alert('Permission Denied', 'Please grant library access to select videos.');
-      }
+  // Settings
+  const cameraSettings = useCameraSettingsStore();
+  const [showSettings, setShowSettings] = useState(false);
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: captureMode === 'photo' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
-        allowsEditing: true,
-        quality: 1,
-      });
+  // States
+  const [activeMode, setActiveMode] = useState<CameraMode>('STORY');
+  const [facing, setFacing] = useState<CameraType>(cameraSettings.mirrorFront ? 'front' : 'back');
+  const [flash, setFlash] = useState<FlashMode>(cameraSettings.autoFlash ? 'auto' : 'off');
+  const [isRecording, setIsRecording] = useState(false);
+  const [timerDelay, setTimerDelay] = useState<0 | 3 | 10>(0);
+  const [timerCountdown, setTimerCountdown] = useState<number | null>(null);
+  
+  // New States for functional sweep
+  const [speedMultiplier, setSpeedMultiplier] = useState<1 | 2 | 3>(1);
+  const [selectedEffect, setSelectedEffect] = useState<any>({ name: 'None' });
+  const [showEffectsSheet, setShowEffectsSheet] = useState(false);
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setSelectedVideoUri(result.assets[0].uri);
-        setScreenMode('settings');
-      }
-    } catch (error) {
-      console.warn('Picker failed:', error);
-      // Fallback in case emulator doesn't support real library
-      setSelectedVideoUri(
-        captureMode === 'photo' 
-          ? 'https://images.unsplash.com/photo-1516280440502-6c24388e3328?q=80&w=800&auto=format&fit=crop'
-          : 'https://assets.mixkit.co/videos/preview/mixkit-young-man-dancing-in-studio-40026-large.mp4'
+  // Music state from params
+  const { selectedMusicId, selectedMusicTitle, selectedMusicArtist, selectedMusicUrl } = useLocalSearchParams<{ 
+    selectedMusicId?: string, 
+    selectedMusicTitle?: string, 
+    selectedMusicArtist?: string,
+    selectedMusicUrl?: string
+  }>();
+
+  // Audio Player
+  const player = useAudioPlayer(selectedMusicUrl || null);
+
+  const cameraRef = useRef<CameraView>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (cameraPermission && !cameraPermission.granted && cameraPermission.canAskAgain) {
+      requestCameraPermission();
+    }
+    if (micPermission && !micPermission.granted && micPermission.canAskAgain) {
+      requestMicPermission();
+    }
+    
+    // Snap scroll to STORY mode on mount
+    setTimeout(() => {
+      const storyIndex = MODES.indexOf('STORY');
+      scrollViewRef.current?.scrollTo({ x: storyIndex * (width / 3), animated: false });
+    }, 100);
+  }, [cameraPermission, micPermission]);
+
+  const toggleFacing = () => setFacing(prev => prev === 'back' ? 'front' : 'back');
+  const toggleFlash = () => setFlash(prev => prev === 'off' ? 'on' : prev === 'on' ? 'auto' : 'off');
+  const toggleTimer = () => setTimerDelay(prev => prev === 0 ? 3 : prev === 3 ? 10 : 0);
+
+  const handleClose = () => {
+    if (isRecording) {
+      Alert.alert(
+        'Discard Changes?',
+        'Are you sure you want to discard this recording?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Discard', style: 'destructive', onPress: () => router.replace('/(tabs)') }
+        ]
       );
-      setScreenMode('settings');
+    } else {
+      router.replace('/(tabs)');
     }
   };
 
-  // Video recording simulator
-  const handleRecordVideo = async () => {
-    // Alert user recording has started
-    setIsPosting(true);
-    await new Promise((r) => setTimeout(r, 2000)); // simulate recording 2s
-    setIsPosting(false);
-    
-    // Auto select mock video loop or dummy image based on mode
-    setSelectedVideoUri(
-      captureMode === 'photo'
-        ? 'https://images.unsplash.com/photo-1529156069898-49953eb1b5b4?q=80&w=800&auto=format&fit=crop'
-        : 'https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-sign-dancing-40030-large.mp4'
-    );
-    setScreenMode('settings');
+  const handleScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / (width / 3));
+    if (index >= 0 && index < MODES.length && MODES[index] !== activeMode) {
+      setActiveMode(MODES[index]);
+    }
   };
 
-  const handlePostNow = async () => {
-    if (!selectedVideoUri) return;
-    
-    setIsPosting(true);
-    await new Promise((r) => setTimeout(r, 2500)); // Simulate upload progress loader
-    
-    const city = gpsCity || 'Indore';
-    const newReel = {
-      id: `reel_user_${Date.now()}`,
-      creatorId: 'alex_rivera',
-      creatorName: userProfile.name,
-      creatorUsername: userProfile.username,
-      creatorAvatar: userProfile.avatar,
-      videoUrl: selectedVideoUri,
-      thumbnailUrl: selectedVideoUri, // use same image for thumbnail if it's a photo
-      description: caption.trim() || 'My custom uploaded post! 🚀 #PopliCreator #' + city,
-      musicName: 'Original Audio - ' + userProfile.name,
-      likesCount: 0,
-      commentsCount: 0,
-      sharesCount: 0,
-      savesCount: 0,
-      isLiked: false,
-      isSaved: false,
-      isFollowed: true,
-      category: userProfile.category,
-      location: {
-        city,
-        latitude: 22.7196,
-        longitude: 75.8577
-      },
-      rewardEarned: 0
-    };
+  const handleModeClick = (index: number) => {
+    scrollViewRef.current?.scrollTo({ x: index * (width / 3), animated: true });
+    setActiveMode(MODES[index]);
+  };
 
-    // Prepend reel to dynamic stores in memory
-    addLocalReel(newReel);
-    setIsPosting(false);
+  const toggleSpeed = () => setSpeedMultiplier(prev => prev === 1 ? 2 : prev === 2 ? 3 : 1);
 
-    Alert.alert('Posted Successfully! 🎉', 'Your video is live. It has been pinned to the top of your For You and Profile feeds!', [
-      {
-        text: 'Go to Feed',
-        onPress: () => {
-          setCaption('');
-          setSelectedVideoUri(null);
-          setScreenMode('camera');
-          router.replace('/(tabs)');
+  const handleCapture = async () => {
+    if (timerDelay > 0 && !isRecording) {
+      setTimerCountdown(timerDelay);
+      let count = timerDelay;
+      const interval = setInterval(() => {
+        count -= 1;
+        if (count > 0) {
+          setTimerCountdown(count);
+        } else {
+          clearInterval(interval);
+          setTimerCountdown(null);
+          executeCapture();
+        }
+      }, 1000);
+    } else {
+      executeCapture();
+    }
+  };
+
+  const executeCapture = async () => {
+    if (!cameraRef.current) return;
+
+    if (activeMode === 'POST') {
+      try {
+        const photo = await cameraRef.current.takePictureAsync({ quality: cameraSettings.quality === 'High' ? 1 : 0.7 });
+        if (photo) {
+          router.push({ pathname: '/(create)/post-editor', params: { uri: photo.uri, mode: activeMode } });
+        }
+      } catch (err) {
+        console.warn('Failed to take photo', err);
+      }
+    } else if (activeMode === 'STORY') {
+      // For stories, short tap is photo, hold is video (simplified here to just photo for now unless held)
+      // In a real app we'd use onPressIn / onPressOut to handle video
+      try {
+        const photo = await cameraRef.current.takePictureAsync();
+        if (photo) {
+          router.push({ pathname: '/(create)/story-editor', params: { uri: photo.uri, type: 'photo', mode: activeMode } });
+        }
+      } catch (err) {
+        console.warn('Failed to take photo', err);
+      }
+    } else if (activeMode === 'REEL') {
+      if (isRecording) {
+        cameraRef.current.stopRecording();
+        setIsRecording(false);
+        player?.pause();
+      } else {
+        setIsRecording(true);
+        player?.seekTo(0);
+        player?.play();
+        try {
+          const video = await cameraRef.current.recordAsync();
+          if (video) {
+            router.push({ 
+              pathname: '/(create)/story-editor', 
+              params: { 
+                uri: video.uri, 
+                type: 'video', 
+                mode: activeMode,
+                speed: speedMultiplier.toString(),
+                effect: selectedEffect.name,
+                musicId: selectedMusicId
+              } 
+            });
+          }
+        } catch (err) {
+          console.warn('Failed to record video', err);
+          setIsRecording(false);
+          player?.pause();
         }
       }
-    ]);
+    } else if (activeMode === 'LIVE') {
+      router.push('/(create)/live-setup');
+    }
+  };
+
+  const openGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: activeMode === 'REEL' ? ImagePicker.MediaTypeOptions.Videos : ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      router.push({ 
+        pathname: '/(create)/story-editor', 
+        params: { 
+          uri: result.assets[0].uri, 
+          type: result.assets[0].type === 'video' ? 'video' : 'photo', 
+          mode: activeMode 
+        } 
+      });
+    }
+  };
+
+  if (!cameraPermission?.granted) {
+    return (
+      <View className="flex-1 items-center justify-center bg-[#12081E]">
+        <Text className="text-white mb-4 text-center px-8 font-medium">Camera permissions required.</Text>
+        <Pressable onPress={requestCameraPermission} className="bg-[#A855F7] px-8 py-3 rounded-full">
+          <Text className="text-white font-bold">Grant Permission</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // Local CSS filters for preview
+  const getFilterStyle = (effectName: string) => {
+    switch (effectName) {
+      case 'Vintage': return { backgroundColor: 'rgba(212, 175, 55, 0.2)' }; // Sepia-ish tint
+      case 'B&W': return { backgroundColor: 'rgba(255, 255, 255, 0.4)', mixBlendMode: 'saturation' }; 
+      case 'Neon': return { backgroundColor: 'rgba(168, 85, 247, 0.3)', mixBlendMode: 'color' };
+      case 'Paris': return { backgroundColor: 'rgba(255, 182, 193, 0.2)' };
+      case 'Blur': return { backgroundColor: 'rgba(255, 255, 255, 0.1)' }; // actual blur requires expo-blur but this is a placeholder
+      default: return {};
+    }
   };
 
   return (
-    <AnimatePresence exitBeforeEnter>
-      {/* ==========================================
-          CAMERA VIEW / VIEWFINDER SIMULATOR
-          ========================================== */}
-      {screenMode === 'camera' && (
-        <MotiView 
-          key="cameraScreen"
-          from={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="flex-1 bg-black"
-        >
-          {/* Mock Viewfinder background matching Figma mountain view */}
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=600&auto=format&fit=crop' }} 
-            className="absolute inset-0 w-full h-full opacity-90"
-            resizeMode="cover"
-          />
+    <View className="flex-1 bg-black">
+      <View className="flex-1 rounded-b-3xl overflow-hidden relative">
+        <CameraView 
+          ref={cameraRef}
+          style={{ flex: 1 }} 
+          facing={facing} 
+          flash={flash}
+          mode={activeMode === 'REEL' || activeMode === 'LIVE' ? 'video' : 'picture'}
+        />
 
-          {/* Top overlays: Close, Music ticker, Settings */}
-          <View className="absolute top-12 left-0 right-0 px-4 flex-row items-center justify-between z-10">
+        {/* Local Filter Overlay Preview */}
+        {selectedEffect.name !== 'None' && (
+          <View style={[{ position: 'absolute', inset: 0, pointerEvents: 'none' }, getFilterStyle(selectedEffect.name)]} />
+        )}
+
+        {/* Timer Overlay */}
+        {timerCountdown !== null && (
+          <View className="absolute inset-0 items-center justify-center pointer-events-none z-20">
+            <Text className="text-white text-9xl font-black" style={{ textShadowColor: 'black', textShadowRadius: 20 }}>
+              {timerCountdown}
+            </Text>
+          </View>
+        )}
+
+        {/* Top Controls */}
+        <View className="absolute top-12 left-0 right-0 px-4 flex-row items-center z-10 pt-2">
+          <View className="flex-1 items-start">
+            <Pressable onPress={handleClose} className="w-[44px] h-[44px] items-center justify-center rounded-full bg-black/30 backdrop-blur-md border border-white/10">
+              <X size={24} color="#FFFFFF" />
+            </Pressable>
+          </View>
+
+          <View className="flex-1 items-center">
+            {(activeMode === 'STORY' || activeMode === 'REEL') && !selectedMusicId && (
+              <Pressable onPress={() => router.push('/(create)/music-picker')} className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full flex-row items-center gap-2 border border-white/10 min-h-[44px]">
+                <Music size={16} color="#FFFFFF" />
+                <Text className="text-white text-xs font-semibold">Pick Music</Text>
+              </Pressable>
+            )}
+            {(activeMode === 'STORY' || activeMode === 'REEL') && selectedMusicId && (
+              <Pressable onPress={() => router.push('/(create)/music-picker')} className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full flex-row items-center gap-2 border border-white/10 min-h-[44px]">
+                <Music size={16} color="#FFFFFF" />
+                <Text className="text-white text-xs font-semibold">{selectedMusicTitle} - {selectedMusicArtist}</Text>
+              </Pressable>
+            )}
+          </View>
+
+          <View className="flex-1 items-end">
+            <Pressable onPress={() => setShowSettings(true)} className="w-[44px] h-[44px] items-center justify-center rounded-full bg-black/30 backdrop-blur-md border border-white/10">
+              <Settings size={24} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Right Toolbar - Dynamic based on Mode */}
+        <View className="absolute right-4 top-1/3 gap-4 z-10 items-center">
+          <Pressable onPress={toggleFacing} className="items-center p-2 rounded-full bg-black/20 backdrop-blur-sm">
+            <RefreshCcw size={24} color="#FFFFFF" />
+          </Pressable>
+          
+          <Pressable onPress={toggleFlash} className="items-center p-2 rounded-full bg-black/20 backdrop-blur-sm">
+            {flash === 'on' ? <Zap size={24} color="#FFFFFF" /> : flash === 'auto' ? <Zap size={24} color="#A855F7" /> : <ZapOff size={24} color="#FFFFFF" />}
+          </Pressable>
+          
+          {activeMode === 'REEL' && (
+            <>
+              <Pressable onPress={toggleSpeed} className="items-center p-2 rounded-full bg-black/20 backdrop-blur-sm relative">
+                <MonitorPlay size={24} color={speedMultiplier > 1 ? '#A855F7' : '#FFFFFF'} />
+                {speedMultiplier > 1 && (
+                  <Text className="text-[#A855F7] text-[10px] font-bold absolute -bottom-3">{speedMultiplier}x</Text>
+                )}
+              </Pressable>
+              {selectedMusicId && (
+                <>
+                  <Pressable className="items-center p-2 rounded-full bg-black/20 backdrop-blur-sm">
+                    <Scissors size={24} color="#FFFFFF" />
+                  </Pressable>
+                  <Pressable className="items-center p-2 rounded-full bg-black/20 backdrop-blur-sm">
+                    <Volume2 size={24} color="#FFFFFF" />
+                  </Pressable>
+                </>
+              )}
+            </>
+          )}
+
+          {activeMode === 'STORY' && (
+            <>
+              <Pressable onPress={() => router.push({ pathname: '/(create)/story-editor', params: { uri: '', type: 'photo', mode: 'text' } })} className="items-center p-2 rounded-full bg-black/20 backdrop-blur-sm">
+                <Type size={24} color="#FFFFFF" />
+              </Pressable>
+            </>
+          )}
+
+          <Pressable onPress={toggleTimer} className="items-center p-2 rounded-full bg-black/20 backdrop-blur-sm">
+            <Timer size={24} color={timerDelay > 0 ? "#A855F7" : "#FFFFFF"} />
+            {timerDelay > 0 && <Text className="text-[#A855F7] text-[10px] font-bold absolute -bottom-4">{timerDelay}s</Text>}
+          </Pressable>
+        </View>
+
+        {/* Bottom Area: Gallery, Shutter, Effects */}
+        <View className="absolute bottom-6 left-0 right-0 px-8 flex-row items-center justify-between z-10">
+          <Pressable onPress={openGallery} className="w-10 h-10 rounded-xl overflow-hidden border-2 border-white/50 bg-black/50">
+            <Image source={{ uri: 'https://picsum.photos/100' }} className="w-full h-full opacity-80" />
+          </Pressable>
+
+          <Pressable onPress={handleCapture} className="items-center justify-center">
+            {activeMode === 'LIVE' ? (
+              <View className="w-20 h-20 rounded-full border-4 border-[#EC4899] items-center justify-center p-1 bg-black/20">
+                <View className="w-full h-full rounded-full bg-[#EC4899] items-center justify-center flex-row">
+                  <MonitorPlay size={20} color="white" />
+                </View>
+              </View>
+            ) : activeMode === 'REEL' ? (
+              <View className="w-20 h-20 rounded-full border-4 border-[#A855F7] items-center justify-center p-1 bg-black/20">
+                <View className={`w-full h-full bg-[#A855F7] ${isRecording ? 'rounded-lg scale-50' : 'rounded-full'} transition-all`} />
+              </View>
+            ) : (
+              <View className="w-20 h-20 rounded-full border-4 border-white items-center justify-center p-1 bg-black/20">
+                <View className="w-full h-full bg-white rounded-full" />
+              </View>
+            )}
+          </Pressable>
+
+          <Pressable onPress={() => setShowEffectsSheet(true)} className="w-10 h-10 items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20">
+            <Wand2 size={20} color="#FFFFFF" />
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Mode Selector (Instagram Style Swipeable Text) */}
+      <View className="h-16 items-center justify-center">
+        <ScrollView 
+          ref={scrollViewRef}
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={width / 3}
+          decelerationRate="fast"
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ paddingHorizontal: width / 3 }}
+        >
+          {MODES.map((mode, idx) => (
             <Pressable 
-              onPress={() => router.replace('/(tabs)')}
-              className="w-10 h-10 rounded-full bg-black/45 items-center justify-center border border-white/10"
+              key={mode} 
+              onPress={() => handleModeClick(idx)}
+              style={{ width: width / 3 }} 
+              className="items-center justify-center py-4"
             >
-              <X size={20} color="#FFFFFF" />
-            </Pressable>
-
-            <View className="bg-black/60 border border-white/10 px-4 py-2 rounded-full flex-row items-center space-x-2 max-w-[200px]">
-              <Music size={12} color="#A855F7" />
-              <Text className="text-white text-[10px] font-semibold truncate" numberOfLines={1}>
-                Tum Tum - Thaman S, Sri Vardhini...
+              <Text className={`font-bold tracking-widest ${activeMode === mode ? 'text-white text-sm' : 'text-neutral-grey text-xs'}`}>
+                {mode}
               </Text>
-            </View>
-
-            <Pressable className="w-10 h-10 rounded-full bg-black/45 items-center justify-center border border-white/10">
-              <Settings size={20} color="#FFFFFF" />
+              {activeMode === mode && (
+                <View className="w-1 h-1 bg-white rounded-full mt-2 absolute bottom-2" />
+              )}
             </Pressable>
-          </View>
+          ))}
+        </ScrollView>
+      </View>
 
-          {/* Right sidebar options */}
-          <View className="absolute right-4 top-28 space-y-7 bg-black/30 px-3.5 py-6 rounded-full border border-white/10 z-10 shadow-sm shadow-black/20">
-            <Pressable className="items-center">
-              <RefreshCcw size={22} color="#FFFFFF" />
-              <Text className="text-white text-[8px] font-bold mt-1.5 tracking-wider">FLIP</Text>
-            </Pressable>
-            <Pressable className="items-center">
-              <Gauge size={22} color="#FFFFFF" />
-              <Text className="text-white text-[8px] font-bold mt-1.5 tracking-wider">SPEED</Text>
-            </Pressable>
-            <Pressable className="items-center">
-              <Aperture size={22} color="#FFFFFF" />
-              <Text className="text-white text-[8px] font-bold mt-1.5 tracking-wider">FILTERS</Text>
-            </Pressable>
-            <Pressable className="items-center">
-              <Timer size={22} color="#FFFFFF" />
-              <Text className="text-white text-[8px] font-bold mt-1.5 tracking-wider">TIMER</Text>
-            </Pressable>
-            <Pressable className="items-center">
-              <Smile size={22} color="#FFFFFF" />
-              <Text className="text-white text-[8px] font-bold mt-1.5 tracking-wider">BEAUTIFY</Text>
-            </Pressable>
-          </View>
-
-          {/* Bottom viewfinder controls */}
-          <View className="absolute bottom-24 left-0 right-0 px-6 items-center z-10 space-y-6">
-            
-            {/* Mode selector tab */}
-            <View className="bg-black/55 px-4 py-1.5 rounded-full flex-row space-x-6 border border-white/10 mb-2">
-              <Pressable onPress={() => setCaptureMode('video')} className={`px-4 py-1.5 rounded-full ${captureMode === 'video' ? 'bg-white/20' : ''}`}>
-                <Text className={`text-xs font-bold ${captureMode === 'video' ? 'text-white' : 'text-white/60'}`}>Video</Text>
-              </Pressable>
-              <Pressable onPress={() => setCaptureMode('photo')} className={`px-4 py-1.5 rounded-full ${captureMode === 'photo' ? 'bg-white/20' : ''}`}>
-                <Text className={`text-xs font-bold ${captureMode === 'photo' ? 'text-white' : 'text-white/60'}`}>Photo</Text>
-              </Pressable>
-            </View>
-
-            {/* Triggers: Gallery, Record, Effects */}
-            <View className="flex-row items-center justify-between w-full px-6">
-              
-              {/* Gallery upload */}
-              <Pressable 
-                onPress={handleSelectVideo}
-                className="w-12 h-12 bg-black/60 border border-white/20 rounded-xl overflow-hidden items-center justify-center"
-              >
-                <Image 
-                  source={{ uri: 'https://picsum.photos/id/111/100/100' }} 
-                  className="w-full h-full opacity-80" 
-                />
-                <View className="absolute inset-0 bg-black/30 items-center justify-center">
-                  <Text className="text-white text-[8px] font-bold uppercase">Upload</Text>
-                </View>
-              </Pressable>
-
-              {/* Record Central Purple Button */}
-              <Pressable 
-                onPress={handleRecordVideo}
-                className="w-20 h-20 rounded-full border-4 border-[#A855F7]/80 items-center justify-center p-1 bg-black/20"
-              >
-                <View className="w-full h-full bg-[#A855F7] rounded-full items-center justify-center">
-                  {isPosting ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <View className="w-6 h-6 bg-white rounded-sm" />
-                  )}
-                </View>
-              </Pressable>
-
-              {/* Effects selector */}
-              <Pressable className="w-12 h-12 bg-black/60 border border-white/20 rounded-xl items-center justify-center">
-                <Sliders size={20} color="#FFFFFF" />
-                <Text className="text-white text-[7px] font-black uppercase mt-0.5">Effects</Text>
-              </Pressable>
-            </View>
-          </View>
-        </MotiView>
+      {/* Settings Sheet Overlay */}
+      {showSettings && (
+        <>
+          <Pressable 
+            onPress={() => setShowSettings(false)} 
+            className="absolute inset-0 bg-black/50 z-40"
+          />
+          <CameraSettingsSheet onClose={() => setShowSettings(false)} />
+        </>
       )}
 
-      {/* ==========================================
-          POST CONFIGURATION SETTINGS SCREEN
-          ========================================== */}
-      {screenMode === 'settings' && (
-        <MotiView
-          key="settingsScreen"
-          from={{ opacity: 0, translateY: 50 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          exit={{ opacity: 0 }}
-          className="flex-1 bg-background-plum pt-12"
-        >
-          {/* Header */}
-          <View className="flex-row items-center px-4 pb-4 border-b border-white/5 justify-between">
-            <Pressable onPress={() => setScreenMode('camera')} className="p-1">
-              <Text className="text-neutral-grey text-base">←</Text>
-            </Pressable>
-            <Text className="text-white font-bold text-base">Post Settings</Text>
-            <View className="w-5" />
-          </View>
-
-          <ScrollView 
-            className="flex-1 px-4 py-4 space-y-5" 
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 120 }}
-          >
-            {/* Caption & Video preview block */}
-            <View className="flex-row space-x-4">
-              <View className="w-28 h-36 bg-black rounded-3xl overflow-hidden border border-white/10 relative shadow-sm">
-                {selectedVideoUri && (
-                  <Image 
-                    source={{ uri: 'https://picsum.photos/id/106/150/200' }} 
-                    className="w-full h-full opacity-80"
-                    resizeMode="cover"
-                  />
-                )}
-                <View className="absolute inset-0 bg-black/20 items-center justify-center">
-                  <Play size={24} color="#FFFFFF" fill="#FFFFFF" />
-                </View>
-              </View>
-
-              <View className="flex-1 space-y-2">
-                <TextInput
-                  value={caption}
-                  onChangeText={(val) => {
-                    if (val.length <= 200) setCaption(val);
-                  }}
-                  placeholder="Write a caption..."
-                  placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                  multiline
-                  numberOfLines={4}
-                  className="bg-background-card/40 border border-white/5 text-white rounded-2xl px-4 py-3.5 text-xs leading-5 flex-1 pr-4 font-normal"
-                  style={{ textAlignVertical: 'top' }}
-                />
-                
-                <View className="flex-row justify-between items-center px-1">
-                  <View className="flex-row gap-2">
-                    <Pressable 
-                      onPress={() => setCaption((c) => c + ' #Hashtag')}
-                      className="bg-[#A855F7]/10 px-3 py-1.5 rounded-full border border-[#A855F7]/20"
-                    >
-                      <Text className="text-[#A855F7] text-[11px] font-semibold"># Hashtag</Text>
-                    </Pressable>
-                    <Pressable 
-                      onPress={() => setCaption((c) => c + ' @Mention')}
-                      className="bg-[#A855F7]/10 px-3 py-1.5 rounded-full border border-[#A855F7]/20"
-                    >
-                      <Text className="text-[#A855F7] text-[11px] font-semibold">@ Mention</Text>
-                    </Pressable>
-                  </View>
-                  <Text className="text-neutral-grey text-[10px] font-semibold">{caption.length}/200</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Monetisation & Gifting Toggles */}
-            <View className="space-y-3.5">
-              <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Monetization & Rewards</Text>
-              
-              <View className="bg-background-card/50 border border-white/5 rounded-3xl p-4 space-y-4">
-                {/* Monetisation */}
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1 pr-4">
-                    <View className="w-10 h-10 rounded-xl bg-[#A855F7]/10 border border-[#A855F7]/20 items-center justify-center mr-3">
-                      <Banknote size={18} color="#A855F7" />
-                    </View>
-                    <View>
-                      <Text className="text-white text-[13px] font-semibold">Monetisation</Text>
-                      <Text className="text-neutral-grey text-[10px] mt-0.5">Earn from views ₹5 per 1,000 views</Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={monetization}
-                    onValueChange={setMonetization}
-                    trackColor={{ false: '#374151', true: '#A855F7' }}
-                    thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : '#FFFFFF'}
-                  />
-                </View>
-
-                {/* Gifting */}
-                <View className="flex-row items-center justify-between border-t border-white/5 pt-4">
-                  <View className="flex-row items-center flex-1 pr-4">
-                    <View className="w-10 h-10 rounded-xl bg-[#EC4899]/10 border border-[#EC4899]/20 items-center justify-center mr-3">
-                      <Gift size={18} color="#EC4899" />
-                    </View>
-                    <View>
-                      <Text className="text-white text-[13px] font-semibold">Allow Virtual Gifting</Text>
-                      <Text className="text-neutral-grey text-[10px] mt-0.5">Receive gifts from fans</Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={allowGifting}
-                    onValueChange={setAllowGifting}
-                    trackColor={{ false: '#374151', true: '#A855F7' }}
-                    thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : '#FFFFFF'}
-                  />
-                </View>
-              </View>
-            </View>
-
-            {/* Visibility Options */}
-            <View className="space-y-2.5">
-              <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Visibility</Text>
-              <View className="bg-background-card/50 border border-white/5 rounded-3xl p-2 flex-row justify-between space-x-2">
-                {(['Public', 'Friends', 'Private'] as const).map((mode) => {
-                  const isSel = visibility === mode;
-                  return (
-                    <Pressable
-                      key={mode}
-                      onPress={() => setVisibility(mode)}
-                      className={`flex-1 h-10 rounded-2xl items-center justify-center ${
-                        isSel ? 'bg-[#A855F7]' : 'bg-transparent'
-                      }`}
-                    >
-                      <Text className={`text-[12px] font-semibold ${isSel ? 'text-white' : 'text-neutral-silver'}`}>
-                        {mode}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Engagement Controls */}
-            <View className="space-y-3">
-              <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Engagement & Controls</Text>
-              
-              <View className="bg-background-card/50 border border-white/5 rounded-3xl px-4 py-1">
-                {/* Allow comments */}
-                <View className="flex-row items-center justify-between py-3 border-b border-white/5">
-                  <View className="flex-row items-center flex-1">
-                    <MessageCircle size={18} color="#9CA3AF" className="mr-3" />
-                    <Text className="text-white text-[13px] font-semibold">Allow Comments</Text>
-                  </View>
-                  <Switch
-                    value={allowComments}
-                    onValueChange={setAllowComments}
-                    trackColor={{ false: '#374151', true: '#D946EF' }}
-                    thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : '#1D1037'}
-                  />
-                </View>
-
-                {/* Allow duets */}
-                <View className="flex-row items-center justify-between py-3 border-b border-white/5">
-                  <View className="flex-row items-center flex-1">
-                    <GitCompare size={18} color="#9CA3AF" className="mr-3" />
-                    <Text className="text-white text-[13px] font-semibold">Allow Duet / Remix</Text>
-                  </View>
-                  <Switch
-                    value={allowDuet}
-                    onValueChange={setAllowDuet}
-                    trackColor={{ false: '#374151', true: '#D946EF' }}
-                    thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : '#1D1037'}
-                  />
-                </View>
-
-                {/* Save to device */}
-                <View className="flex-row items-center justify-between py-3">
-                  <View className="flex-row items-center flex-1">
-                    <Download size={18} color="#9CA3AF" className="mr-3" />
-                    <Text className="text-white text-[13px] font-semibold">Save to Device</Text>
-                  </View>
-                  <Switch
-                    value={saveToDevice}
-                    onValueChange={setSaveToDevice}
-                    trackColor={{ false: '#374151', true: '#D946EF' }}
-                    thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : '#1D1037'}
-                  />
-                </View>
-              </View>
-            </View>
-
-            {/* Post CTA Pink-Gradient Button */}
-            <View className="pt-3">
-              <Pressable
-                onPress={handlePostNow}
-                disabled={isPosting}
-                className="bg-gradient-to-tr from-primary-pink to-primary-purple h-14 rounded-2xl items-center justify-center shadow-lg shadow-primary-pink/35 flex-row space-x-2 mt-2"
-                style={{ backgroundColor: '#EC4899' }} // Gradient fallback
-              >
-                {isPosting ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Text className="text-white text-[15px] font-bold tracking-wide">Post Now</Text>
-                    <Sparkles size={18} color="#FFFFFF" strokeWidth={2} />
-                  </>
-                )}
-              </Pressable>
-              
-              <Text className="text-neutral-grey text-[10px] text-center mt-3 px-2 leading-4">
-                By posting, you agree to our Content Policy and acknowledge that monetization rewards are subject to traffic verification.
-              </Text>
-            </View>
-          </ScrollView>
-        </MotiView>
+      {/* Effects Sheet Overlay */}
+      {showEffectsSheet && (
+        <>
+          <Pressable 
+            onPress={() => setShowEffectsSheet(false)} 
+            className="absolute inset-0 z-40"
+          />
+          <EffectsSheet onClose={() => setShowEffectsSheet(false)} onSelect={(effect) => {
+            setSelectedEffect(effect);
+            setShowEffectsSheet(false);
+          }} />
+        </>
       )}
-    </AnimatePresence>
+
+    </View>
   );
 }

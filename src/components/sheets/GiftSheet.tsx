@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Switch, Alert, Platform } from 'react-native';
 import { X, Award, Coins } from 'lucide-react-native';
 import { useWalletStore, useFeedStore } from '../../store';
-import { GIFT_CATALOG } from '../../services/mockApi';
+import { GIFT_CATALOG } from '../../constants/staticData';
 import { Reel } from '../../types';
 import { MotiView } from 'moti';
 
@@ -21,17 +21,17 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
 
   const selectedGift = GIFT_CATALOG.find((g) => g.id === selectedGiftId)!;
 
-  const handleSendGift = () => {
+  const handleSendGift = async () => {
     if (!reel) return;
 
     const cost = selectedGift.cost;
     const desc = `Sent ${selectedGift.name} gift to @${reel.creatorUsername}`;
 
-    // Deduct coins from persistent store
-    const success = sendGiftCoins(cost, desc);
+    // Deduct coins and send to backend
+    const success = await sendGiftCoins(reel.creatorId, selectedGiftId, cost, desc);
     
     if (success) {
-      // Add mock coin receipt to the creator balance
+      // Add mock coin receipt to the creator balance locally for UI speed
       useFeedStore.getState().creators = useFeedStore.getState().creators.map((c) => {
         if (c.id === reel.creatorId) {
           return {
@@ -90,7 +90,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
       <View className="bg-[#190C2C]/50 mx-5 mt-4 p-4 rounded-2xl border border-white/5 flex-row items-center justify-between">
         <View className="flex-col">
           <Text className="text-white/40 text-[9px] font-bold uppercase tracking-wider">MY BALANCE</Text>
-          <View className="flex-row items-center space-x-1.5 mt-0.5">
+          <View className="flex-row items-center gap-2 mt-0.5">
             <Coins size={14} color="#EAB308" fill="#EAB308" />
             <Text className="text-yellow-400 font-extrabold text-base">
               {coinBalance.toLocaleString()} Coins

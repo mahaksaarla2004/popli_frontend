@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "212781099362",
+    "project_id": "popli-5ffeb",
+    "storage_bucket": "popli-5ffeb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:212781099362:android:b20f82665fb7d4fea1e43b",
+        "android_client_info": {
+          "package_name": "com.mahak2004.popliapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAug20VLqmo1-LRomU24PQqj7p2T0t1eXc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

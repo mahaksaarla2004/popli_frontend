@@ -113,7 +113,7 @@ export default function ForgotPasswordScreen() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: 'timing', duration: 300 }}
-                className="space-y-8"
+                className="gap-8"
               >
                 {/* Header envelope badge */}
                 <View className="items-center">
@@ -129,11 +129,11 @@ export default function ForgotPasswordScreen() {
                 </View>
 
                 {/* Input Container */}
-                <View className="space-y-2">
+                <View className="gap-2">
                   <Text className="text-white/80 text-xs font-semibold px-2">
                     Email Address or Phone Number
                   </Text>
-                  <View className="bg-[#1D1037]/45 border border-primary-purple/20 rounded-full px-5 flex-row items-center space-x-3 h-14">
+                  <View className="bg-[#1D1037]/45 border border-primary-purple/20 rounded-full px-5 flex-row items-center gap-3 h-14">
                     <Mail size={16} color="rgba(255, 255, 255, 0.4)" />
                     <TextInput
                       value={inputValue}
@@ -156,7 +156,7 @@ export default function ForgotPasswordScreen() {
                     opacity: (!isValidInput || isSending) ? 0.55 : pressed ? 0.92 : 1,
                     transform: [{ scale: (isValidInput && !isSending && pressed) ? 0.98 : 1 }]
                   })}
-                  className={`h-14 rounded-full items-center justify-center flex-row space-x-2 transition-all ${
+                  className={`h-14 rounded-full items-center justify-center flex-row gap-2 transition-all ${
                     isValidInput && !isSending
                       ? 'bg-primary-purple shadow-lg shadow-primary-purple/40'
                       : 'bg-white/5 border border-white/5'
@@ -168,7 +168,7 @@ export default function ForgotPasswordScreen() {
                 </Pressable>
 
                 {/* Secure Disclaimer matching bottom card of Screenshot 1 */}
-                <View className="bg-[#1D1037]/25 border border-primary-purple/10 rounded-2xl p-4 flex-row space-x-3">
+                <View className="bg-[#1D1037]/25 border border-primary-purple/10 rounded-2xl p-4 flex-row gap-3">
                   <View className="mt-0.5">
                     <Shield size={16} color="#A78BFA" />
                   </View>
@@ -185,7 +185,7 @@ export default function ForgotPasswordScreen() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: 'timing', duration: 300 }}
-                className="space-y-8"
+                className="gap-8"
               >
                 {/* Check your email header badge */}
                 <View className="items-center">
@@ -220,7 +220,7 @@ export default function ForgotPasswordScreen() {
                     opacity: pressed ? 0.92 : 1,
                     transform: [{ scale: pressed ? 0.98 : 1 }]
                   })}
-                  className="h-14 bg-primary-purple rounded-full items-center justify-center flex-row space-x-2 shadow-lg shadow-primary-purple/40"
+                  className="h-14 bg-primary-purple rounded-full items-center justify-center flex-row gap-2 shadow-lg shadow-primary-purple/40"
                 >
                   <Text className="text-white text-sm font-bold uppercase tracking-wider">
                     Enter Reset Code
@@ -228,7 +228,7 @@ export default function ForgotPasswordScreen() {
                 </Pressable>
 
                 {/* Resend footer options */}
-                <View className="items-center flex-row justify-center space-x-1.5 mt-2">
+                <View className="items-center flex-row justify-center gap-2 mt-2">
                   <Text className="text-white/40 text-xs">{"Didn't receive it?"}</Text>
                   <Pressable 
                     onPress={() => {

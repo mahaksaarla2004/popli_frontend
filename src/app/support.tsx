@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, MessageCircle, AlertTriangle, ChevronDown, ChevronUp, Sparkles, Send } from 'lucide-react-native';
-import { FAQ_LIST } from '../services/mockApi';
+import { FAQ_LIST } from '../constants/staticData';
 
 export default function SupportScreen() {
   const router = useRouter();
@@ -32,7 +32,7 @@ export default function SupportScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background-plum pt-12">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-background-plum pt-12">
       {/* Header bar */}
       <View className="flex-row items-center justify-between px-4 pb-3 border-b border-white/5 bg-background-card/15">
         <View className="flex-row items-center space-x-3">
@@ -41,17 +41,16 @@ export default function SupportScreen() {
           </Pressable>
           <Text className="text-white font-bold text-base">Help & Support</Text>
         </View>
-        <MessageCircle size={20} color="#EC4899" />
       </View>
 
-      <ScrollView className="flex-1 px-4 py-4 space-y-5" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 px-4 py-4 gap-6" showsVerticalScrollIndicator={false}>
         
         {/* Section 1: Support Form Card */}
-        <View className="space-y-3.5 mt-2">
+        <View className="gap-4 mt-2">
           <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Raise Support Ticket</Text>
-          <View className="bg-background-card/50 border border-white/5 rounded-3xl p-5 space-y-5 shadow-lg shadow-primary-purple/10">
+          <View className="bg-background-card/50 border border-white/5 rounded-3xl p-6 gap-6 shadow-lg shadow-primary-purple/10">
             
-            <View className="space-y-2">
+            <View className="gap-2">
               <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Issue Subject</Text>
               <TextInput
                 value={ticketSubject}
@@ -62,7 +61,7 @@ export default function SupportScreen() {
               />
             </View>
 
-            <View className="space-y-2">
+            <View className="gap-2">
               <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Detailed Description</Text>
               <TextInput
                 value={ticketDescription}
@@ -79,7 +78,7 @@ export default function SupportScreen() {
             <Pressable
               onPress={handleRaiseTicket}
               disabled={isSubmitting}
-              className="bg-primary-purple h-12 rounded-2xl items-center justify-center shadow shadow-primary-purple/35 flex-row space-x-2"
+              className="bg-primary-purple h-12 rounded-2xl items-center justify-center shadow shadow-primary-purple/35 flex-row gap-2"
             >
               <Send size={14} color="#FFFFFF" />
               <Text className="text-white text-xs font-black uppercase tracking-wider">Raise Ticket</Text>
@@ -89,9 +88,9 @@ export default function SupportScreen() {
         </View>
 
         {/* Section 2: Creator Monetization FAQs Accordions */}
-        <View className="space-y-3.5 pb-24">
+        <View className="gap-4 pb-24">
           <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Creator FAQs</Text>
-          <View className="space-y-3">
+          <View className="gap-3">
             {FAQ_LIST.map((faq, i) => {
               const isExpanded = expandedIndex === i;
               return (
@@ -127,6 +126,6 @@ export default function SupportScreen() {
         </View>
 
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

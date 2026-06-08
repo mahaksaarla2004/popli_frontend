@@ -1,11 +1,19 @@
 import React, { useEffect } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 import { useAuthStore, useKYCStore } from '../store';
+import { useFCM } from '../hooks/useFCM';
+import messaging from '@react-native-firebase/messaging';
 import '../global.css';
+
+// Register background handler
+messaging().setBackgroundMessageHandler(async remoteMessage => {
+  console.log('Message handled in the background!', remoteMessage);
+});
 
 // Disable strict mode to suppress internal library warnings (e.g. from react-native-css-interop)
 configureReanimatedLogger({
@@ -16,7 +24,10 @@ configureReanimatedLogger({
 export default function RootLayout() {
   const { isLoggedIn, isOnboarded } = useAuthStore();
   const segments = useSegments();
-  const router = useRouter();
+
+  // Initialize FCM
+  useFCM();
+
 
   // Root Navigation Guard: Ensures absolute route safety across groups
   useEffect(() => {
@@ -62,9 +73,10 @@ export default function RootLayout() {
   }, [isLoggedIn, isOnboarded, segments]);
 
   return (
-    <SafeAreaProvider>
-      <View style={{ flex: 1, backgroundColor: '#0B001A' }}>
-        <StatusBar style="light" />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <View style={{ flex: 1, backgroundColor: '#0B001A' }}>
+          <StatusBar style="light" />
         <Stack
           screenOptions={{
             headerShown: false,
@@ -87,5 +99,6 @@ export default function RootLayout() {
         </Stack>
       </View>
     </SafeAreaProvider>
+  </GestureHandlerRootView>
   );
 }

@@ -1,20 +1,46 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, AtSign, Link as LinkIcon, UserPlus } from 'lucide-react-native';
+import { useAuthStore } from '../store';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function EditProfileScreen() {
   const router = useRouter();
 
-  // Mock initial state based on Figma
-  const [username, setUsername] = useState('@alex_curates');
-  const [fullName, setFullName] = useState('Alex Rivera');
-  const [email, setEmail] = useState('alex.curates@neon.app');
-  const [phone, setPhone] = useState('+1 (555) 012-3456');
-  const [bio, setBio] = useState('Digital curator of nocturnal aesthetics. Capturing the glow in the darkness 🌠');
-  const [website, setWebsite] = useState('https://curator.pro/alex');
+  const { userProfile, updateProfile } = useAuthStore();
 
-  const handleSave = () => {
+  const [username, setUsername] = useState(userProfile.username);
+  const [fullName, setFullName] = useState(userProfile.name);
+  const [email, setEmail] = useState(''); // not in store currently
+  const [phone, setPhone] = useState(''); // not in store currently
+  const [bio, setBio] = useState(userProfile.bio || '');
+  const [website, setWebsite] = useState(''); // not in store currently
+  const [avatarUri, setAvatarUri] = useState(userProfile.avatar || '');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handlePickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setAvatarUri(result.assets[0].uri);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    await updateProfile({
+      name: fullName,
+      username: username,
+      bio: bio,
+      avatar: avatarUri
+    });
+    setIsSaving(false);
+
     Alert.alert('Success', 'Profile changes saved successfully.', [
       { text: 'OK', onPress: () => router.back() }
     ]);
@@ -55,7 +81,7 @@ export default function EditProfileScreen() {
   );
 
   return (
-    <View className="flex-1 bg-[#12081E] pt-14">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
       {/* Header */}
       <View className="flex-row items-center px-4 pb-4">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
@@ -68,9 +94,16 @@ export default function EditProfileScreen() {
         
         {/* Avatar Section */}
         <View className="items-center py-6">
-          <View className="w-24 h-24 rounded-full bg-[#F59E0B]/20 items-center justify-center border-4 border-[#F59E0B]/50 mb-3">
-             <UserPlus size={40} color="#F59E0B" />
-          </View>
+          <Pressable 
+            onPress={handlePickImage}
+            className="w-24 h-24 rounded-full bg-[#F59E0B]/20 items-center justify-center border-4 border-[#F59E0B]/50 mb-3 overflow-hidden"
+          >
+             {avatarUri ? (
+               <Image source={{ uri: avatarUri }} className="w-full h-full" resizeMode="cover" />
+             ) : (
+               <UserPlus size={40} color="#F59E0B" />
+             )}
+          </Pressable>
           <View className="bg-[#FACC15] px-3 py-1 rounded-full -mt-6 z-10 shadow-sm shadow-[#FACC15]/40">
             <Text className="text-black text-[9px] font-black uppercase tracking-wider">Premium Creator</Text>
           </View>
@@ -100,10 +133,10 @@ export default function EditProfileScreen() {
         >
           {/* Gradient Simulation */}
           <View className="absolute top-0 bottom-0 left-0 right-0 bg-gradient-to-r from-[#D946EF] to-[#EC4899] rounded-full opacity-90" />
-          <Text className="text-white font-bold text-sm z-10">Save Changes</Text>
+          <Text className="text-white font-bold text-sm z-10">{isSaving ? 'Saving...' : 'Save Changes'}</Text>
         </Pressable>
 
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

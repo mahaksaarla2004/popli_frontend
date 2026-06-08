@@ -5,10 +5,12 @@ import { useAuthStore, useKYCStore } from '../../store';
 import { ChevronLeft } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
+import { apiClient } from '../../api/client';
+import { verifyFirebaseOTP } from '../../lib/firebase';
 
 export default function OTPScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ mode?: string; type?: string; target?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; type?: string; target?: string; isSignup?: string }>();
   
   const isResetMode = params.mode === 'reset';
   const isEmailType = params.type === 'email';
@@ -43,36 +45,130 @@ export default function OTPScreen() {
     return () => clearInterval(interval);
   }, [timerSeconds]);
 
+  const otp = otpArray;
+  const isOtpComplete = otpArray.every(val => val !== '');
+
   const triggerVerification = useCallback(async () => {
     if (isVerifying || isSuccess) return;
     setIsVerifying(true);
 
-    // Simulated network validation delay
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-
-    setIsVerifying(false);
-    setIsSuccess(true);
-
-    // Play visual success delay then route accordingly
-    setTimeout(() => {
-      if (isResetMode) {
+    try {
+      if (isOtpComplete) {
+        // 1. Verify OTP with Firebase natively
+        let idToken;
         try {
-          router.replace('/(auth)/create-new-password');
-        } catch {
-          router.replace('/create-new-password');
+          idToken = await verifyFirebaseOTP(otp.join(''));
+        } catch (err: any) {
+          throw new Error('Invalid OTP or Firebase not configured.');
         }
-      } else {
-        setOnboardingComplete(true);
-        if (params.isSignup === 'true') {
-          useAuthStore.getState().setFirstLogin(true);
-        } else {
-          useAuthStore.getState().setFirstLogin(false);
+
+        // 2. Authenticate with backend using the Firebase Token
+        const response = await apiClient.post('/auth/verify-firebase-token', { idToken });
+
+        if (response.data.accessToken) {
+          const { setToken, setLogin, setFirstLogin, updateProfile } = useAuthStore.getState();
+          setToken(response.data.accessToken);
+
+          const userFromBackend = response.data.user;
+
+          // If the user already completed their profile, they are an existing user.
+          // Don't overwrite their data even if they came through the Sign Up screen.
+          if (userFromBackend?.isProfileComplete) {
+            try {
+              const fullProfileRes = await apiClient.get('/users/me', {
+                headers: { Authorization: `Bearer ${response.data.accessToken}` }
+              });
+              const fullProfile = fullProfileRes.data;
+              updateProfile({
+                name: fullProfile.name || 'Popli User',
+                username: fullProfile.username,
+                avatar: fullProfile.avatar || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&auto=format&fit=crop',
+                bio: fullProfile.bio || 'Living the life your style with your rules',
+                city: fullProfile.city || '',
+                category: fullProfile.category || '',
+                followersCount: fullProfile.followersCount || 0,
+                followingCount: fullProfile.followingCount || 0,
+                giftsReceivedCount: fullProfile.giftsReceivedCount || 0,
+                isVerified: fullProfile.isVerified || false
+              });
+            } catch (err) {
+              console.error("Failed to fetch full profile", err);
+              updateProfile({
+                name: userFromBackend.name || 'Popli User',
+                username: userFromBackend.username,
+                avatar: userFromBackend.avatar || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&auto=format&fit=crop',
+              });
+            }
+            
+            setIsVerifying(false);
+            setIsSuccess(true);
+            setLogin(true);
+            setFirstLogin(false);
+            setTimeout(() => {
+              router.replace('/(tabs)');
+            }, 800);
+            return;
+          }
+
+          // If this was signup AND user is not complete, update their name/username
+          if (params.isSignup === 'true') {
+            let dobIso = undefined;
+            if ((params as any).dob) {
+              const parts = ((params as any).dob as string).split('/');
+              if (parts.length === 3) {
+                dobIso = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])).toISOString();
+              }
+            }
+
+            await apiClient.put('/users/me', {
+              name: (params as any).name,
+              username: (params as any).username,
+              dob: dobIso
+            }, {
+              headers: { Authorization: `Bearer ${response.data.accessToken}` }
+            });
+            
+            updateProfile({ name: (params as any).name, username: (params as any).username });
+            
+            setIsVerifying(false);
+            setIsSuccess(true);
+            setTimeout(() => {
+              router.replace('/(auth)/profile-setup');
+            }, 800);
+            return;
+          }
+          
+          // Existing User but profile not complete
+          try {
+            updateProfile({
+              name: userFromBackend.name || 'Popli User',
+              username: userFromBackend.username,
+            });
+
+            setIsVerifying(false);
+            setIsSuccess(true);
+            setLogin(true);
+            setFirstLogin(false);
+
+            setTimeout(() => {
+              router.replace('/(tabs)');
+            }, 800);
+          } catch (profileError) {
+            console.error('Failed to process user profile:', profileError);
+            setIsVerifying(false);
+            alert('Failed to load profile. Please try again.');
+          }
         }
-        setLogin(true); // Log the user in
-        router.replace('/(tabs)');
       }
-    }, 800);
-  }, [isVerifying, isSuccess, isResetMode, setOnboardingComplete, setLogin, router]);
+    } catch (e: any) {
+      setIsVerifying(false);
+      console.error('OTP Verification Error:', e.response?.data || e.message);
+      const errorMessage = typeof e.response?.data?.message === 'string' 
+        ? e.response.data.message 
+        : (e.response?.data?.message?.[0] || e.message || 'Invalid OTP. Please try again.');
+      alert(errorMessage);
+    }
+  }, [isVerifying, isSuccess, isOtpComplete, otp, params]);
 
   const handleResendOTP = () => {
     if (timerSeconds > 0) return;
@@ -141,10 +237,6 @@ export default function OTPScreen() {
       }
     }
   };
-
-  const otp = otpArray;
-  const isOtpComplete = otp.join('').length === otpLength;
-
   // Render individual inputs
   const renderOtpBoxes = () => {
     const boxes = [];
@@ -160,13 +252,13 @@ export default function OTPScreen() {
             inputRefs.current[i]?.focus();
             setFocusedIndex(i);
           }}
-          style={{ width: isEmailType ? 42 : 62, height: isEmailType ? 48 : 62 }}
-          className={`bg-[#1D1037]/45 rounded-2xl items-center justify-center border-2 ${
+          style={{ width: isEmailType ? 40 : 64, height: isEmailType ? 48 : 64 }}
+          className={`bg-[#1D1037] rounded-2xl items-center justify-center border-2 ${
             isFocused 
-              ? 'border-primary-pink shadow-lg shadow-primary-pink/30 scale-105' 
+              ? 'border-[#A78BFA] shadow-lg shadow-[#A78BFA]/30 scale-105' 
               : isFilled 
-                ? 'border-primary-purple/60' 
-                : 'border-primary-purple/20'
+                ? 'border-[#A78BFA]/60' 
+                : 'border-[#3E2B5C]'
           } active:scale-[0.97]`}
         >
           <TextInput
@@ -208,16 +300,16 @@ export default function OTPScreen() {
             opacity: pressed ? 0.6 : 1,
             transform: [{ scale: pressed ? 0.95 : 1 }]
           })}
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/5 items-center justify-center active:scale-[0.9]"
+          className="w-11 h-11 rounded-full bg-[#2D1B4E] items-center justify-center active:scale-[0.9]"
         >
-          <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
+          <ChevronLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
         </Pressable>
       </View>
 
       {/* 2. Main content wrapper inside ScrollView to support smooth scrolling & tap persistent */}
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32, paddingTop: 100 }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32, paddingTop: 40 }}
         showsVerticalScrollIndicator={false}
       >
         
@@ -226,13 +318,13 @@ export default function OTPScreen() {
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
           transition={{ type: 'timing', duration: 400 }}
-          className="flex-1 justify-center space-y-8"
+          className="flex-1 justify-center gap-8"
         >
           {isSuccess ? (
             <MotiView 
               from={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="items-center space-y-4"
+              className="items-center gap-4"
             >
               <View className="w-18 h-18 bg-[#10B981]/20 border border-[#10B981]/30 rounded-full items-center justify-center">
                 <Text className="text-[#10B981] text-3xl font-bold">✓</Text>
@@ -244,11 +336,11 @@ export default function OTPScreen() {
             </MotiView>
           ) : (
             <>
-              <View className="space-y-2">
-                <Text className="text-white font-black text-3xl tracking-tight">
+              <View className="gap-2 mb-2">
+                <Text className="text-white font-bold text-[28px] tracking-tight">
                   {isResetMode && isEmailType ? 'Enter Reset Code' : 'Enter OTP'}
                 </Text>
-                <Text className="text-white/60 text-xs leading-5">
+                <Text className="text-white/60 text-[14px] mt-1">
                   {isEmailType 
                     ? `Verify the code sent to your email ${targetLabel}`
                     : `Verify your number ${targetLabel}`
@@ -257,20 +349,20 @@ export default function OTPScreen() {
               </View>
 
               {/* Passcode Box Grid Layout */}
-              <View className="space-y-6">
+              <View className="gap-6">
                 <View className="flex-row justify-between w-full">
                   {renderOtpBoxes()}
                 </View>
 
                 {/* Centered purple timer below OTP grid */}
-                <View className="items-center">
+                <View className="items-center mt-4">
                   <Pressable 
                     onPress={handleResendOTP} 
                     disabled={timerSeconds > 0}
                     style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   >
-                    <Text className={`text-xs font-bold ${timerSeconds > 0 ? 'text-primary-pink' : 'text-primary-pink hover:underline'}`}>
+                    <Text className={`text-[13px] font-bold ${timerSeconds > 0 ? 'text-[#A78BFA]' : 'text-[#A78BFA] hover:underline'}`}>
                       {timerSeconds > 0 
                         ? `Resend OTP 00:${timerSeconds < 10 ? '0' + timerSeconds : timerSeconds}` 
                         : 'Resend Verification Code'
@@ -279,42 +371,40 @@ export default function OTPScreen() {
                   </Pressable>
                 </View>
               </View>
+              
+              {/* Footer Next Button */}
+              <View className="w-full mt-8" pointerEvents="box-none">
+                <Pressable
+                  onPress={() => {
+                    if (isOtpComplete) {
+                      // Reset KYC store so it starts fresh
+                      useKYCStore.getState().resetKYC();
+                      triggerVerification();
+                    }
+                  }}
+                  style={{
+                    backgroundColor: isOtpComplete ? '#A855F7' : '#1D1037',
+                    height: 56,
+                    borderRadius: 28,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    opacity: !isOtpComplete ? 0.5 : 1,
+                  }}
+                  className="shadow-lg shadow-[#A855F7]/40 active:scale-[0.98] transition-all"
+                  disabled={!isOtpComplete || isVerifying || isSuccess}
+                >
+                  {isVerifying ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text className="color-white font-bold text-[16px]">
+                      Sign Up
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
             </>
           )}
         </MotiView>
-
-        {/* Footer Next Button */}
-        <View className="w-full mt-4" pointerEvents="box-none">
-          <Pressable
-            onPress={() => {
-              if (isOtpComplete) {
-                // Reset KYC store so it starts fresh
-                useKYCStore.getState().resetKYC();
-                triggerVerification();
-              }
-            }}
-            style={{
-              backgroundColor: isOtpComplete ? '#8B5CF6' : '#1D1037',
-              height: 54,
-              borderRadius: 16,
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginTop: 20,
-              opacity: !isOtpComplete ? 0.5 : 1,
-            }}
-            className="shadow-lg shadow-primary-purple/20 active:scale-[0.98] transition-all"
-            disabled={!isOtpComplete || isVerifying || isSuccess}
-          >
-            {isVerifying ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text className="color-white font-extrabold text-sm uppercase tracking-wider">
-                Sign Up
-              </Text>
-            )}
-          </Pressable>
-        </View>
-
       </ScrollView>
     </KeyboardAvoidingView>
   );

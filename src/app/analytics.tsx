@@ -34,12 +34,12 @@ export default function AnalyticsScreen() {
                 <Play size={14} color="#FFFFFF" fill="#FFFFFF" />
               </View>
             </View>
-            <View className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded">
+            <View className="absolute bottom-1 right-1 bg-black/80 px-2 py-1 rounded">
               <Text className="text-white text-[9px] font-bold">0:45</Text>
             </View>
           </View>
           <View className="flex-1 pr-2">
-            <Text className="text-[#A855F7] text-[10px] font-black tracking-widest uppercase mb-1.5">Last Uploaded</Text>
+            <Text className="text-[#A855F7] text-[10px] font-black tracking-widest uppercase mb-2">Last Uploaded</Text>
             <Text className="text-white font-bold text-[15px] leading-5" numberOfLines={2}>Night City Dreams: A Cinematic Journey...</Text>
             <Text className="text-white/40 text-[11px] mt-2 font-semibold">Uploaded Apr 24, 2024</Text>
           </View>
@@ -52,7 +52,7 @@ export default function AnalyticsScreen() {
             <Eye size={16} color="#A855F7" />
           </View>
           <Text className="text-white font-black text-4xl tracking-tight mb-2">1.2M</Text>
-          <View className="flex-row items-center gap-1.5">
+          <View className="flex-row items-center gap-2">
             <TrendingUp size={12} color="#10B981" />
             <Text className="text-[#10B981] font-bold text-[10px]">12.4% vs last video</Text>
           </View>
@@ -64,7 +64,7 @@ export default function AnalyticsScreen() {
           <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-5 w-[48%]">
             <Text className="text-white/50 text-[10px] font-bold tracking-widest uppercase mb-3">Avg Watch Time</Text>
             <Text className="text-white font-black text-2xl tracking-tight mb-4">0:45s</Text>
-            <View className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <View className="h-2 bg-white/10 rounded-full overflow-hidden">
               <View className="h-full w-[100%] bg-[#A855F7] rounded-full" />
             </View>
           </View>
@@ -73,7 +73,7 @@ export default function AnalyticsScreen() {
           <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-5 w-[48%]">
             <Text className="text-white/50 text-[10px] font-bold tracking-widest uppercase mb-3">Completion Rate</Text>
             <Text className="text-white font-black text-2xl tracking-tight mb-4">68%</Text>
-            <View className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <View className="h-2 bg-white/10 rounded-full overflow-hidden">
               <View className="h-full w-[68%] bg-[#facc15] rounded-full" />
             </View>
           </View>
@@ -84,7 +84,7 @@ export default function AnalyticsScreen() {
           {/* Fake glow effect */}
           <View className="absolute -top-10 -right-10 w-32 h-32 bg-[#F59E0B]/20 rounded-full blur-3xl" />
           
-          <View className="flex-row items-center gap-2.5 mb-3">
+          <View className="flex-row items-center gap-3 mb-3">
             <View className="w-5 h-5 rounded-full bg-[#facc15] items-center justify-center">
               <DollarSign size={12} color="#432371" strokeWidth={3} />
             </View>
@@ -101,7 +101,7 @@ export default function AnalyticsScreen() {
             <View className="flex-row items-center">
               <Text className="text-white/60 text-[11px] font-semibold w-24">Ad Revenue</Text>
               <Text className="text-white font-bold text-[12px] w-16">₹12,450</Text>
-              <View className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden ml-2">
+              <View className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden ml-2">
                 <View className="h-full w-[70%] bg-[#A855F7] rounded-full" />
               </View>
             </View>
@@ -109,7 +109,7 @@ export default function AnalyticsScreen() {
             <View className="flex-row items-center">
               <Text className="text-white/60 text-[11px] font-semibold w-24">Virtual Gifts</Text>
               <Text className="text-white font-bold text-[12px] w-16">₹4,200</Text>
-              <View className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden ml-2">
+              <View className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden ml-2">
                 <View className="h-full w-[25%] bg-[#facc15] rounded-full" />
               </View>
             </View>
@@ -117,7 +117,7 @@ export default function AnalyticsScreen() {
             <View className="flex-row items-center">
               <Text className="text-white/60 text-[11px] font-semibold w-24">Referral Bonus</Text>
               <Text className="text-white font-bold text-[12px] w-16">₹850</Text>
-              <View className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden ml-2">
+              <View className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden ml-2">
                 <View className="h-full w-[5%] bg-white/40 rounded-full" />
               </View>
             </View>
@@ -129,9 +129,9 @@ export default function AnalyticsScreen() {
           <View className="flex-row justify-between items-start mb-4">
             <View>
               <Text className="text-white font-bold text-[14px]">View Velocity</Text>
-              <Text className="text-white/50 text-[10px] mt-0.5">First 24 Hours Performance</Text>
+              <Text className="text-white/50 text-[10px] mt-1">First 24 Hours Performance</Text>
             </View>
-            <View className="bg-[#A855F7]/20 px-2.5 py-1 rounded-full">
+            <View className="bg-[#A855F7]/20 px-3 py-1 rounded-full">
               <Text className="text-[#A855F7] font-bold text-[8px] tracking-widest uppercase">Live</Text>
             </View>
           </View>
@@ -155,17 +155,17 @@ export default function AnalyticsScreen() {
         <View className="flex-row justify-between mb-5">
           <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-4 w-[31%] items-center">
             <Heart size={16} color="#A855F7" fill="#A855F7" className="mb-3" />
-            <Text className="text-white font-black text-[17px] mb-1.5">12.4%</Text>
+            <Text className="text-white font-black text-[17px] mb-2">12.4%</Text>
             <Text className="text-white/50 text-[7px] font-bold tracking-widest uppercase">Like Rate</Text>
           </View>
           <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-4 w-[31%] items-center">
             <MessageSquare size={16} color="#A855F7" fill="#A855F7" className="mb-3" />
-            <Text className="text-white font-black text-[17px] mb-1.5">3.2%</Text>
+            <Text className="text-white font-black text-[17px] mb-2">3.2%</Text>
             <Text className="text-white/50 text-[7px] font-bold tracking-widest uppercase">Comment Rate</Text>
           </View>
           <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-4 w-[31%] items-center">
             <Share2 size={16} color="#A855F7" className="mb-3" />
-            <Text className="text-white font-black text-[17px] mb-1.5">5.8%</Text>
+            <Text className="text-white font-black text-[17px] mb-2">5.8%</Text>
             <Text className="text-white/50 text-[7px] font-bold tracking-widest uppercase">Share Rate</Text>
           </View>
         </View>
@@ -177,13 +177,13 @@ export default function AnalyticsScreen() {
             <Text className="text-white font-bold text-[13px]">Top Locations</Text>
           </View>
           
-          <View className="gap-y-5">
+          <View className="gap-y-6">
             <View>
               <View className="flex-row justify-between mb-2">
                 <Text className="text-white text-[11px] font-semibold">Mumbai</Text>
                 <Text className="text-white font-bold text-[11px]">42%</Text>
               </View>
-              <View className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <View className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <View className="h-full w-[42%] bg-[#A855F7] rounded-full" />
               </View>
             </View>
@@ -193,7 +193,7 @@ export default function AnalyticsScreen() {
                 <Text className="text-white text-[11px] font-semibold">Delhi</Text>
                 <Text className="text-white font-bold text-[11px]">28%</Text>
               </View>
-              <View className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <View className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <View className="h-full w-[28%] bg-[#A855F7] rounded-full" />
               </View>
             </View>
@@ -203,7 +203,7 @@ export default function AnalyticsScreen() {
                 <Text className="text-white text-[11px] font-semibold">Bengaluru</Text>
                 <Text className="text-white font-bold text-[11px]">18%</Text>
               </View>
-              <View className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <View className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <View className="h-full w-[18%] bg-[#A855F7] rounded-full" />
               </View>
             </View>
@@ -213,7 +213,7 @@ export default function AnalyticsScreen() {
                 <Text className="text-white text-[11px] font-semibold">Pune</Text>
                 <Text className="text-white font-bold text-[11px]">12%</Text>
               </View>
-              <View className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <View className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <View className="h-full w-[12%] bg-[#A855F7] rounded-full" />
               </View>
             </View>

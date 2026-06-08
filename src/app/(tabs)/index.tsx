@@ -1,14 +1,15 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, Dimensions, FlatList, ViewToken, StyleSheet, useWindowDimensions } from 'react-native';
-import { Bell } from 'lucide-react-native';
+import { View, Text, Pressable, Dimensions, FlatList, ViewToken, StyleSheet, useWindowDimensions, ScrollView } from 'react-native';
+import { Bell, MessageSquare, Send } from 'lucide-react-native';
 import { ReelItem } from '../../components/feed/ReelItem';
 import { CommentsSheet } from '../../components/sheets/CommentsSheet';
 import { GiftSheet } from '../../components/sheets/GiftSheet';
-import { useFeedStore, useAuthStore } from '../../store';
+import { SendSheet } from '../../components/sheets/SendSheet';
+import { useFeedStore, useAuthStore, useStoryStore } from '../../store';
 import { requestGPSLocation, getClosestMockCity } from '../../services/geoService';
 import { Reel } from '../../types';
 import { MotiView } from 'moti';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 type TopTabType = 'for_you' | 'following' | 'nearby' | 'trending';
 
@@ -16,13 +17,30 @@ export default function HomeFeedScreen() {
   const router = useRouter();
   const { height, width } = useWindowDimensions();
   const { reels, setGPS } = useFeedStore();
-  const { followingIds } = useAuthStore();
+  const { userProfile, followingIds } = useAuthStore();
+  const { stories } = useStoryStore();
   
   const [activeTab, setActiveTab] = useState<TopTabType>('for_you');
   const [activeReelId, setActiveReelId] = useState<string>('');
+  const [isFocused, setIsFocused] = useState(true);
+  const flatListRef = useRef<FlatList>(null);
+  
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+      setTimeout(() => {
+        if (mounted) setIsFocused(true);
+      }, 0);
+      return () => {
+        mounted = false;
+        setIsFocused(false);
+      };
+    }, [])
+  );
   
   // Sheet Overlays States
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [isSendOpen, setIsSendOpen] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState<string>('');
   
   const [isGiftsOpen, setIsGiftsOpen] = useState(false);
@@ -31,93 +49,83 @@ export default function HomeFeedScreen() {
   // Success Burst Haptic overlay
   const [burstGift, setBurstGift] = useState<{ visible: boolean; icon: string }>({ visible: false, icon: '' });
 
-  // 1. Core location initialization
   useEffect(() => {
     async function initLocation() {
       const gps = await requestGPSLocation();
       if (gps) {
         setGPS(gps.latitude, gps.longitude, gps.city);
       } else {
-        // Preset fallbacks
         setGPS(22.7196, 75.8577, 'Indore');
       }
     }
     initLocation();
+    
+    // Fetch real reels on mount
+    const { fetchReels } = useFeedStore.getState();
+    const { fetchStories } = useStoryStore.getState();
+    fetchReels(1, 10, 'all');
+    fetchStories();
   }, []);
 
-  // 2. Filter reels based on active top tab
   const getFilteredReels = () => {
     switch (activeTab) {
-      case 'following':
-        return reels.filter((r) => followingIds.includes(r.creatorId));
-      case 'nearby':
-        // Filter reels close to current city
-        const currentCity = useFeedStore.getState().gpsCity || 'Indore';
-        return reels.filter((r) => r.location.city === currentCity);
-      case 'trending':
-        return reels.filter((r) => r.likesCount > 40000);
-      case 'for_you':
-      default:
-        return reels;
+      case 'following': return reels.filter((r) => followingIds.includes(r.creatorId));
+      case 'nearby': return reels.filter((r) => r.location.city === (useFeedStore.getState().gpsCity || 'Indore'));
+      case 'trending': return reels.filter((r) => r.likesCount > 40000);
+      case 'for_you': default: return reels;
     }
   };
 
   const filteredReels = getFilteredReels();
 
-  // Set the first item active initially
   useEffect(() => {
     if (filteredReels.length > 0 && !activeReelId) {
       setActiveReelId(filteredReels[0].id);
     }
   }, [filteredReels]);
 
-  // 3. Viewable Items Change listener for playing ONLY visible reels
+  useEffect(() => {
+    if (reels.length > 0) {
+      const firstReel = reels[0];
+      if (firstReel.creatorUsername === userProfile.username && activeReelId !== firstReel.id) {
+        setActiveReelId(firstReel.id);
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      }
+    }
+  }, [reels.length]);
+
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].isViewable) {
       setActiveReelId(viewableItems[0].item.id);
     }
   }).current;
 
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 80, // Renders active if 80% visible
-  }).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80 }).current;
 
-  // Interactivity triggers
-  const handleOpenComments = useCallback((reelId: string) => {
-    setSelectedReelId(reelId);
-    setIsCommentsOpen(true);
-  }, []);
-
-  const handleOpenGifts = useCallback((reel: Reel) => {
-    setSelectedReel(reel);
-    setIsGiftsOpen(true);
-  }, []);
-
-  const handleOpenProfile = useCallback((creatorId: string) => {
-    // Navigate dynamically to profile tab
-    router.push('/(tabs)/profile');
-  }, [router]);
+  const handleOpenComments = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsCommentsOpen(true); }, []);
+  const handleOpenSend = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsSendOpen(true); }, []);
+  const handleOpenGifts = useCallback((reel: Reel) => { setSelectedReel(reel); setIsGiftsOpen(true); }, []);
+  const handleOpenProfile = useCallback((creatorUsername: string) => { router.push(`/user/${creatorUsername}`); }, [router]);
 
   const handleGiftSendSuccess = (icon: string) => {
     setBurstGift({ visible: true, icon });
-    setTimeout(() => {
-      setBurstGift({ visible: false, icon: '' });
-    }, 1500);
+    setTimeout(() => setBurstGift({ visible: false, icon: '' }), 1500);
   };
 
   const renderItem = useCallback(({ item }: { item: Reel }) => {
     return (
       <ReelItem
         item={item}
-        isActive={item.id === activeReelId}
+        isActive={isFocused && item.id === activeReelId}
         onOpenComments={handleOpenComments}
+        onOpenSend={handleOpenSend}
         onOpenGifts={handleOpenGifts}
         onOpenProfile={handleOpenProfile}
         windowWidth={width}
         windowHeight={height}
       />
     );
-  }, [activeReelId, handleOpenComments, handleOpenGifts, handleOpenProfile, width, height]);
+  }, [isFocused, activeReelId, handleOpenComments, handleOpenSend, handleOpenGifts, handleOpenProfile, width, height]);
 
   const keyExtractor = useCallback((item: Reel) => item.id, []);
 
@@ -126,8 +134,7 @@ export default function HomeFeedScreen() {
       
       {/* Top Segmented Tabs Overlay & Notification Bell */}
       <View className="absolute top-12 left-0 right-0 z-20 flex-row justify-between items-center px-4">
-        {/* Spacer for exact centering */}
-        <View className="w-10 h-10" />
+        <View className="w-[84px] h-10" />
 
         <View className="flex-row bg-black/40 rounded-full p-1">
           {(['for_you', 'following'] as const).map((tab) => {
@@ -139,23 +146,24 @@ export default function HomeFeedScreen() {
                 onPress={() => setActiveTab(tab)} 
                 className={`items-center px-4 py-1.5 rounded-full ${isCurrent ? 'bg-white/20' : 'bg-transparent'}`}
               >
-                <Text className={`text-[15px] ${isCurrent ? 'text-white font-bold' : 'text-white/80 font-semibold'}`}>
-                  {label}
-                </Text>
+                <Text className={`text-[15px] ${isCurrent ? 'text-white font-bold' : 'text-white/80 font-semibold'}`}>{label}</Text>
               </Pressable>
             );
           })}
         </View>
 
-        {/* Notifications Icon (Right) */}
-        <Pressable 
-          onPress={() => router.push('/notifications')} 
-          className="w-10 h-10 items-center justify-center active:scale-95"
-        >
-          <Bell size={24} color="#FFFFFF" strokeWidth={2.5} />
-          {/* Unread alert dot */}
-          <View className="absolute top-[8px] right-[8px] w-2.5 h-2.5 bg-[#D946EF] rounded-full border border-black" />
-        </Pressable>
+        <View className="flex-row items-center gap-2">
+          <Pressable onPress={() => router.push('/notifications')} className="w-10 h-10 items-center justify-center active:scale-95">
+            <Bell size={24} color="#FFFFFF" strokeWidth={2.5} />
+            <View className="absolute top-[8px] right-[8px] w-2.5 h-2.5 bg-[#D946EF] rounded-full border border-black" />
+          </Pressable>
+          <Pressable onPress={() => router.push('/(tabs)/inbox')} className="w-10 h-10 bg-black/40 rounded-full items-center justify-center active:scale-95">
+            <Send size={20} color="#FFFFFF" strokeWidth={2.5} className="mr-0.5 mt-0.5" />
+            <View className="absolute top-0 right-0 bg-[#D946EF] rounded-full px-[5px] py-[1px] border-[1.5px] border-black">
+              <Text className="text-white text-[8px] font-bold">2</Text>
+            </View>
+          </Pressable>
+        </View>
       </View>
 
       {/* Vertical Reels List */}
@@ -165,6 +173,7 @@ export default function HomeFeedScreen() {
         </View>
       ) : (
         <FlatList
+          ref={flatListRef}
           data={filteredReels}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
@@ -178,25 +187,15 @@ export default function HomeFeedScreen() {
           snapToInterval={height}
           snapToAlignment="start"
           decelerationRate="fast"
+          disableIntervalMomentum={true}
         />
       )}
 
-      {/* Comments Sliding Bottom Sheet */}
-      <CommentsSheet
-        reelId={selectedReelId}
-        isOpen={isCommentsOpen}
-        onClose={() => setIsCommentsOpen(false)}
-      />
+      {/* Sheets & Overlays */}
+      <CommentsSheet reelId={selectedReelId} isOpen={isCommentsOpen} onClose={() => setIsCommentsOpen(false)} />
+      <SendSheet reelId={selectedReelId} isOpen={isSendOpen} onClose={() => setIsSendOpen(false)} />
+      <GiftSheet reel={selectedReel} isOpen={isGiftsOpen} onClose={() => setIsGiftsOpen(false)} onSendSuccess={handleGiftSendSuccess} />
 
-      {/* Gifts Sliding Bottom Sheet */}
-      <GiftSheet
-        reel={selectedReel}
-        isOpen={isGiftsOpen}
-        onClose={() => setIsGiftsOpen(false)}
-        onSendSuccess={handleGiftSendSuccess}
-      />
-
-      {/* Virtual Gift Send Success Burst Overlay */}
       {burstGift.visible && (
         <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-black/40 z-50">
           <MotiView
@@ -216,10 +215,3 @@ export default function HomeFeedScreen() {
     </View>
   );
 }
-
-const Transition = {
-  type: 'spring',
-  damping: 15,
-} as const;
-
-import { Alert } from 'react-native';

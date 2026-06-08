@@ -35,7 +35,7 @@ export default function SettingsScreen() {
   };
 
   const SectionTitle = ({ title }: { title: string }) => (
-    <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest pl-1 mt-6 mb-3">{title}</Text>
+    <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest mt-6 mb-4">{title}</Text>
   );
 
   const ListItem = ({ 
@@ -55,11 +55,11 @@ export default function SettingsScreen() {
       onPress={onPress}
       className="flex-row items-center justify-between bg-[#1A0E2C] border-b border-[#2D1B4E]/50 px-4 py-4"
     >
-      <View className="flex-row items-center space-x-3">
+      <View className="flex-row items-center gap-4">
         <Icon size={20} color="#9CA3AF" />
         <View>
           <Text className="text-white font-medium text-sm">{title}</Text>
-          {subtitle && <Text className="text-neutral-grey text-[10px] mt-0.5">{subtitle}</Text>}
+          {subtitle && <Text className="text-neutral-grey text-[10px] mt-1">{subtitle}</Text>}
         </View>
       </View>
       {rightElement || <ChevronRight size={18} color="#4B5563" />}
@@ -69,7 +69,7 @@ export default function SettingsScreen() {
   return (
     <View className="flex-1 bg-[#12081E] pt-14">
       {/* Header */}
-      <View className="flex-row items-center px-4 pb-4">
+      <View className="flex-row items-center px-4 pb-6">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
           <ArrowLeft size={20} color="#FFFFFF" />
         </Pressable>
@@ -79,20 +79,26 @@ export default function SettingsScreen() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         
         {/* Profile Card */}
-        <View className="bg-[#1A0E2C] rounded-2xl mx-4 mt-2 p-4 flex-row items-center justify-between border border-white/5">
-          <View className="flex-row items-center space-x-4">
-            <View className="w-14 h-14 rounded-full bg-[#F59E0B]/20 items-center justify-center border-2 border-[#F59E0B]/50">
-              {/* Silhouette placeholder as per Figma */}
-              <UserPlus size={24} color="#F59E0B" />
+        <View className="bg-[#1A0E2C] rounded-2xl mx-4 p-4 flex-row items-center justify-between border border-white/5">
+          <Pressable 
+            onPress={() => router.back()} 
+            className="flex-row items-center gap-4 flex-1"
+          >
+            <View className="w-14 h-14 rounded-full overflow-hidden items-center justify-center border-2 border-[#F59E0B]/50 bg-[#F59E0B]/20">
+              {userProfile?.avatar ? (
+                <Image source={{ uri: userProfile.avatar }} className="w-full h-full" resizeMode="cover" />
+              ) : (
+                <UserPlus size={24} color="#F59E0B" />
+              )}
             </View>
-            <View>
-              <Text className="text-white font-bold text-base">Alex Rivera</Text>
-              <Text className="text-neutral-grey text-xs">@ALEX_CURATES</Text>
+            <View className="flex-1">
+              <Text className="text-white font-bold text-base">{userProfile?.name || 'Alex Rivera'}</Text>
+              <Text className="text-neutral-grey text-xs mt-1">@{userProfile?.username?.toUpperCase() || 'ALEX_CURATES'}</Text>
             </View>
-          </View>
+          </Pressable>
           <Pressable 
             onPress={() => router.push('/edit-profile')}
-            className="bg-[#A855F7] px-4 py-2 rounded-lg"
+            className="bg-[#A855F7] px-4 py-2 rounded-lg ml-2"
           >
             <Text className="text-white font-bold text-xs uppercase">Edit Profile</Text>
           </Pressable>
@@ -103,36 +109,46 @@ export default function SettingsScreen() {
           {/* MONETIZATION */}
           <SectionTitle title="Monetization" />
           
-          <Pressable className="flex-row items-center justify-between bg-[#1A0E2C] rounded-2xl p-4 mb-3 shadow-sm border border-white/5" style={{ borderLeftWidth: 4, borderLeftColor: '#FACC15' }}>
-            <View className="flex-row items-center space-x-3">
+          <Pressable 
+            onPress={() => router.push('/(creator)/portal')}
+            className="flex-row items-center justify-between bg-[#1A0E2C] rounded-2xl p-4 mb-4 shadow-sm border border-white/5" 
+            style={{ borderLeftWidth: 4, borderLeftColor: '#FACC15' }}
+          >
+            <View className="flex-row items-center gap-4">
               <View className="w-8 h-8 rounded-full bg-[#FACC15]/10 items-center justify-center border border-[#FACC15]/20">
                 <Star size={16} color="#FACC15" fill="#FACC15" />
               </View>
               <View>
                 <Text className="text-white font-bold text-sm">Creator Portal</Text>
-                <Text className="text-neutral-grey text-[10px] mt-0.5">View your growth & tools</Text>
+                <Text className="text-neutral-grey text-[10px] mt-1">View your growth & tools</Text>
               </View>
             </View>
             <ChevronRight size={18} color="#4B5563" />
           </Pressable>
 
-          <View className="flex-row justify-between mb-2" style={{ gap: 12 }}>
-            <Pressable className="flex-1 bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 justify-between shadow-sm" style={{ minHeight: 90 }}>
+          <View className="flex-row justify-between mb-2 gap-4">
+            <Pressable 
+              onPress={() => router.push('/(creator)/payouts')}
+              className="flex-1 bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 justify-between shadow-sm min-h-[96px]"
+            >
               <View className="mb-2">
                 <CreditCard size={20} color="#EC4899" />
               </View>
               <View>
-                <Text className="text-white font-bold text-sm mb-0.5">Payout Settings</Text>
+                <Text className="text-white font-bold text-sm mb-1">Payout Settings</Text>
                 <Text className="text-neutral-grey text-[9px] uppercase tracking-wider">Configure</Text>
               </View>
             </Pressable>
 
-            <Pressable className="flex-1 bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 justify-between shadow-sm" style={{ minHeight: 90 }}>
+            <Pressable 
+              onPress={() => router.push('/(creator)/earnings')}
+              className="flex-1 bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 justify-between shadow-sm min-h-[96px]"
+            >
               <View className="mb-2">
                 <BarChart2 size={20} color="#3B82F6" />
               </View>
               <View>
-                <Text className="text-white font-bold text-sm mb-0.5">Earnings History</Text>
+                <Text className="text-white font-bold text-sm mb-1">Earnings History</Text>
                 <Text className="text-neutral-grey text-[9px] uppercase tracking-wider">Last 30 Days</Text>
               </View>
             </Pressable>
@@ -141,9 +157,9 @@ export default function SettingsScreen() {
           {/* CONTENT & ACTIVITY */}
           <SectionTitle title="Content & Activity" />
           <View className="rounded-2xl overflow-hidden border border-white/5 bg-[#1A0E2C]">
-            <ListItem icon={Clock} title="Watch History" />
-            <ListItem icon={Heart} title="Liked Videos" />
-            <ListItem icon={Download} title="Downloads" />
+            <ListItem icon={Clock} title="Watch History" onPress={() => router.push('/(settings)/watch-history')} />
+            <ListItem icon={Heart} title="Liked Videos" onPress={() => router.push('/(settings)/liked-videos')} />
+            <ListItem icon={Download} title="Downloads" onPress={() => router.push('/(settings)/downloads')} />
           </View>
 
           {/* PREFERENCES */}
@@ -182,21 +198,22 @@ export default function SettingsScreen() {
               icon={Lock} 
               title="Account Privacy" 
               rightElement={<Text className="text-neutral-grey text-xs">Public</Text>} 
+              onPress={() => router.push('/(settings)/privacy')}
             />
-            <ListItem icon={Ban} title="Blocked Accounts" />
+            <ListItem icon={Ban} title="Blocked Accounts" onPress={() => router.push('/(settings)/blocked')} />
           </View>
 
           {/* SUPPORT */}
           <SectionTitle title="Support" />
           <View className="rounded-2xl overflow-hidden border border-white/5 bg-[#1A0E2C]">
             <ListItem icon={UserPlus} title="Refer a Friend" onPress={() => router.push('/referrals')} />
-            <ListItem icon={HelpCircle} title="Help Center" />
-            <ListItem icon={AlertOctagon} title="Report a Problem" />
-            <ListItem icon={Info} title="About" />
+            <ListItem icon={HelpCircle} title="Help Center" onPress={() => router.push('/support')} />
+            <ListItem icon={AlertOctagon} title="Report a Problem" onPress={() => router.push('/support')} />
+            <ListItem icon={Info} title="About" onPress={() => router.push('/(settings)/about')} />
           </View>
 
           {/* LOG OUT */}
-          <Pressable onPress={handleLogout} className="mt-8 mb-4 items-center py-4">
+          <Pressable onPress={handleLogout} className="mt-6 mb-4 items-center py-4">
             <Text className="text-[#EF4444] font-bold text-sm tracking-widest">LOG OUT</Text>
           </Pressable>
 

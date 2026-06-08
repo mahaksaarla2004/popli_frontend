@@ -4,6 +4,10 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { ChevronLeft, Camera, Sparkles, Globe, ChevronRight } from 'lucide-react-native';
 import { MotiView } from 'moti';
+import * as ImagePicker from 'expo-image-picker';
+import { apiClient } from '../../api/client';
+import { ActivityIndicator } from 'react-native';
+import axios from 'axios';
 
 const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop',
@@ -32,6 +36,56 @@ export default function ProfileSetupScreen() {
   const [gender, setGender] = useState<string>('Male');
   const [category, setCategory] = useState<string>('comedy');
   const [selectedLang, setSelectedLang] = useState<'English' | 'Hindi' | 'Bengali' | 'Tamil'>('English');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setIsUploading(true);
+        const imageUri = result.assets[0].uri;
+        
+        // Get Cloudinary signature from backend
+        const sigResponse = await apiClient.get('/upload/signature?folder=profiles');
+        const { timestamp, signature, cloudName, apiKey, folder } = sigResponse.data;
+
+        // Construct FormData for Cloudinary
+        const formData = new FormData();
+        const fileType = imageUri.split('.').pop() || 'jpg';
+        formData.append('file', {
+          uri: imageUri,
+          type: `image/${fileType}`,
+          name: `profile-${Date.now()}.${fileType}`
+        } as any);
+        formData.append('api_key', apiKey);
+        formData.append('timestamp', timestamp.toString());
+        formData.append('signature', signature);
+        formData.append('folder', folder);
+
+        // Upload directly to Cloudinary
+        const axios = require('axios').default;
+        const uploadRes = await axios.post(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, formData);
+        
+        const uploadData = uploadRes.data;
+        if (uploadData.secure_url) {
+          setAvatar(uploadData.secure_url);
+        } else {
+          throw new Error('Cloudinary upload failed');
+        }
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleNext = () => {
     // Persist current profiling data to global auth state store
@@ -60,7 +114,7 @@ export default function ProfileSetupScreen() {
           from={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'timing', duration: 400 }}
-          className="space-y-6"
+          className="gap-6"
         >
           {/* Header */}
           <View className="flex-row items-center justify-between w-full">
@@ -70,36 +124,36 @@ export default function ProfileSetupScreen() {
             >
               <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
             </Pressable>
-            <View className="flex-row items-center space-x-1.5 bg-primary-pink/15 px-3 py-1.5 rounded-full border border-primary-pink/20">
+            <View className="flex-row items-center gap-2 bg-primary-pink/15 px-3 py-1.5 rounded-full border border-primary-pink/20">
               <Sparkles size={11} color="#EC4899" />
               <Text className="text-primary-pink text-[9px] font-black uppercase tracking-wider">Step 1 of 4</Text>
             </View>
           </View>
 
           {/* Intro titles */}
-          <View className="space-y-1">
+          <View className="gap-2">
             <Text className="text-white font-black text-3xl tracking-tight">Setup Profile</Text>
             <Text className="text-white/50 text-xs">{"Let's create your creator identity and match you with local fans."}</Text>
           </View>
 
           {/* Avatar Selector */}
-          <View className="space-y-3">
+          <View className="gap-3">
             <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Choose Creator Avatar</Text>
             
             <View className="items-center py-4">
-              <View className="relative">
+              <Pressable onPress={pickImage} className="relative active:scale-95 transition-all">
                 <Image 
                   source={{ uri: avatar }} 
                   className="w-24 h-24 rounded-full border-4 border-primary-pink shadow-lg shadow-primary-pink/40"
                 />
                 <View className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary-purple border-2 border-[#0B001A] items-center justify-center">
-                  <Camera size={14} color="#FFFFFF" />
+                  {isUploading ? <ActivityIndicator size="small" color="#FFF" /> : <Camera size={14} color="#FFFFFF" />}
                 </View>
-              </View>
+              </Pressable>
             </View>
 
             {/* Presets Horizontal Row */}
-            <View className="flex-row justify-center space-x-3 py-2">
+            <View className="flex-row justify-center gap-3 py-2">
               {AVATAR_PRESETS.map((preset, idx) => {
                 const isSelected = preset === avatar;
                 return (
@@ -121,7 +175,7 @@ export default function ProfileSetupScreen() {
           </View>
 
           {/* Bio input Card */}
-          <View className="space-y-2">
+          <View className="gap-2">
             <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Your Bio</Text>
             <View className="bg-[#190C2C] border border-white/5 rounded-2xl p-4">
               <TextInput
@@ -142,9 +196,9 @@ export default function ProfileSetupScreen() {
           </View>
 
           {/* Gender selector grid */}
-          <View className="space-y-2">
+          <View className="gap-2">
             <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Gender</Text>
-            <View className="flex-row space-x-2 w-full">
+            <View className="flex-row gap-2 w-full">
               {['Male', 'Female', 'Other'].map((item) => {
                 const isSelected = gender === item;
                 return (
@@ -167,7 +221,7 @@ export default function ProfileSetupScreen() {
           </View>
 
           {/* Category Dropdown/Selector Grid */}
-          <View className="space-y-2">
+          <View className="gap-2">
             <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Creator Vibe Category</Text>
             <View className="flex-row flex-wrap gap-2">
               {CATEGORIES.map((cat) => {
@@ -192,12 +246,12 @@ export default function ProfileSetupScreen() {
           </View>
 
           {/* Language Preference */}
-          <View className="space-y-2">
-            <View className="flex-row items-center space-x-1">
+          <View className="gap-2">
+            <View className="flex-row items-center gap-1">
               <Globe size={12} color="#A78BFA" />
               <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">App Language</Text>
             </View>
-            <View className="flex-row space-x-2 w-full">
+            <View className="flex-row gap-2 w-full">
               {LANGUAGES.map((lang) => {
                 const isSelected = selectedLang === lang;
                 return (
@@ -221,7 +275,7 @@ export default function ProfileSetupScreen() {
           <View className="pt-4">
             <Pressable
               onPress={handleNext}
-              className="bg-primary-purple py-4 rounded-2xl items-center justify-center flex-row space-x-2 active:scale-[0.98] shadow-lg shadow-primary-purple/40"
+              className="bg-primary-purple py-4 rounded-2xl items-center justify-center flex-row gap-2 active:scale-[0.98] shadow-lg shadow-primary-purple/40"
             >
               <Text className="text-white text-sm font-bold uppercase tracking-wider">Continue to Interests</Text>
               <ChevronRight size={16} color="#FFFFFF" strokeWidth={3} />
