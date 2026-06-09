@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView, Modal } from 'react-native';
 import { X, Search, Send } from 'lucide-react-native';
-import { useAuthStore, useChatStore } from '../../store';
+import { useAuthStore, useChatStore, useFeedStore } from '../../store';
 import { MotiView } from 'moti';
 
 interface SendSheetProps {
@@ -10,27 +10,43 @@ interface SendSheetProps {
   onClose: () => void;
 }
 
-const MOCK_FRIENDS = [
-  { id: '1', username: 'neon_curator', name: 'Neon Curator', avatar: 'https://i.pravatar.cc/150?u=neon_curator' },
-  { id: '2', username: 'alexa_vibes', name: 'Alexa Vibes', avatar: 'https://i.pravatar.cc/150?u=alexa_vibes' },
-  { id: '3', username: 'jason_prime', name: 'Jason Prime', avatar: 'https://i.pravatar.cc/150?u=jason_prime' },
-  { id: '4', username: 'sophia.arts', name: 'Sophia Arts', avatar: 'https://i.pravatar.cc/150?u=sophia.arts' },
-  { id: '5', username: 'marcus_vlogs', name: 'Marcus V.', avatar: 'https://i.pravatar.cc/150?u=marcus_vlogs' },
-  { id: '6', username: 'elena_fashion', name: 'Elena F.', avatar: 'https://i.pravatar.cc/150?u=elena_fashion' },
-];
-
 export const SendSheet = ({ reelId, isOpen, onClose }: SendSheetProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sentTo, setSentTo] = useState<string[]>([]);
-  const { userProfile } = useAuthStore();
-  const { sendDirectMessage } = useChatStore();
+  const { userProfile, followingIds } = useAuthStore();
+  const { chats, sendDirectMessage } = useChatStore();
+  const { reels } = useFeedStore();
 
-  const handleSend = (friend: typeof MOCK_FRIENDS[0]) => {
+  const chatFriends = chats.map(c => ({
+    id: c.creatorId,
+    username: c.creatorUsername,
+    name: c.creatorName,
+    avatar: c.creatorAvatar
+  }));
+
+  const followedCreators = reels
+    .filter(r => followingIds.includes(r.creatorId))
+    .map(r => ({
+      id: r.creatorId,
+      username: r.creatorUsername,
+      name: r.creatorName,
+      avatar: r.creatorAvatar
+    }));
+
+  // Combine chats and followed creators, then deduplicate by ID
+  const allCandidates = [...chatFriends, ...followedCreators];
+  let friendsList = Array.from(new Map(allCandidates.map(item => [item.id, item])).values());
+
+  // Optional: Prioritize strictly followed users or just show all combined
+  // Since user asked for "following", we can ensure following users are at the top or just show them.
+  // We'll show all (chats + following) as it's standard for sharing, but now following are included!
+
+  const handleSend = (friend: typeof friendsList[0]) => {
     setSentTo(prev => [...prev, friend.id]);
     sendDirectMessage(friend, `Hey, check out this Reel! 🎥 popli.app/reels/${reelId}`);
   };
 
-  const filteredFriends = MOCK_FRIENDS.filter(f => 
+  const filteredFriends = friendsList.filter(f => 
     f.username.toLowerCase().includes(searchQuery.toLowerCase()) || 
     f.name.toLowerCase().includes(searchQuery.toLowerCase())
   );

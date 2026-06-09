@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 
-// We use EXPO_PUBLIC_API_URL from .env. If not set, fallback to your LAN IP.
-export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.3:3000';
+// We use EXPO_PUBLIC_API_URL from .env. If not set, fallback to the production URL.
+export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://popli-backend.onrender.com';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,

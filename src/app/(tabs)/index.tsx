@@ -5,7 +5,7 @@ import { ReelItem } from '../../components/feed/ReelItem';
 import { CommentsSheet } from '../../components/sheets/CommentsSheet';
 import { GiftSheet } from '../../components/sheets/GiftSheet';
 import { SendSheet } from '../../components/sheets/SendSheet';
-import { useFeedStore, useAuthStore, useStoryStore } from '../../store';
+import { useFeedStore, useAuthStore, useStoryStore, useChatStore } from '../../store';
 import { requestGPSLocation, getClosestMockCity } from '../../services/geoService';
 import { Reel } from '../../types';
 import { MotiView } from 'moti';
@@ -48,6 +48,10 @@ export default function HomeFeedScreen() {
 
   // Success Burst Haptic overlay
   const [burstGift, setBurstGift] = useState<{ visible: boolean; icon: string }>({ visible: false, icon: '' });
+
+  const { chats, notifications } = useChatStore();
+  const unreadChatsCount = chats.reduce((acc, chat) => acc + (chat.unreadCount || 0), 0);
+  const hasUnreadNotifications = notifications.some(n => !n.isRead);
 
   useEffect(() => {
     async function initLocation() {
@@ -155,13 +159,17 @@ export default function HomeFeedScreen() {
         <View className="flex-row items-center gap-2">
           <Pressable onPress={() => router.push('/notifications')} className="w-10 h-10 items-center justify-center active:scale-95">
             <Bell size={24} color="#FFFFFF" strokeWidth={2.5} />
-            <View className="absolute top-[8px] right-[8px] w-2.5 h-2.5 bg-[#D946EF] rounded-full border border-black" />
+            {hasUnreadNotifications && (
+              <View className="absolute top-[8px] right-[8px] w-2.5 h-2.5 bg-[#D946EF] rounded-full border border-black" />
+            )}
           </Pressable>
           <Pressable onPress={() => router.push('/(tabs)/inbox')} className="w-10 h-10 bg-black/40 rounded-full items-center justify-center active:scale-95">
             <Send size={20} color="#FFFFFF" strokeWidth={2.5} className="mr-0.5 mt-0.5" />
-            <View className="absolute top-0 right-0 bg-[#D946EF] rounded-full px-[5px] py-[1px] border-[1.5px] border-black">
-              <Text className="text-white text-[8px] font-bold">2</Text>
-            </View>
+            {unreadChatsCount > 0 && (
+              <View className="absolute top-0 right-0 bg-[#D946EF] rounded-full px-[5px] py-[1px] border-[1.5px] border-black">
+                <Text className="text-white text-[8px] font-bold">{unreadChatsCount}</Text>
+              </View>
+            )}
           </Pressable>
         </View>
       </View>
@@ -202,7 +210,7 @@ export default function HomeFeedScreen() {
             from={{ scale: 0.1, opacity: 0 }}
             animate={{ scale: [1, 2.5, 1.8], opacity: 1 }}
             transition={{ type: 'spring', damping: 8 }}
-            className="items-center"
+            style={{ alignItems: 'center' }}
           >
             <Text style={{ fontSize: 110 }}>{burstGift.icon}</Text>
             <Text className="text-accent-yellow font-black text-2xl mt-4 uppercase tracking-widest text-shadow shadow-black/80">

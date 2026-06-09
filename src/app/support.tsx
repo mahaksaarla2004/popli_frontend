@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, MessageCircle, AlertTriangle, ChevronDown, ChevronUp, Sparkles, Send } from 'lucide-react-native';
 import { FAQ_LIST } from '../constants/staticData';
@@ -10,6 +10,7 @@ export default function SupportScreen() {
   const [ticketSubject, setTicketSubject] = useState('');
   const [ticketDescription, setTicketDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const toggleExpand = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index);
@@ -22,11 +23,7 @@ export default function SupportScreen() {
     setIsSubmitting(true);
     await new Promise((r) => setTimeout(r, 1500)); // Simulate sending support ticket
     setIsSubmitting(false);
-
-    Alert.alert(
-      'Ticket Created! 🎟️',
-      'Your ticket has been raised. A dedicated Creator Relations manager will contact you in your Inbox within 4 hours.'
-    );
+    setShowSuccessModal(true);
     setTicketSubject('');
     setTicketDescription('');
   };
@@ -126,6 +123,28 @@ export default function SupportScreen() {
         </View>
 
       </ScrollView>
+
+      {/* Premium Success Modal */}
+      <Modal visible={showSuccessModal} transparent animationType="fade">
+        <View className="flex-1 bg-black/80 items-center justify-center px-6">
+          <View className="bg-[#1A0E2C] w-full rounded-3xl p-6 items-center border border-[#A855F7]/30 shadow-2xl shadow-[#A855F7]/20">
+            <View className="w-16 h-16 rounded-full bg-[#A855F7]/20 items-center justify-center mb-4">
+              <Sparkles size={32} color="#A855F7" />
+            </View>
+            <Text className="text-white text-xl font-black mb-2 text-center">Ticket Raised!</Text>
+            <Text className="text-neutral-silver text-xs text-center leading-5 mb-6 px-4">
+              A dedicated Creator Relations manager will contact you in your Inbox within 4 hours.
+            </Text>
+            <Pressable 
+              onPress={() => setShowSuccessModal(false)}
+              className="bg-[#A855F7] w-full py-4 rounded-xl items-center active:scale-95 transition-all"
+            >
+              <Text className="text-white font-bold text-sm">Got It, Thanks!</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
     </KeyboardAvoidingView>
   );
 }

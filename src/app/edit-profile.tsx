@@ -5,6 +5,39 @@ import { ArrowLeft, AtSign, Link as LinkIcon, UserPlus } from 'lucide-react-nati
 import { useAuthStore } from '../store';
 import * as ImagePicker from 'expo-image-picker';
 
+const InputField = ({ 
+  label, 
+  value, 
+  onChange, 
+  placeholder, 
+  rightIcon: RightIcon, 
+  multiline = false 
+}: any) => (
+  <View className="mb-4">
+    <Text className="text-white/60 text-[9px] font-bold uppercase tracking-widest pl-1 mb-2">{label}</Text>
+    <View className={`bg-[#1A0E2C] border border-white/5 rounded-2xl flex-row px-4 ${multiline ? 'py-4 min-h-[90px]' : 'h-[52px] items-center'}`}>
+      {RightIcon && label === 'WEBSITE OR CONTACT LINK' && (
+        <View className="mr-3">
+          <RightIcon size={16} color="#9CA3AF" />
+        </View>
+      )}
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor="rgba(255, 255, 255, 0.3)"
+        multiline={multiline}
+        className={`flex-1 text-white font-medium text-sm ${multiline ? 'leading-5' : ''}`}
+        style={multiline ? { textAlignVertical: 'top' } : {}}
+      />
+      {RightIcon && label === 'USERNAME' && (
+        <View className="ml-3">
+          <RightIcon size={16} color="#9CA3AF" />
+        </View>
+      )}
+    </View>
+  </View>
+);
 export default function EditProfileScreen() {
   const router = useRouter();
 
@@ -46,39 +79,7 @@ export default function EditProfileScreen() {
     ]);
   };
 
-  const InputField = ({ 
-    label, 
-    value, 
-    onChange, 
-    placeholder, 
-    rightIcon: RightIcon, 
-    multiline = false 
-  }: any) => (
-    <View className="mb-4">
-      <Text className="text-white/60 text-[9px] font-bold uppercase tracking-widest pl-1 mb-2">{label}</Text>
-      <View className={`bg-[#1A0E2C] border border-white/5 rounded-2xl flex-row px-4 ${multiline ? 'py-4 min-h-[90px]' : 'h-[52px] items-center'}`}>
-        {RightIcon && label === 'WEBSITE OR CONTACT LINK' && (
-          <View className="mr-3">
-            <RightIcon size={16} color="#9CA3AF" />
-          </View>
-        )}
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          placeholder={placeholder}
-          placeholderTextColor="rgba(255, 255, 255, 0.3)"
-          multiline={multiline}
-          className={`flex-1 text-white font-medium text-sm ${multiline ? 'leading-5' : ''}`}
-          style={multiline ? { textAlignVertical: 'top' } : {}}
-        />
-        {RightIcon && label === 'USERNAME' && (
-          <View className="ml-3">
-            <RightIcon size={16} color="#9CA3AF" />
-          </View>
-        )}
-      </View>
-    </View>
-  );
+
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
@@ -90,7 +91,7 @@ export default function EditProfileScreen() {
         <Text className="text-white font-bold text-base ml-2">Edit Profile</Text>
       </View>
 
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 60 }}>
         
         {/* Avatar Section */}
         <View className="items-center py-6">

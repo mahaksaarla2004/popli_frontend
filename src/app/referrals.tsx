@@ -1,19 +1,24 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable, Dimensions, Alert, Share, Image, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuthStore, useWalletStore } from '../store';
 import { ArrowLeft, Gift, Users, Wallet, Video, UserPlus, MessageCircle, Aperture, X, Share2 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
 export default function ReferralsScreen() {
   const router = useRouter();
+  const { userProfile } = useAuthStore();
+  const { inrEarnings } = useWalletStore();
 
   const handleCopyLink = () => {
     Alert.alert('Copied', 'Your referral link has been copied to clipboard!');
   };
 
+  const referralLink = `app.vibe/${userProfile?.username || 'user'}`;
+
   const handleShareSpecific = async (platform: string) => {
-    const message = encodeURIComponent("Join Vibe and let's earn rewards together! Use my link: app.vibe/creator123");
+    const message = encodeURIComponent(`Join Vibe and let's earn rewards together! Use my link: ${referralLink}`);
     try {
       if (platform === 'whatsapp') {
         await Linking.openURL(`whatsapp://send?text=${message}`);
@@ -68,7 +73,7 @@ export default function ReferralsScreen() {
         <View className="gap-4">
           <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest">Your Personal Link</Text>
           <View className="flex-row items-center justify-between bg-[#150B24] rounded-2xl p-2 border border-white/5">
-            <Text className="text-white/80 text-xs font-semibold pl-4">app.vibe/creator123</Text>
+            <Text className="text-white/80 text-xs font-semibold pl-4">{referralLink}</Text>
             <Pressable 
               onPress={handleCopyLink}
               className="bg-[#A855F7] px-5 py-3 rounded-xl shadow-sm shadow-[#A855F7]/30"
@@ -87,7 +92,7 @@ export default function ReferralsScreen() {
             <View className="mb-4">
               <Users size={22} color="#A855F7" />
             </View>
-            <Text className="text-white font-black text-[28px]">24</Text>
+            <Text className="text-white font-black text-[28px]">0</Text>
             <Text className="text-neutral-grey text-[11px] font-medium mt-2">Total Referrals</Text>
           </Pressable>
 
@@ -98,7 +103,7 @@ export default function ReferralsScreen() {
             <View className="mb-4">
               <Wallet size={22} color="#FACC15" />
             </View>
-            <Text className="text-white font-black text-[28px]">₹1,450</Text>
+            <Text className="text-white font-black text-[28px]">₹{inrEarnings.toLocaleString('en-IN')}</Text>
             <Text className="text-neutral-grey text-[11px] font-medium mt-2">Earnings (₹)</Text>
           </Pressable>
         </View>

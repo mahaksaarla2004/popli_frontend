@@ -71,23 +71,23 @@ export default function PermissionsScreen() {
           <Text className="text-white/50 text-xs">Enable these features to create, capture, and share your hyperlocal vibe.</Text>
         </View>
 
-        <ScrollView className="flex-grow-0 space-y-3" showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ gap: 16, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
           
           {/* Notifications Card */}
           <Pressable 
             onPress={() => handleRequestPermission('notifications')}
-            className={`p-4 rounded-2xl border flex-row items-center space-x-4 active:scale-[0.98] transition-all ${
+            className={`p-5 rounded-3xl border flex-row items-center active:scale-[0.98] transition-all ${
               permissionsState.notifications 
                 ? 'bg-primary-purple/10 border-primary-pink/40' 
                 : 'bg-[#190C2C]/50 border-white/5'
             }`}
           >
-            <View className={`p-3 rounded-xl ${permissionsState.notifications ? 'bg-primary-pink/20' : 'bg-white/5'}`}>
-              <Bell size={18} color={permissionsState.notifications ? '#EC4899' : '#FFFFFF'} />
+            <View className={`p-3.5 rounded-2xl ${permissionsState.notifications ? 'bg-primary-pink/20' : 'bg-white/5'}`}>
+              <Bell size={20} color={permissionsState.notifications ? '#EC4899' : '#FFFFFF'} />
             </View>
-            <View className="flex-1">
-              <Text className="text-white font-bold text-sm">Push Notifications</Text>
-              <Text className="text-white/40 text-[10px] leading-4">Receive coin recharge, gifting, and comment alerts.</Text>
+            <View className="flex-1 ml-4 mr-3">
+              <Text className="text-white font-bold text-[15px] mb-1">Push Notifications</Text>
+              <Text className="text-white/40 text-[11px] leading-4">Receive coin recharge, gifting, and comment alerts.</Text>
             </View>
             <View className={`w-6 h-6 rounded-full items-center justify-center border ${
               permissionsState.notifications ? 'bg-primary-pink border-primary-pink' : 'border-white/10'
@@ -99,18 +99,18 @@ export default function PermissionsScreen() {
           {/* Media access Card */}
           <Pressable 
             onPress={() => handleRequestPermission('media')}
-            className={`p-4 rounded-2xl border flex-row items-center space-x-4 active:scale-[0.98] transition-all ${
+            className={`p-5 rounded-3xl border flex-row items-center active:scale-[0.98] transition-all ${
               permissionsState.media 
                 ? 'bg-primary-purple/10 border-primary-pink/40' 
                 : 'bg-[#190C2C]/50 border-white/5'
             }`}
           >
-            <View className={`p-3 rounded-xl ${permissionsState.media ? 'bg-primary-pink/20' : 'bg-white/5'}`}>
-              <Image size={18} color={permissionsState.media ? '#EC4899' : '#FFFFFF'} />
+            <View className={`p-3.5 rounded-2xl ${permissionsState.media ? 'bg-primary-pink/20' : 'bg-white/5'}`}>
+              <Image size={20} color={permissionsState.media ? '#EC4899' : '#FFFFFF'} />
             </View>
-            <View className="flex-1">
-              <Text className="text-white font-bold text-sm">Media & Gallery</Text>
-              <Text className="text-white/40 text-[10px] leading-4">Select and upload video recordings from local storage.</Text>
+            <View className="flex-1 ml-4 mr-3">
+              <Text className="text-white font-bold text-[15px] mb-1">Media & Gallery</Text>
+              <Text className="text-white/40 text-[11px] leading-4">Select and upload video recordings from local storage.</Text>
             </View>
             <View className={`w-6 h-6 rounded-full items-center justify-center border ${
               permissionsState.media ? 'bg-primary-pink border-primary-pink' : 'border-white/10'
@@ -122,18 +122,18 @@ export default function PermissionsScreen() {
           {/* Camera Card */}
           <Pressable 
             onPress={() => handleRequestPermission('camera')}
-            className={`p-4 rounded-2xl border flex-row items-center space-x-4 active:scale-[0.98] transition-all ${
+            className={`p-5 rounded-3xl border flex-row items-center active:scale-[0.98] transition-all ${
               permissionsState.camera 
                 ? 'bg-primary-purple/10 border-primary-pink/40' 
                 : 'bg-[#190C2C]/50 border-white/5'
             }`}
           >
-            <View className={`p-3 rounded-xl ${permissionsState.camera ? 'bg-primary-pink/20' : 'bg-white/5'}`}>
-              <Camera size={18} color={permissionsState.camera ? '#EC4899' : '#FFFFFF'} />
+            <View className={`p-3.5 rounded-2xl ${permissionsState.camera ? 'bg-primary-pink/20' : 'bg-white/5'}`}>
+              <Camera size={20} color={permissionsState.camera ? '#EC4899' : '#FFFFFF'} />
             </View>
-            <View className="flex-1">
-              <Text className="text-white font-bold text-sm">Video Camera</Text>
-              <Text className="text-white/40 text-[10px] leading-4">Capture original videos directly using the custom app lens.</Text>
+            <View className="flex-1 ml-4 mr-3">
+              <Text className="text-white font-bold text-[15px] mb-1">Video Camera</Text>
+              <Text className="text-white/40 text-[11px] leading-4">Capture original videos directly using the custom app lens.</Text>
             </View>
             <View className={`w-6 h-6 rounded-full items-center justify-center border ${
               permissionsState.camera ? 'bg-primary-pink border-primary-pink' : 'border-white/10'
@@ -145,18 +145,18 @@ export default function PermissionsScreen() {
           {/* Microphone Card */}
           <Pressable 
             onPress={() => handleRequestPermission('mic')}
-            className={`p-4 rounded-2xl border flex-row items-center space-x-4 active:scale-[0.98] transition-all ${
+            className={`p-5 rounded-3xl border flex-row items-center active:scale-[0.98] transition-all ${
               permissionsState.mic 
                 ? 'bg-primary-purple/10 border-primary-pink/40' 
                 : 'bg-[#190C2C]/50 border-white/5'
             }`}
           >
-            <View className={`p-3 rounded-xl ${permissionsState.mic ? 'bg-primary-pink/20' : 'bg-white/5'}`}>
-              <Mic size={18} color={permissionsState.mic ? '#EC4899' : '#FFFFFF'} />
+            <View className={`p-3.5 rounded-2xl ${permissionsState.mic ? 'bg-primary-pink/20' : 'bg-white/5'}`}>
+              <Mic size={20} color={permissionsState.mic ? '#EC4899' : '#FFFFFF'} />
             </View>
-            <View className="flex-1">
-              <Text className="text-white font-bold text-sm">Microphone Audio</Text>
-              <Text className="text-white/40 text-[10px] leading-4">Record high-fidelity audio voiceovers & sounds during shoots.</Text>
+            <View className="flex-1 ml-4 mr-3">
+              <Text className="text-white font-bold text-[15px] mb-1">Microphone Audio</Text>
+              <Text className="text-white/40 text-[11px] leading-4">Record high-fidelity audio voiceovers & sounds during shoots.</Text>
             </View>
             <View className={`w-6 h-6 rounded-full items-center justify-center border ${
               permissionsState.mic ? 'bg-primary-pink border-primary-pink' : 'border-white/10'

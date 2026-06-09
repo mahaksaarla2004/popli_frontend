@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Stack, router, useSegments } from 'expo-router';
+import { Stack, router, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -7,13 +7,21 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 import { useAuthStore, useKYCStore } from '../store';
 import { useFCM } from '../hooks/useFCM';
-import messaging from '@react-native-firebase/messaging';
+import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
 import '../global.css';
 
-// Register background handler
-messaging().setBackgroundMessageHandler(async remoteMessage => {
-  console.log('Message handled in the background!', remoteMessage);
-});
+import { Platform } from 'react-native';
+
+// Register background handler safely
+try {
+  if (Platform.OS !== 'web') {
+    setBackgroundMessageHandler(getMessaging(), async remoteMessage => {
+      console.log('Message handled in the background!', remoteMessage);
+    });
+  }
+} catch (e) {
+  console.warn('Firebase is not fully initialized. If you are in Expo Go or Web, this is expected.', e);
+}
 
 // Disable strict mode to suppress internal library warnings (e.g. from react-native-css-interop)
 configureReanimatedLogger({
@@ -24,13 +32,15 @@ configureReanimatedLogger({
 export default function RootLayout() {
   const { isLoggedIn, isOnboarded } = useAuthStore();
   const segments = useSegments();
+  const rootNavigationState = useRootNavigationState();
 
   // Initialize FCM
   useFCM();
 
-
   // Root Navigation Guard: Ensures absolute route safety across groups
   useEffect(() => {
+    if (!rootNavigationState?.key) return;
+
     const rootSegment = segments[0] as string;
     const inAuthGroup = rootSegment === '(auth)';
     const inTabsGroup = rootSegment === '(tabs)';
@@ -62,11 +72,15 @@ export default function RootLayout() {
     // 4. Protect Main tabs for logged in sessions
     if (isLoggedIn) {
       if (inAuthGroup) {
-        if (useAuthStore.getState().isFirstLogin) {
-          useAuthStore.getState().setFirstLogin(false);
-          router.replace('/kyc');
-        } else {
-          router.replace('/(tabs)');
+        // Allow logged in users to access profile completion pages
+        const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions'];
+        if (!allowedAuthRoutes.includes(segments[1] as string)) {
+          if (useAuthStore.getState().isFirstLogin) {
+            useAuthStore.getState().setFirstLogin(false);
+            router.replace('/kyc');
+          } else {
+            router.replace('/(tabs)');
+          }
         }
       }
     }

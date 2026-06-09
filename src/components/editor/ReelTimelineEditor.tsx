@@ -32,7 +32,7 @@ export default function ReelTimelineEditor({ player, duration, initialData, onCo
   const endPercent = useSharedValue(initialData?.trimEnd !== undefined && duration > 0 ? initialData.trimEnd / duration : 1);
   
   // Voice over state
-  const recorder = useAudioRecorder(AudioModule.RecordingOptionsPresets.HighQuality);
+  const recorder = useAudioRecorder({} as any);
   const [voiceOverPaths, setVoiceOverPaths] = useState<string[]>(initialData?.voiceOverPaths || []);
 
   const toggleRecording = async () => {
@@ -41,7 +41,7 @@ export default function ReelTimelineEditor({ player, duration, initialData, onCo
         // Stop recording
         await recorder.stop();
         if (recorder.uri) {
-          setVoiceOverPaths(prev => [...prev, recorder.uri]);
+          setVoiceOverPaths(prev => [...prev, recorder.uri!]);
         }
       } else {
         // Start recording

@@ -4,11 +4,11 @@
     "slug": "PopliApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/custom_logo.png",
     "scheme": "popliapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/custom_logo.png",
       "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.mahak2004.popliapp",
       "infoPlist": {
@@ -17,10 +17,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#12081E",
+        "foregroundImage": "./assets/images/custom_logo.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.mahak2004.popliapp",
@@ -42,11 +40,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
+          "backgroundColor": "#12081E",
+          "image": "./assets/images/custom_logo.png",
+          "resizeMode": "contain"
         }
       ],
       "expo-secure-store",
@@ -73,7 +69,8 @@
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true
+            "usesCleartextTraffic": true,
+            "ndkVersion": "26.1.10909125"
           }
         }
       ],

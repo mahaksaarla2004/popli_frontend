@@ -90,8 +90,12 @@ export const useStoryStore = create<StoryState>()(
             createdAt: s.createdAt || new Date().toISOString()
           }));
           set({ stories: formattedStories });
-        } catch (error) {
-          console.error("Error fetching stories:", error);
+        } catch (error: any) {
+          if (error.response?.status === 401) {
+            console.log("Session expired. Could not fetch stories. User will be logged out.");
+          } else {
+            console.error("Error fetching stories:", error.message);
+          }
         }
       },
       deleteStory: async (storyId) => {

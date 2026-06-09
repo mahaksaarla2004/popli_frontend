@@ -13,7 +13,7 @@ const CATEGORIES = [
   { id: 'creator', label: 'Creator Sounds', icon: User },
 ];
 
-const MOCK_SONGS = [
+const PRESET_LIBRARY = [
   { id: '1', title: 'Paint The Town Red', artist: 'Doja Cat', duration: '3:51', cover: 'https://picsum.photos/100?1', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', uses: '2.4M Reels' },
   { id: '2', title: 'Water', artist: 'Tyla', duration: '3:20', cover: 'https://picsum.photos/100?2', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', uses: '1.8M Reels' },
   { id: '3', title: 'Greedy', artist: 'Tate McRae', duration: '2:11', cover: 'https://picsum.photos/100?3', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', uses: '900K Reels' },
@@ -27,14 +27,14 @@ export default function MusicPickerScreen() {
   const [activeCategory, setActiveCategory] = useState('trending');
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<string[]>(['2', '4']);
-  const [songs, setSongs] = useState<any[]>(MOCK_SONGS);
+  const [songs, setSongs] = useState<any[]>(PRESET_LIBRARY);
   const [loading, setLoading] = useState(false);
 
   const player = useAudioPlayer();
 
   const fetchSongs = async (query: string) => {
     if (!query.trim()) {
-      setSongs(MOCK_SONGS);
+      setSongs(PRESET_LIBRARY);
       return;
     }
     setLoading(true);
@@ -98,7 +98,7 @@ export default function MusicPickerScreen() {
         <Pressable onPress={() => { player?.pause(); router.back(); }} className="w-10 h-10 items-center justify-center -ml-2">
           <ChevronLeft size={28} color="#FFFFFF" />
         </Pressable>
-        <Text className="flex-1 text-center text-white text-lg font-bold pr-8">Audio Library</Text>
+        <Text className="flex-1 text-center text-white text-lg font-bold pr-8">AppyHigh Royalty-Free Library</Text>
       </View>
 
       {/* Search */}

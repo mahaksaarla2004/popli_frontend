@@ -24,6 +24,8 @@ export default function ProfileScreen() {
     }
   }, [userProfile.id]);
 
+  const isProfileIncomplete = !userProfile.isProfileComplete && !userProfile.category;
+
   // Dynamically fetch reels for the logged-in user from the global store
   const userPostedReels = reels.filter((r) => r.creatorUsername === userProfile.username);
   
@@ -41,18 +43,7 @@ export default function ProfileScreen() {
     avatar: userProfile.avatar
   };
 
-  // If the user hasn't posted anything yet, we show some default mock reels just to keep the profile looking good
-  // However, any newly posted reel will show up here at the top!
-  const defaultMockReels = [
-    { id: 'mock_1', thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 1200000 },
-    { id: 'mock_2', thumbnailUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 840000 },
-    { id: 'mock_3', thumbnailUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 2500000 },
-    { id: 'mock_4', thumbnailUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 450000 },
-    { id: 'mock_5', thumbnailUrl: 'https://images.unsplash.com/photo-1517365830460-955ce3ccd263?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 900000 },
-    { id: 'mock_6', thumbnailUrl: 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', likesCount: 150000 }
-  ];
-
-  const displayReels = userPostedReels.length > 0 ? userPostedReels : defaultMockReels;
+  const displayReels = userPostedReels;
   const likedReels = reels.filter((r) => r.isLiked);
 
   const activeGridData = activeTab === 'reels' ? displayReels : likedReels;
@@ -80,7 +71,7 @@ export default function ProfileScreen() {
       >
         
         {/* INCOMPLETE PROFILE BANNER */}
-        {!userProfile.isProfileComplete && (
+        {isProfileIncomplete && (
           <Pressable 
             onPress={() => router.push('/(auth)/profile-setup')}
             className="mx-4 mt-4 bg-primary-purple/20 border border-primary-purple p-3 rounded-xl flex-row items-center justify-between active:scale-[0.98]"
@@ -167,8 +158,14 @@ export default function ProfileScreen() {
 
         {/* 4. GRID OF VIDEO PREVIEWS */}
         {activeGridData.length === 0 ? (
-          <View className="py-16 items-center justify-center">
-            <Text className="text-white/60 text-xs">No media found. 📷</Text>
+          <View className="py-24 items-center justify-center">
+            <View className="w-20 h-20 rounded-full bg-white/5 items-center justify-center mb-4">
+              <LayoutGrid size={32} color="#FFFFFF" opacity={0.5} />
+            </View>
+            <Text className="text-white font-bold text-lg mb-2">No reels yet</Text>
+            <Text className="text-neutral-grey text-xs text-center px-10">
+              {activeTab === 'reels' ? 'When you post reels, they will appear here.' : 'When you like reels, they will appear here.'}
+            </Text>
           </View>
         ) : (
           <View className="flex-row flex-wrap">

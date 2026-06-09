@@ -26,7 +26,7 @@ const EMOJIS = ['😂', '😍', '🔥', '👏', '😢', '😮', '❤️', '🎉'
 
 export default function StickerSheet({ onClose, onSelect }: StickerSheetProps) {
   return (
-    <View className="absolute bottom-0 left-0 right-0 bg-[#1A0E2C] rounded-t-3xl border-t border-white/10 z-50 h-[80%]">
+    <View className="absolute bottom-0 left-0 right-0 bg-[#0B001A] rounded-t-[40px] border-t border-[#3E295E] z-50 h-[85%] shadow-2xl shadow-purple-900/50">
       {/* Handle */}
       <View className="items-center py-3">
         <View className="w-12 h-1.5 bg-white/20 rounded-full" />
@@ -35,9 +35,9 @@ export default function StickerSheet({ onClose, onSelect }: StickerSheetProps) {
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 60 }}>
         
         {/* Search Bar */}
-        <View className="bg-black/40 rounded-xl px-4 py-3 flex-row items-center gap-3 mb-6">
-          <Search size={18} color="#6B7280" />
-          <Text className="text-neutral-grey font-medium">Search stickers...</Text>
+        <View className="bg-[#1C0D33] border border-[#3E295E] rounded-2xl px-5 py-3.5 flex-row items-center gap-3 mb-6 shadow-md">
+          <Search size={20} color="#A78BFA" />
+          <Text className="text-white/50 font-medium text-sm">Search stickers, polls, music...</Text>
         </View>
 
         {/* Widgets Grid */}
@@ -49,11 +49,13 @@ export default function StickerSheet({ onClose, onSelect }: StickerSheetProps) {
                 key={widget.id}
                 onPress={() => onSelect(widget)}
                 style={{ width: (width - 40) / 2 - 8 }}
-                className="bg-white rounded-xl items-center justify-center p-3 h-16 border-b-4 border-black/20"
+                className="bg-[#190C2C] border border-[#3E295E] rounded-[24px] items-center justify-center p-3 h-[72px] active:scale-[0.98] transition-all shadow-lg"
               >
-                <View className="flex-row items-center gap-2">
-                  <Icon size={18} color={widget.colors[0]} />
-                  <Text className="text-black font-black text-xs tracking-wider">{widget.label}</Text>
+                <View className="flex-row items-center gap-2.5">
+                  <View className="w-9 h-9 rounded-full bg-[#8B5CF6]/10 items-center justify-center border border-[#8B5CF6]/20">
+                    <Icon size={18} color={widget.colors[0] || '#A78BFA'} strokeWidth={2.5} />
+                  </View>
+                  <Text className="text-white font-black text-[11px] tracking-widest">{widget.label}</Text>
                 </View>
               </Pressable>
             );
@@ -67,7 +69,7 @@ export default function StickerSheet({ onClose, onSelect }: StickerSheetProps) {
             <TouchableOpacity 
               key={index}
               onPress={() => onSelect({ type: 'EMOJI', value: emoji })}
-              className="w-12 h-12 items-center justify-center bg-black/20 rounded-full"
+              className="w-14 h-14 items-center justify-center bg-[#190C2C] border border-[#3E295E] rounded-full shadow-md active:scale-95"
             >
               <Text className="text-3xl">{emoji}</Text>
             </TouchableOpacity>

@@ -221,7 +221,7 @@ export default function DiscoverScreen() {
                         {creator.name}
                       </Text>
                       <Text className="text-white/50 text-[9px] mt-1 text-center font-normal">
-                        {creator.city || 'Global Creator'}
+                        {(creator as any).city || 'Global Creator'}
                       </Text>
 
                       <Pressable

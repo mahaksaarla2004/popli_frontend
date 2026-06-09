@@ -1,28 +1,18 @@
-import React, { useEffect } from 'react';
-import { View } from 'react-native';
-import { useRouter } from 'expo-router';
+import React from 'react';
+import { Redirect, useRootNavigationState } from 'expo-router';
 import { useAuthStore } from '../store';
 
 export default function EntryRedirectScreen() {
-  console.log('INDEX MOUNTED');
-  const router = useRouter();
   const { isLoggedIn, isOnboarded } = useAuthStore();
+  const rootNavigationState = useRootNavigationState();
 
-  useEffect(() => {
-    // Schedule redirect on the next event loop tick to allow Root Layout to fully mount
-    const redirectTimeout = setTimeout(() => {
-      if (!isOnboarded) {
-        router.replace('/(auth)/onboarding');
-      } else if (!isLoggedIn) {
-        router.replace('/(auth)/login');
-      } else {
-        router.replace('/(tabs)');
-      }
-    }, 20);
+  if (!rootNavigationState?.key) return null;
 
-    return () => clearTimeout(redirectTimeout);
-  }, [isLoggedIn, isOnboarded, router]);
-
-  // Renders a solid matching dark background to ensure absolute zero visual flicker during instant boot
-  return <View className="bg-[#0B001A] flex-1" />;
+  if (!isOnboarded) {
+    return <Redirect href="/(auth)/onboarding" />;
+  } else if (!isLoggedIn) {
+    return <Redirect href="/(auth)/login" />;
+  } else {
+    return <Redirect href="/(tabs)" />;
+  }
 }

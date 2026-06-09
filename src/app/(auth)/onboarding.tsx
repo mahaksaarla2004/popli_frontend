@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, Image, Pressable, Dimensions, ScrollView, Animated, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
-import { ArrowRight, Landmark, CreditCard, Sparkles, Coins, MapPin, UserPlus, Plus, ShieldCheck, Star, Zap, ArrowDownToLine } from 'lucide-react-native';
+import { ArrowRight, Landmark, CreditCard, Sparkles, Coins, MapPin, UserPlus, Plus, ShieldCheck, Star, Zap, ArrowDownToLine, ChevronLeft } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
@@ -76,16 +76,7 @@ export default function OnboardingScreen() {
         
       {/* TOP HEADER NAVIGATION */}
       <View className="flex-row items-center justify-between w-full h-12 mt-2 z-20 px-6">
-        {currentSlide > 0 ? (
-          <Pressable 
-            onPress={handleBack}
-            className="w-10 h-10 rounded-full bg-white/5 items-center justify-center border border-white/5 active:scale-[0.9]"
-          >
-            <Text className="text-white text-base">←</Text>
-          </Pressable>
-        ) : (
-          <View className="w-10" />
-        )}
+        <View className="w-10" />
         
         {currentSlide < 2 ? (
           <Pressable onPress={handleComplete} className="py-2 px-4 active:opacity-75">

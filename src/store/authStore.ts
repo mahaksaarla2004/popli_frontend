@@ -114,11 +114,23 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       toggleBlock: async (creatorId) => {
+        // Optimistic UI update for immediate feedback
+        set((state) => {
+          const isBlocked = state.blockedUsers.some(u => u.id === creatorId);
+          if (isBlocked) {
+            return { blockedUsers: state.blockedUsers.filter(u => u.id !== creatorId) };
+          } else {
+            // Add a mock object so it appears instantly; fetchBlockedUsers will correct it later
+            return { blockedUsers: [...state.blockedUsers, { id: creatorId, name: 'Blocked User', username: 'blocked', avatar: 'https://i.pravatar.cc/150' } as any] };
+          }
+        });
+
         try {
           await apiClient.post(`/social/block/${creatorId}`);
-          get().fetchBlockedUsers(); // Refresh list
+          get().fetchBlockedUsers(); // Refresh list to get accurate user details
         } catch (error) {
-          console.error("Failed to toggle block:", error);
+          console.warn("Failed to toggle block (silenced):", error);
+          get().fetchBlockedUsers(); // Revert on failure
         }
       },
       toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),

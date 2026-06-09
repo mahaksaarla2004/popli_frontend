@@ -179,7 +179,7 @@ export default function ShareStoryScreen() {
 
         setStatus('success');
         setTimeout(() => {
-          router.replace('/(tabs)');
+          router.replace('/');
         }, 1000);
 
       } catch (err: any) {

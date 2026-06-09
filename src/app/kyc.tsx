@@ -23,7 +23,15 @@ import {
   QrCode
 } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import DateTimePicker from '@react-native-community/datetimepicker';
+
+let DateTimePicker: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    DateTimePicker = require('@react-native-community/datetimepicker').default;
+  } catch (e) {
+    console.warn("Could not load datetimepicker");
+  }
+}
 
 const CATEGORIES = [
   { id: 'music', label: 'Music', icon: Music },
@@ -488,8 +496,8 @@ export default function KYCScreen() {
             key="step-1"
             from={{ opacity: 0, translateX: 30 }}
             animate={{ opacity: 1, translateX: 0 }}
-            className="space-y-6"
           >
+            <View className="space-y-6">
             {/* Grouped Container */}
             <View className="bg-[#190C2C]/50 border border-white/5 rounded-[32px] overflow-hidden">
               {/* Identity details wrapper */}
@@ -730,6 +738,7 @@ export default function KYCScreen() {
               <Text className="text-white text-sm font-bold uppercase tracking-wider">Proceed to Identity Check</Text>
               <Text className="text-white text-sm font-bold">→</Text>
             </Pressable>
+            </View>
           </MotiView>
         )}
 

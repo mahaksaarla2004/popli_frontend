@@ -267,7 +267,7 @@ export const useFeedStore = create<FeedState>()(
       }
     }),
     {
-      name: 'popli-feed-store',
+      name: 'popli-feed-store-v2',
       storage: createJSONStorage(() => mmkvStoreStorage)
     }
   )

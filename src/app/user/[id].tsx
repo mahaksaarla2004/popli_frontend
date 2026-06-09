@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, MapPin, Award, Play } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiClient } from '../../api/client';
-import { useAuthStore, useChatStore } from '../../store';
+import { useAuthStore, useChatStore, useFeedStore } from '../../store';
 import { formatSocialCount } from '../../utils';
 
 const { width } = Dimensions.get('window');
@@ -15,23 +15,28 @@ export default function PublicProfileScreen() {
   const router = useRouter();
   const { sendDirectMessage } = useChatStore();
   
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // Optimistic UI: Pre-load profile from feedStore if available
+  const { creators } = useFeedStore();
+  const cachedProfile = creators.find((c: any) => c.username === username);
+
+  const [profile, setProfile] = useState<any>(cachedProfile || null);
+  const [loading, setLoading] = useState(!cachedProfile);
   const [error, setError] = useState('');
 
-  const { followingIds, toggleFollow, userProfile } = useAuthStore();
+  const { followingIds, toggleFollow, userProfile, blockedUsers, toggleBlock } = useAuthStore();
   const isFollowing = profile ? followingIds.includes(profile.id) : false;
-  const isOwnProfile = profile ? userProfile.username === profile.username : false;
+  const isOwnProfile = profile ? userProfile?.username === profile.username : false;
+  const isBlocked = profile ? blockedUsers.some(u => u.id === profile.id) : false;
 
   useEffect(() => {
     async function fetchProfile() {
       try {
-        setLoading(true);
+        if (!cachedProfile) setLoading(true);
         const res = await apiClient.get(`/users/creator/${username}`);
         setProfile(res.data);
       } catch (e: any) {
         console.error("Error fetching creator profile:", e);
-        setError("Creator not found");
+        if (!cachedProfile) setError("Creator not found");
       } finally {
         setLoading(false);
       }
@@ -118,21 +123,53 @@ export default function PublicProfileScreen() {
 
           {/* Action Buttons */}
           <View className="flex-row gap-2 mt-5">
-            {!isOwnProfile ? (
+            {isBlocked ? (
               <Pressable 
-                onPress={() => {
-                  toggleFollow(profile.id);
-                  setProfile((prev: any) => ({
-                    ...prev,
-                    followersCount: Math.max(0, prev.followersCount + (isFollowing ? -1 : 1))
-                  }));
-                }}
-                className={`flex-1 py-2.5 rounded-lg items-center justify-center ${isFollowing ? 'bg-white/10' : 'bg-primary-pink'}`}
+                onPress={() => toggleBlock(profile.id)}
+                className="flex-1 py-2.5 rounded-lg items-center justify-center bg-[#2A1B3D] border border-[#FF3B30]/30"
               >
-                <Text className={`font-bold text-sm ${isFollowing ? 'text-white' : 'text-white'}`}>
-                  {isFollowing ? 'Following' : 'Follow'}
-                </Text>
+                <Text className="font-bold text-sm text-[#FF3B30]">Unblock User</Text>
               </Pressable>
+            ) : !isOwnProfile ? (
+              <>
+                <Pressable 
+                  onPress={() => {
+                    toggleFollow(profile.id);
+                    setProfile((prev: any) => ({
+                      ...prev,
+                      followersCount: Math.max(0, prev.followersCount + (isFollowing ? -1 : 1))
+                    }));
+                  }}
+                  className={`flex-1 py-2.5 rounded-lg items-center justify-center ${isFollowing ? 'bg-white/10' : 'bg-primary-pink'}`}
+                >
+                  <Text className={`font-bold text-sm ${isFollowing ? 'text-white' : 'text-white'}`}>
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </Text>
+                </Pressable>
+                <Pressable 
+                  onPress={async () => {
+                    try {
+                      // Start a chat with this user
+                      const res = await apiClient.post(`/chats/user/${profile.id}`);
+                      if (res.data && res.data.id) {
+                        router.push({
+                          pathname: `/chat/${res.data.id}` as any,
+                          params: {
+                            creatorName: profile.name,
+                            creatorUsername: profile.username,
+                            creatorAvatar: profile.avatar
+                          }
+                        });
+                      }
+                    } catch (e) {
+                      console.error("Failed to start chat", e);
+                    }
+                  }}
+                  className="flex-1 py-2.5 rounded-lg items-center justify-center bg-white/10"
+                >
+                  <Text className="font-bold text-sm text-white">Message</Text>
+                </Pressable>
+              </>
             ) : (
               <Pressable 
                 onPress={() => router.push('/(tabs)/profile')}
@@ -141,68 +178,59 @@ export default function PublicProfileScreen() {
                 <Text className="font-bold text-sm text-white">Edit Profile</Text>
               </Pressable>
             )}
-            
-            {!isOwnProfile && (
-              <Pressable 
-                onPress={async () => {
-                  try {
-                    // Start a chat with this user
-                    const res = await apiClient.post(`/chats/user/${profile.id}`);
-                    if (res.data && res.data.id) {
-                      router.push(`/chat/${res.data.id}`);
-                    }
-                  } catch (e) {
-                    console.error("Failed to start chat", e);
-                  }
-                }}
-                className="flex-1 py-2.5 rounded-lg items-center justify-center bg-white/10"
-              >
-                <Text className="text-white font-bold text-sm">Message</Text>
-              </Pressable>
-            )}
           </View>
         </View>
 
-        {/* Reels Grid */}
-        <View className="mt-4">
-          <View className="flex-row items-center border-b border-white/20">
-            <View className="flex-1 items-center pb-2 border-b-2 border-primary-pink">
-              <Play size={20} color="#FFFFFF" />
+        {isBlocked ? (
+          <View className="mt-10 items-center justify-center p-6">
+            <View className="w-16 h-16 rounded-full bg-white/5 items-center justify-center mb-4">
+              <Text className="text-3xl">🚫</Text>
             </View>
-            <View className="flex-1 items-center pb-2">
-              <Award size={20} color="#6B7280" />
-            </View>
+            <Text className="text-white font-bold text-lg mb-2 text-center">User Blocked</Text>
+            <Text className="text-neutral-silver text-center text-sm">
+              You have blocked this user. Unblock them to see their reels and content.
+            </Text>
           </View>
-
-          <View className="flex-row flex-wrap mt-[2px] gap-[2px]">
-            {profile.reels && profile.reels.length > 0 ? (
-              profile.reels.map((reel: any) => (
-                <Pressable 
-                  key={reel.id} 
-                  style={{ width: REEL_THUMB_WIDTH, height: REEL_THUMB_WIDTH * 1.5 }}
-                  className="bg-neutral-grey relative"
-                  // onPress={() => router.push(`/reel/${reel.id}`)} // Phase 2: deep linking to specific reel
-                >
-                  <Image 
-                    source={{ uri: reel.thumbnailUrl || reel.mediaUrl }} 
-                    className="w-full h-full opacity-90"
-                    resizeMode="cover"
-                  />
-                  <View className="absolute bottom-1.5 left-1.5 flex-row items-center">
-                    <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
-                    <Text className="text-white text-xs font-bold ml-1">
-                      {formatSocialCount(reel.viewsCount || 0)}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))
-            ) : (
-              <View className="flex-1 items-center justify-center py-20">
-                <Text className="text-neutral-silver font-semibold">No reels yet</Text>
+        ) : (
+          <View className="mt-4">
+            <View className="flex-row items-center border-b border-white/20">
+              <View className="flex-1 items-center pb-2 border-b-2 border-primary-pink">
+                <Play size={20} color="#FFFFFF" />
               </View>
-            )}
+              <View className="flex-1 items-center pb-2">
+                <Award size={20} color="#6B7280" />
+              </View>
+            </View>
+
+            <View className="flex-row flex-wrap mt-[2px] gap-[2px]">
+              {profile.reels && profile.reels.length > 0 ? (
+                profile.reels.map((reel: any) => (
+                  <Pressable 
+                    key={reel.id} 
+                    style={{ width: REEL_THUMB_WIDTH, height: REEL_THUMB_WIDTH * 1.5 }}
+                    className="bg-neutral-grey relative"
+                  >
+                    <Image 
+                      source={{ uri: reel.thumbnailUrl || reel.mediaUrl }} 
+                      className="w-full h-full opacity-90"
+                      resizeMode="cover"
+                    />
+                    <View className="absolute bottom-1.5 left-1.5 flex-row items-center">
+                      <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
+                      <Text className="text-white text-xs font-bold ml-1">
+                        {formatSocialCount(reel.viewsCount || 0)}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))
+              ) : (
+                <View className="flex-1 items-center justify-center py-20">
+                  <Text className="text-neutral-silver font-semibold">No reels yet</Text>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
+        )}
         
         {/* Bottom Spacing */}
         <View className="h-24" />

@@ -5,12 +5,16 @@ import {
   ArrowLeft, Edit, Search, MessageSquare, Bell, 
   Heart, Award, ShieldAlert, Sparkles, ChevronRight, Video
 } from 'lucide-react-native';
-import { useChatStore } from '../../store';
+import { useAuthStore, useChatStore } from '../../store';
 import StoryRing from '../../components/StoryRing';
 
 export default function InboxScreen() {
   const router = useRouter();
   const { chats, fetchChats, connectSocket } = useChatStore();
+  const { blockedUsers } = useAuthStore();
+  
+  const blockedIds = blockedUsers.map(u => u.id);
+  const visibleChats = chats.filter(chat => !blockedIds.includes(chat.creatorId));
 
   useEffect(() => {
     connectSocket();
@@ -18,7 +22,7 @@ export default function InboxScreen() {
   }, []);
 
   // Map active friends from existing chats (fallback logic until real presence is added)
-  const activeFriends = chats.slice(0, 5).map((chat) => ({
+  const activeFriends = visibleChats.slice(0, 5).map((chat) => ({
     id: chat.creatorId,
     name: chat.creatorName.split(' ')[0],
     avatar: chat.creatorAvatar,
@@ -82,7 +86,7 @@ export default function InboxScreen() {
 
             {/* Messages List */}
             <View className="px-4 gap-6">
-              {chats.length === 0 ? (
+              {visibleChats.length === 0 ? (
                 <View className="items-center justify-center py-10">
                   <MessageSquare size={48} color="#9CA3AF" />
                   <Text className="text-white font-bold mt-4 text-center">No messages yet</Text>
@@ -91,7 +95,7 @@ export default function InboxScreen() {
                   </Text>
                 </View>
               ) : (
-                chats.map((chat) => (
+                visibleChats.map((chat) => (
                   <Pressable
                     key={chat.id}
                     onPress={() => router.push(`/chat/${chat.id}`)}

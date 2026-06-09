@@ -9,12 +9,13 @@ import CameraSettingsSheet from '../../components/CameraSettingsSheet';
 import EffectsSheet from '../../components/sheets/EffectsSheet';
 import { useCameraSettingsStore } from '../../store';
 import { useAudioPlayer } from 'expo-audio';
+import Svg, { Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
-type CameraMode = 'POST' | 'STORY' | 'REEL' | 'LIVE';
+type CameraMode = 'STORY' | 'REEL' | 'LIVE';
 
-const MODES: CameraMode[] = ['POST', 'STORY', 'REEL', 'LIVE'];
+const MODES: CameraMode[] = ['STORY', 'REEL', 'LIVE'];
 
 export default function CreateScreen() {
   const router = useRouter();
@@ -39,6 +40,10 @@ export default function CreateScreen() {
   const [speedMultiplier, setSpeedMultiplier] = useState<1 | 2 | 3>(1);
   const [selectedEffect, setSelectedEffect] = useState<any>({ name: 'None' });
   const [showEffectsSheet, setShowEffectsSheet] = useState(false);
+
+  // Recording Timer State
+  const [recordingTime, setRecordingTime] = useState(0);
+  const recordingInterval = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Music state from params
   const { selectedMusicId, selectedMusicTitle, selectedMusicArtist, selectedMusicUrl } = useLocalSearchParams<{ 
@@ -88,16 +93,19 @@ export default function CreateScreen() {
     }
   };
 
+  const ITEM_WIDTH = 80;
+  const PADDING_H = (width - ITEM_WIDTH) / 2;
+
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / (width / 3));
+    const index = Math.round(offsetX / ITEM_WIDTH);
     if (index >= 0 && index < MODES.length && MODES[index] !== activeMode) {
       setActiveMode(MODES[index]);
     }
   };
 
   const handleModeClick = (index: number) => {
-    scrollViewRef.current?.scrollTo({ x: index * (width / 3), animated: true });
+    scrollViewRef.current?.scrollTo({ x: index * ITEM_WIDTH, animated: true });
     setActiveMode(MODES[index]);
   };
 
@@ -125,16 +133,7 @@ export default function CreateScreen() {
   const executeCapture = async () => {
     if (!cameraRef.current) return;
 
-    if (activeMode === 'POST') {
-      try {
-        const photo = await cameraRef.current.takePictureAsync({ quality: cameraSettings.quality === 'High' ? 1 : 0.7 });
-        if (photo) {
-          router.push({ pathname: '/(create)/post-editor', params: { uri: photo.uri, mode: activeMode } });
-        }
-      } catch (err) {
-        console.warn('Failed to take photo', err);
-      }
-    } else if (activeMode === 'STORY') {
+    if (activeMode === 'STORY') {
       // For stories, short tap is photo, hold is video (simplified here to just photo for now unless held)
       // In a real app we'd use onPressIn / onPressOut to handle video
       try {
@@ -149,13 +148,24 @@ export default function CreateScreen() {
       if (isRecording) {
         cameraRef.current.stopRecording();
         setIsRecording(false);
+        if (recordingInterval.current) clearInterval(recordingInterval.current);
         player?.pause();
       } else {
         setIsRecording(true);
+        setRecordingTime(0);
         player?.seekTo(0);
         player?.play();
+        
+        recordingInterval.current = setInterval(() => {
+          setRecordingTime(prev => prev + 1);
+        }, 1000);
+
         try {
-          const video = await cameraRef.current.recordAsync();
+          const video = await cameraRef.current.recordAsync({ maxDuration: 60 });
+          
+          if (recordingInterval.current) clearInterval(recordingInterval.current);
+          setIsRecording(false);
+
           if (video) {
             router.push({ 
               pathname: '/(create)/story-editor', 
@@ -171,6 +181,7 @@ export default function CreateScreen() {
           }
         } catch (err) {
           console.warn('Failed to record video', err);
+          if (recordingInterval.current) clearInterval(recordingInterval.current);
           setIsRecording(false);
           player?.pause();
         }
@@ -199,12 +210,12 @@ export default function CreateScreen() {
     }
   };
 
-  if (!cameraPermission?.granted) {
+  if (!cameraPermission?.granted || !micPermission?.granted) {
     return (
       <View className="flex-1 items-center justify-center bg-[#12081E]">
-        <Text className="text-white mb-4 text-center px-8 font-medium">Camera permissions required.</Text>
-        <Pressable onPress={requestCameraPermission} className="bg-[#A855F7] px-8 py-3 rounded-full">
-          <Text className="text-white font-bold">Grant Permission</Text>
+        <Text className="text-white mb-4 text-center px-8 font-medium">Camera & Mic permissions required to create.</Text>
+        <Pressable onPress={() => { requestCameraPermission(); requestMicPermission(); }} className="bg-[#A855F7] px-8 py-3 rounded-full">
+          <Text className="text-white font-bold">Grant Permissions</Text>
         </Pressable>
       </View>
     );
@@ -230,12 +241,12 @@ export default function CreateScreen() {
           style={{ flex: 1 }} 
           facing={facing} 
           flash={flash}
-          mode={activeMode === 'REEL' || activeMode === 'LIVE' ? 'video' : 'picture'}
+          mode={activeMode === 'REEL' ? 'video' : 'picture'}
         />
 
         {/* Local Filter Overlay Preview */}
         {selectedEffect.name !== 'None' && (
-          <View style={[{ position: 'absolute', inset: 0, pointerEvents: 'none' }, getFilterStyle(selectedEffect.name)]} />
+          <View style={[{ position: 'absolute', inset: 0, pointerEvents: 'none' }, getFilterStyle(selectedEffect.name) as any]} />
         )}
 
         {/* Timer Overlay */}
@@ -328,23 +339,58 @@ export default function CreateScreen() {
             <Image source={{ uri: 'https://picsum.photos/100' }} className="w-full h-full opacity-80" />
           </Pressable>
 
-          <Pressable onPress={handleCapture} className="items-center justify-center">
-            {activeMode === 'LIVE' ? (
-              <View className="w-20 h-20 rounded-full border-4 border-[#EC4899] items-center justify-center p-1 bg-black/20">
-                <View className="w-full h-full rounded-full bg-[#EC4899] items-center justify-center flex-row">
-                  <MonitorPlay size={20} color="white" />
+          <View className="relative items-center justify-center">
+            {/* Timer Display above shutter when recording */}
+            {activeMode === 'REEL' && isRecording && (
+               <View className="absolute -top-12 items-center w-full min-w-[80px]">
+                 <View className="bg-red-500/90 backdrop-blur-md px-3 py-1.5 rounded-full flex-row items-center gap-1.5 shadow-lg shadow-red-500/30">
+                   <View className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                   <Text className="text-white font-bold text-[10px] tracking-widest">
+                     00:{recordingTime.toString().padStart(2, '0')} / 01:00
+                   </Text>
+                 </View>
+               </View>
+            )}
+
+            <Pressable onPress={handleCapture} className="items-center justify-center">
+              {activeMode === 'LIVE' ? (
+                <View className="w-20 h-20 rounded-full border-4 border-[#EC4899] items-center justify-center p-1 bg-black/20">
+                  <View className="w-full h-full rounded-full bg-[#EC4899] items-center justify-center flex-row">
+                    <MonitorPlay size={20} color="white" />
+                  </View>
                 </View>
-              </View>
-            ) : activeMode === 'REEL' ? (
-              <View className="w-20 h-20 rounded-full border-4 border-[#A855F7] items-center justify-center p-1 bg-black/20">
-                <View className={`w-full h-full bg-[#A855F7] ${isRecording ? 'rounded-lg scale-50' : 'rounded-full'} transition-all`} />
-              </View>
-            ) : (
+              ) : activeMode === 'REEL' ? (
+                <View className="w-20 h-20 items-center justify-center relative">
+                  {/* Background border */}
+                  <View className="absolute inset-0 rounded-full border-4 border-white/30" />
+                  
+                  {/* Progress Ring */}
+                  {isRecording && (
+                    <Svg width={80} height={80} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
+                      <Circle
+                        cx={40}
+                        cy={40}
+                        r={37}
+                        stroke="#A855F7"
+                        strokeWidth={6}
+                        fill="none"
+                        strokeDasharray={2 * Math.PI * 37}
+                        strokeDashoffset={2 * Math.PI * 37 - (recordingTime / 60) * (2 * Math.PI * 37)}
+                        strokeLinecap="round"
+                      />
+                    </Svg>
+                  )}
+
+                  {/* Inner Shutter Button */}
+                  <View className={`bg-[#A855F7] ${isRecording ? 'w-8 h-8 rounded-lg' : 'w-[68px] h-[68px] rounded-full'} transition-all duration-300 ease-out`} />
+                </View>
+              ) : (
               <View className="w-20 h-20 rounded-full border-4 border-white items-center justify-center p-1 bg-black/20">
                 <View className="w-full h-full bg-white rounded-full" />
               </View>
             )}
           </Pressable>
+          </View>
 
           <Pressable onPress={() => setShowEffectsSheet(true)} className="w-10 h-10 items-center justify-center bg-black/40 backdrop-blur-md rounded-full border border-white/20">
             <Wand2 size={20} color="#FFFFFF" />
@@ -358,20 +404,20 @@ export default function CreateScreen() {
           ref={scrollViewRef}
           horizontal 
           showsHorizontalScrollIndicator={false}
-          snapToInterval={width / 3}
+          snapToInterval={ITEM_WIDTH}
           decelerationRate="fast"
           onScroll={handleScroll}
           scrollEventThrottle={16}
-          contentContainerStyle={{ paddingHorizontal: width / 3 }}
+          contentContainerStyle={{ paddingHorizontal: PADDING_H }}
         >
           {MODES.map((mode, idx) => (
             <Pressable 
               key={mode} 
               onPress={() => handleModeClick(idx)}
-              style={{ width: width / 3 }} 
+              style={{ width: ITEM_WIDTH }} 
               className="items-center justify-center py-4"
             >
-              <Text className={`font-bold tracking-widest ${activeMode === mode ? 'text-white text-sm' : 'text-neutral-grey text-xs'}`}>
+              <Text className={`font-bold tracking-wider ${activeMode === mode ? 'text-white text-sm' : 'text-neutral-grey text-xs'}`}>
                 {mode}
               </Text>
               {activeMode === mode && (

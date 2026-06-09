@@ -16,7 +16,9 @@ interface ChatState {
   messages: Message[];
   notifications: NotificationItem[];
   isTyping: Record<string, boolean>;
+  mutedChats: string[];
   sendMessage: (chatId: string, text: string) => void;
+  toggleMuteChat: (chatId: string) => void;
   sendDirectMessage: (receiver: { id: string, name: string, username: string, avatar: string }, text: string) => void;
   markChatRead: (chatId: string) => void;
   markNotificationsRead: () => Promise<void>;
@@ -38,6 +40,14 @@ export const useChatStore = create<ChatState>()(
       messages: [],
       notifications: [],
       isTyping: {},
+      mutedChats: [],
+      toggleMuteChat: (chatId) => {
+        set((state) => ({
+          mutedChats: state.mutedChats.includes(chatId)
+            ? state.mutedChats.filter(id => id !== chatId)
+            : [...state.mutedChats, chatId]
+        }));
+      },
       connectSocket: () => {
         if (socket?.connected) return;
         

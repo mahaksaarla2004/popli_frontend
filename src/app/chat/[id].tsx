@@ -1,28 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Image, KeyboardAvoidingView, Platform, Modal, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore, useChatStore } from '../../store';
 import { 
   ChevronLeft, Video, Info, Plus, Mic, Image as ImageIcon, 
-  Sticker, Play, CheckCheck, Send
+  Sticker, Play, CheckCheck, Send, BellOff, Ban, X
 } from 'lucide-react-native';
 import StoryRing from '../../components/StoryRing';
 import { formatRelativeTime } from '../../utils';
 
 export default function ChatScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { id, creatorName, creatorUsername, creatorAvatar } = useLocalSearchParams();
   const [inputText, setInputText] = useState('');
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
 
-  const { userProfile } = useAuthStore();
-  const { messages: storeMessages, fetchMessages, sendMessage, isTyping } = useChatStore();
+  const { userProfile, toggleBlock } = useAuthStore();
+  const { chats, messages: storeMessages, fetchMessages, fetchChats, sendMessage, isTyping, toggleMuteChat, mutedChats } = useChatStore();
   
+  const chat = chats.find(c => c.id === id);
+
+  const displayAvatar = chat?.creatorAvatar || (creatorAvatar as string) || 'https://i.pravatar.cc/150';
+  const displayName = chat?.creatorName || (creatorName as string) || 'Unknown User';
+  const displayUsername = chat?.creatorUsername || (creatorUsername as string) || 'user';
+
   // Only show messages for this chat
   const messages = storeMessages.filter(m => m.chatId === id);
 
   useEffect(() => {
     if (id) {
       fetchMessages(id as string);
+      if (!chat) fetchChats();
     }
   }, [id]);
 
@@ -43,7 +51,7 @@ export default function ChatScreen() {
     type: m.senderId === userProfile?.username || m.senderId === userProfile?.id ? 'sent' : 'received',
     text: m.text,
     time: m.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    senderAvatar: m.senderId === userProfile?.id ? userProfile?.avatar : 'https://i.pravatar.cc/150', // We might need to pull the other user's avatar from chat info
+    senderAvatar: m.senderId === userProfile?.id ? userProfile?.avatar : displayAvatar, 
     isSeen: m.status === 'seen'
   }));
 
@@ -60,22 +68,29 @@ export default function ChatScreen() {
             <ChevronLeft size={28} color="#FFFFFF" />
           </Pressable>
           
-          <View className="relative">
-            <StoryRing userId="Alex" avatarUrl="https://i.pravatar.cc/150?img=44" size={40} />
-            <View className="absolute bottom-0 right-0 w-3 h-3 bg-[#10B981] rounded-full border-2 border-[#12081E]" />
-          </View>
-          
-          <View>
-            <Text className="text-white font-bold text-base">Alex Rivera</Text>
-            <Text className="text-neutral-grey text-xs">Active now</Text>
-          </View>
+          <Pressable 
+            className="flex-row items-center gap-3"
+            onPress={() => router.push(`/user/${displayUsername}`)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
+            <View className="relative">
+              <StoryRing userId={displayUsername} avatarUrl={displayAvatar} size={40} />
+              {chat?.isOnline && (
+                <View className="absolute bottom-0 right-0 w-3 h-3 bg-[#10B981] rounded-full border-2 border-[#12081E]" />
+              )}
+            </View>
+            
+            <View>
+              <Text className="text-white font-bold text-base">{displayName}</Text>
+              <Text className="text-neutral-grey text-xs">
+                {chat?.isOnline ? 'Active now' : `Last seen at ${chat?.lastMessageTime || 'recently'}`}
+              </Text>
+            </View>
+          </Pressable>
         </View>
 
         <View className="flex-row items-center gap-4">
-          <Pressable>
-            <Video size={22} color="#FFFFFF" />
-          </Pressable>
-          <Pressable>
+          <Pressable onPress={() => setShowOptionsModal(true)}>
             <Info size={22} color="#FFFFFF" />
           </Pressable>
         </View>
@@ -122,11 +137,11 @@ export default function ChatScreen() {
                     </View>
                   )}
 
-                  {msg.attachment && (
+                  {(msg as any).attachment && (
                     <View className="bg-[#2D1B4E] p-1 rounded-2xl rounded-br-sm max-w-[65%] mt-1">
                       <View className="relative rounded-xl overflow-hidden">
-                        <Image source={{ uri: msg.attachment }} style={{ width: 180, height: 240 }} resizeMode="cover" />
-                        {msg.isVideo && (
+                        <Image source={{ uri: (msg as any).attachment }} style={{ width: 180, height: 240 }} resizeMode="cover" />
+                        {(msg as any).isVideo && (
                           <View className="absolute inset-0 items-center justify-center bg-black/20">
                             <View className="w-12 h-12 bg-white/30 rounded-full items-center justify-center backdrop-blur-md">
                               <Play size={20} color="#FFFFFF" fill="#FFFFFF" className="ml-1" />
@@ -193,6 +208,63 @@ export default function ChatScreen() {
           </>
         )}
       </View>
+
+      {/* OPTIONS MODAL */}
+      <Modal
+        visible={showOptionsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowOptionsModal(false)}
+      >
+        <TouchableOpacity 
+          className="flex-1 bg-black/50 justify-center items-center px-6 z-50"
+          activeOpacity={1}
+          onPress={() => setShowOptionsModal(false)}
+        >
+          <View className="bg-[#1A0E2C] w-full rounded-3xl overflow-hidden border border-white/5" onStartShouldSetResponder={() => true}>
+            <View className="p-5 border-b border-white/5 flex-row items-center justify-between">
+              <Text className="text-white font-bold text-lg">Chat Options</Text>
+              <Pressable onPress={() => setShowOptionsModal(false)} className="p-1">
+                <X size={20} color="#9CA3AF" />
+              </Pressable>
+            </View>
+            
+            <View className="p-2">
+              <Pressable 
+                onPress={() => {
+                  toggleMuteChat(id as string);
+                  setShowOptionsModal(false);
+                }}
+                className="flex-row items-center px-4 py-4 active:bg-white/5 rounded-xl"
+              >
+                <BellOff size={20} color="#FFFFFF" />
+                <View className="ml-3">
+                  <Text className="text-white font-semibold text-base">
+                    {mutedChats.includes(id as string) ? 'Unmute Notifications' : 'Mute Notifications'}
+                  </Text>
+                  <Text className="text-neutral-grey text-xs mt-0.5">Stop receiving push notifications</Text>
+                </View>
+              </Pressable>
+
+              <Pressable 
+                onPress={() => {
+                  toggleBlock(chat?.creatorId || id as string);
+                  setShowOptionsModal(false);
+                  router.back();
+                }}
+                className="flex-row items-center px-4 py-4 active:bg-white/5 rounded-xl"
+              >
+                <Ban size={20} color="#EF4444" />
+                <View className="ml-3">
+                  <Text className="text-[#EF4444] font-semibold text-base">Block User</Text>
+                  <Text className="text-neutral-grey text-xs mt-0.5">They won't be able to message you</Text>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </KeyboardAvoidingView>
   );
 }

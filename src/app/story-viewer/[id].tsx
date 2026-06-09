@@ -8,6 +8,31 @@ import { formatRelativeTime } from '../../utils';
 
 const { width, height } = Dimensions.get('window');
 
+import { useVideoPlayer, VideoView } from 'expo-video';
+
+const StoryVideo = ({ url, isPaused }: { url: string, isPaused: boolean }) => {
+  const player = useVideoPlayer(url, p => {
+    p.loop = true;
+    p.muted = false;
+    if (!isPaused) p.play();
+    else p.pause();
+  });
+
+  useEffect(() => {
+    if (!isPaused) player.play();
+    else player.pause();
+  }, [isPaused, player]);
+
+  return (
+    <VideoView 
+      player={player} 
+      style={{ width: '100%', height: '100%', borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }} 
+      contentFit="cover" 
+      nativeControls={false} 
+    />
+  );
+};
+
 export default function StoryViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -104,17 +129,21 @@ export default function StoryViewerScreen() {
       <View className="flex-1 relative">
         
         {/* Background Media */}
-        <Image 
-          source={{ uri: activeStory.mediaUrl }} 
-          className="w-full h-full rounded-b-xl"
-          resizeMode="cover"
-        />
+        {activeStory.mediaType === 'VIDEO' ? (
+          <StoryVideo url={activeStory.mediaUrl} isPaused={isPaused} />
+        ) : (
+          <Image 
+            source={{ uri: activeStory.mediaUrl }} 
+            className="w-full h-full rounded-b-xl"
+            resizeMode="cover"
+          />
+        )}
 
         {/* METADATA LAYERS OVERLAY */}
         {parsedLayersData?.layers && (
-          <View style={{ ...StyleSheet.absoluteFillObject, zIndex: 5 }} pointerEvents="none">
+          <View style={{ ...StyleSheet.absoluteFill, zIndex: 5 }} pointerEvents="none">
             {/* Draw drawings */}
-            <View style={{ ...StyleSheet.absoluteFillObject, zIndex: 5 }} pointerEvents="none">
+            <View style={{ ...StyleSheet.absoluteFill, zIndex: 5 }} pointerEvents="none">
               <Svg width="100%" height="100%">
                 {parsedLayersData.layers.filter((l: any) => l.type === 'drawing').map((layer: any) => (
                   <G key={layer.id}>

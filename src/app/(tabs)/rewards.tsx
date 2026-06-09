@@ -30,10 +30,10 @@ export default function CreatorRewardsScreen() {
     // Or if /withdraw route exists: router.push('/withdraw');
   };
 
-  // Derived dummy calculations (since backend doesn't split revenues explicitly yet)
+  // Derived calculations
   const giftsRevenue = transactions
     .filter(t => t.type.toLowerCase().includes('gift_receive'))
-    .reduce((acc, t) => acc + t.amount, 0) || (inrEarnings * 0.2); // Fallback estimate
+    .reduce((acc, t) => acc + t.amount, 0);
   
   const videoRevenue = Math.max(0, inrEarnings - giftsRevenue);
   const referralRevenue = 0; // Assuming no referral implementation yet

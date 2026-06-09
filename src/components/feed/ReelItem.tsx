@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Image, Pressable, Dimensions, StyleSheet, Animated, Platform, Alert, Share } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useEventListener } from 'expo';
 import { Heart, MessageCircle, Share2, Award, Music, Plus, Send, Check, Eye, VolumeX, Volume2 } from 'lucide-react-native';
 import { Reel } from '../../types';
 import { useFeedStore, useAuthStore, useWalletStore } from '../../store';
@@ -31,10 +32,17 @@ const ActiveVideoPlayer = ({ url, isMuted, isActive, isHeldPaused, width, height
     }
   });
 
-  useEffect(() => {
-    // Notify parent component that player is ready
-    onLoaded(); 
-  }, [onLoaded]);
+  useEventListener(player, 'statusChange', ({ status }) => {
+    if (status === 'readyToPlay') {
+      onLoaded();
+    }
+  });
+
+  useEventListener(player, 'playingChange', ({ isPlaying }) => {
+    if (isPlaying) {
+      onLoaded();
+    }
+  });
 
   useEffect(() => {
     player.muted = isMuted;
@@ -175,16 +183,8 @@ export const ReelItem = React.memo(({
   return (
     <View style={{ width, height, backgroundColor: '#000000' }} className="relative">
       
-      {/* 0. TOP FLOATING ACTIONS (Figma-level: Plus & Direct Inbox Plane) */}
-      <View className="absolute top-12 left-4 right-4 flex-row justify-between items-center z-20">
-        {/* Plus Button on Left */}
-        <Pressable 
-          onPress={() => Alert.alert('Add Creator Reel', 'Select a video from your gallery or start recording to go viral!')}
-          className="w-10 h-10 bg-black/35 border border-white/10 rounded-full items-center justify-center active:scale-95"
-        >
-          <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
-        </Pressable>
-
+      {/* 0. TOP FLOATING ACTIONS (Figma-level: Direct Inbox Plane) */}
+      <View className="absolute top-12 left-4 right-4 flex-row justify-end items-center z-20">
         {/* Paper Plane Button on Right */}
         <Pressable 
           onPress={() => router.push('/notifications')}
@@ -248,7 +248,7 @@ export const ReelItem = React.memo(({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
             transition={{ type: 'spring', damping: 20 }}
-            className="bg-black/60 rounded-full p-4 items-center justify-center"
+            style={{ backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 9999, padding: 16, alignItems: 'center', justifyContent: 'center' }}
           >
             {muteIndicator === 'muted' ? (
               <VolumeX color="white" size={32} strokeWidth={2.5} />
@@ -261,9 +261,9 @@ export const ReelItem = React.memo(({
 
       {/* METADATA LAYERS OVERLAY */}
         {parsedLayersData?.layers && (
-          <View style={{ ...StyleSheet.absoluteFillObject, zIndex: 10 }} pointerEvents="none">
+          <View style={{ ...StyleSheet.absoluteFill, zIndex: 10 }} pointerEvents="none">
             {/* Draw drawings */}
-            <View style={{ ...StyleSheet.absoluteFillObject, zIndex: 5 }} pointerEvents="none">
+            <View style={{ ...StyleSheet.absoluteFill, zIndex: 5 }} pointerEvents="none">
               <Svg width="100%" height="100%">
                 {parsedLayersData.layers.filter((l: any) => l.type === 'drawing').map((layer: any) => (
                   <G key={layer.id}>

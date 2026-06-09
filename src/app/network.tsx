@@ -3,90 +3,21 @@ import { View, Text, ScrollView, Image, Pressable, TextInput, KeyboardAvoidingVi
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Search, CheckCircle2 } from 'lucide-react-native';
 import StoryRing from '../components/StoryRing';
+import { useFeedStore, useAuthStore } from '../store';
 
 export default function NetworkScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>('followers');
   const [searchQuery, setSearchQuery] = useState('');
+  const { creators } = useFeedStore();
+  const { userProfile } = useAuthStore();
+  const filteredCreators = creators.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    c.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // Mock Data
-  const networkUsers = [
-    {
-      id: '1',
-      name: 'Elena Vance',
-      username: '@elenav_visuals',
-      avatar: 'https://i.pravatar.cc/150?img=47',
-      isFollowing: true,
-      verified: true,
-      hasStory: true
-    },
-    {
-      id: '2',
-      name: 'Marcus Thorne',
-      username: '@mthorne_ux',
-      avatar: 'https://i.pravatar.cc/150?img=11',
-      isFollowing: true,
-      verified: false,
-      hasStory: false
-    },
-    {
-      id: '3',
-      name: 'Sasha Neon',
-      username: '@sasha_n',
-      avatar: 'https://i.pravatar.cc/150?img=44',
-      isFollowing: false,
-      verified: true,
-      hasStory: true
-    },
-    {
-      id: '4',
-      name: 'Julian Grey',
-      username: '@jgrey_art',
-      avatar: 'https://i.pravatar.cc/150?img=12',
-      isFollowing: false,
-      verified: false,
-      hasStory: false
-    },
-    {
-      id: '5',
-      name: 'David K.',
-      username: '@dk_motion',
-      avatar: 'https://i.pravatar.cc/150?img=13',
-      isFollowing: true,
-      verified: false,
-      hasStory: false
-    },
-    {
-      id: '6',
-      name: 'Maya Sterling',
-      username: '@sterling_maya',
-      avatar: 'https://i.pravatar.cc/150?img=45',
-      isFollowing: false,
-      verified: false,
-      hasStory: false
-    }
-  ];
-
-  const suggestedUsers = [
-    {
-      id: 's1',
-      name: 'Clara J.',
-      username: '@clara_glow',
-      avatar: 'https://i.pravatar.cc/150?img=41'
-    },
-    {
-      id: 's2',
-      name: 'Leo Fitz',
-      username: '@fitz_tech',
-      avatar: 'https://i.pravatar.cc/150?img=14'
-    },
-    {
-      id: 's3',
-      name: 'Isla',
-      username: '@isla_vibes',
-      avatar: 'https://i.pravatar.cc/150?img=42'
-    }
-  ];
+  const networkUsers = filteredCreators.slice(0, Math.floor(filteredCreators.length / 2));
+  const suggestedUsers = filteredCreators.slice(Math.floor(filteredCreators.length / 2));
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
@@ -106,7 +37,7 @@ export default function NetworkScreen() {
             className={`flex-1 py-2.5 items-center justify-center rounded-lg ${activeTab === 'followers' ? 'bg-[#2D1B4E]' : 'bg-transparent'}`}
           >
             <Text className={`text-xs font-bold ${activeTab === 'followers' ? 'text-[#A855F7]' : 'text-neutral-grey'}`}>
-              Followers (1.2k)
+              Followers ({userProfile.followersCount > 1000 ? (userProfile.followersCount / 1000).toFixed(1) + 'k' : userProfile.followersCount})
             </Text>
           </Pressable>
           <Pressable 
@@ -114,7 +45,7 @@ export default function NetworkScreen() {
             className={`flex-1 py-2.5 items-center justify-center rounded-lg ${activeTab === 'following' ? 'bg-[#2D1B4E]' : 'bg-transparent'}`}
           >
             <Text className={`text-xs font-bold ${activeTab === 'following' ? 'text-[#A855F7]' : 'text-neutral-grey'}`}>
-              Following (850)
+              Following ({userProfile.followingCount > 1000 ? (userProfile.followingCount / 1000).toFixed(1) + 'k' : userProfile.followingCount})
             </Text>
           </Pressable>
         </View>
@@ -144,7 +75,7 @@ export default function NetworkScreen() {
               <View className="flex-row items-center gap-4 flex-1 pr-2">
                 <View className="relative">
                   <StoryRing userId={user.username.replace('@','')} avatarUrl={user.avatar} size={48} />
-                  {user.verified && (
+                  {user.isVerified && (
                     <View className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full">
                       <CheckCircle2 size={16} color="#A855F7" fill="#FFFFFF" />
                     </View>
@@ -154,21 +85,17 @@ export default function NetworkScreen() {
                 <View className="flex-1">
                   <View className="flex-row items-center gap-1">
                     <Text className="text-white font-bold text-sm" numberOfLines={1}>{user.name}</Text>
-                    {user.verified && <CheckCircle2 size={14} color="#A855F7" fill="#FFFFFF" />}
+                    {user.isVerified && <CheckCircle2 size={14} color="#A855F7" fill="#FFFFFF" />}
                   </View>
                   <Text className="text-neutral-grey text-xs mt-1">{user.username}</Text>
                 </View>
               </View>
 
               <Pressable 
-                className={`px-4 py-1.5 rounded-full items-center justify-center border ${
-                  user.isFollowing 
-                  ? 'bg-transparent border-[#A855F7]' 
-                  : 'bg-[#A855F7] border-[#A855F7]'
-                }`}
+                className={`px-4 py-1.5 rounded-full items-center justify-center border bg-transparent border-[#A855F7]`}
               >
-                <Text className={`text-[10px] font-bold ${user.isFollowing ? 'text-[#A855F7]' : 'text-white'}`}>
-                  {user.isFollowing ? 'Unfollow' : 'Follow'}
+                <Text className={`text-[10px] font-bold text-[#A855F7]`}>
+                  Following
                 </Text>
               </Pressable>
 

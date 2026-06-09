@@ -241,7 +241,7 @@ export default function StoryEditorScreen() {
           </View>
         )}
 
-        <View style={{ ...StyleSheet.absoluteFillObject, zIndex: 5 }} pointerEvents="none">
+        <View style={{ ...StyleSheet.absoluteFill, zIndex: 5 }} pointerEvents="none">
           <Svg width="100%" height="100%">
             {layers.filter(l => l.type === 'drawing').map(layer => (
               <G key={layer.id}>
@@ -444,21 +444,18 @@ export default function StoryEditorScreen() {
             </>
           ) : (
             <>
-              <Pressable onPress={() => navigateToShare('your_story')} className="items-center justify-center bg-black/60 px-4 py-3 rounded-full flex-row gap-2">
-                <View className="w-6 h-6 rounded-full border border-white/20 items-center justify-center bg-white">
-                  <PlusCircle size={24} color="#A855F7" />
+              <Pressable onPress={() => navigateToShare('your_story')} className="flex-1 items-center justify-center bg-[#190C2C]/90 backdrop-blur-xl px-6 py-4 rounded-[24px] flex-row gap-3 border border-[#8B5CF6]/30 mr-2 active:scale-95 transition-all shadow-lg shadow-purple-900/20">
+                <View className="w-8 h-8 rounded-full items-center justify-center bg-[#8B5CF6]/20 border border-[#8B5CF6]/30">
+                  <PlusCircle size={18} color="#A78BFA" strokeWidth={2.5} />
                 </View>
-                <Text className="text-white text-xs font-bold">Your Story</Text>
+                <Text className="text-white text-[15px] font-bold tracking-wide">Your Story</Text>
               </Pressable>
-              <Pressable onPress={() => navigateToShare('close_friends')} className="items-center justify-center bg-black/60 px-4 py-3 rounded-full flex-row gap-2">
-                <View className="w-6 h-6 rounded-full border-2 border-[#10B981] items-center justify-center bg-[#10B981]/20">
-                  <Text className="text-white text-[10px] font-bold">★</Text>
+
+              <Pressable onPress={() => setShowSendToSheet(true)} className="flex-1 items-center justify-center bg-[#8B5CF6] px-6 py-4 rounded-[24px] flex-row gap-3 shadow-xl shadow-purple-500/40 ml-2 active:scale-95 transition-all">
+                <Text className="text-white text-[15px] font-black tracking-wide">Share</Text>
+                <View className="w-8 h-8 rounded-full items-center justify-center bg-white/20">
+                  <SendIcon size={16} color="#FFFFFF" strokeWidth={2.5} />
                 </View>
-                <Text className="text-white text-xs font-bold">Close Friends</Text>
-              </Pressable>
-              <Pressable onPress={() => setShowSendToSheet(true)} className="items-center justify-center bg-white px-6 py-3 rounded-full flex-row gap-2">
-                <Text className="text-black text-sm font-bold">Share</Text>
-                <SendIcon size={16} color="#000000" />
               </Pressable>
             </>
           )}
