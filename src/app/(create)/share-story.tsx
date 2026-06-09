@@ -168,6 +168,7 @@ export default function ShareStoryScreen() {
             id: res.data.id,
             creatorId: userProfile.username,
             mediaUrl: finalUrl,
+            mediaType: type === 'video' ? 'VIDEO' : 'PHOTO',
             isCloseFriends: target === 'close_friends',
             repliesAllowed: true,
             viewers: [],

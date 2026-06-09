@@ -36,9 +36,9 @@ export default function AboutScreen() {
         <View className="items-center py-6">
           <View className="w-24 h-24 rounded-3xl items-center justify-center mb-4 shadow-lg overflow-hidden bg-transparent">
             <Image 
-              source={require('../../../assets/images/icon.png')} 
-              className="w-full h-full rounded-3xl"
-              resizeMode="cover"
+              source={require('../../../assets/images/custom_logo_square.png')} 
+              className="w-24 h-24 rounded-2xl"
+              resizeMode="contain"
             />
           </View>
           <Text className="text-white text-xl font-bold">Popli App</Text>

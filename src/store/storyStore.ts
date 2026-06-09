@@ -13,6 +13,7 @@ export interface Story {
   id: string;
   creatorId: string;
   mediaUrl: string;
+  mediaType: 'IMAGE' | 'VIDEO';
   viewers: string[];
   isCloseFriends: boolean;
   repliesAllowed: boolean;
