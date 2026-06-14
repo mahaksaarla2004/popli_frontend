@@ -57,9 +57,20 @@ export interface Reel {
   };
   rewardEarned?: number; // in Rupees/Coins
   distanceKm?: number; // Calculated dynamically via GPS
+  city?: string;
+  isMonetized?: boolean;
+  taggedUsers?: Array<{ id: string; username: string }>;
   layersData?: any;
   createdAt?: string;
   mediaUrl?: string;
+  creatorIsVerified?: boolean;
+  creator?: {
+    id: string;
+    name: string;
+    username: string;
+    avatar: string;
+    isVerified: boolean;
+  };
 }
 
 export type GiftType = 'rose' | 'crown' | 'rocket' | 'fire' | 'diamond' | 'lion' | 'heart' | 'party' | 'sparkle' | 'star';
@@ -119,7 +130,7 @@ export interface NotificationItem {
 
 export interface TransactionItem {
   id: string;
-  type: 'gift_send' | 'gift_receive' | 'coin_recharge' | 'withdrawal';
+  type: 'gift_send' | 'gift_receive' | 'coin_recharge' | 'withdrawal' | 'COIN_RECHARGE' | 'AD_REVENUE' | 'GIFT_RECEIVE';
   amount: number; // in coins or rupees
   currency: 'coins' | 'INR';
   description: string;

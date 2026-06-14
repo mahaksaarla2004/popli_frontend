@@ -3,18 +3,18 @@ import { View, Text, ScrollView, Pressable, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ExternalLink, FileText, ShieldCheck, Users } from 'lucide-react-native';
 
+const LinkRow = ({ icon: Icon, title }: any) => (
+  <Pressable className="flex-row items-center justify-between border-b border-white/5 py-4">
+    <View className="flex-row items-center gap-4">
+      <Icon size={20} color="#9CA3AF" />
+      <Text className="text-white font-bold text-sm">{title}</Text>
+    </View>
+    <ExternalLink size={16} color="#4B5563" />
+  </Pressable>
+);
+
 export default function AboutScreen() {
   const router = useRouter();
-
-  const LinkRow = ({ icon: Icon, title }: any) => (
-    <Pressable className="flex-row items-center justify-between border-b border-white/5 py-4">
-      <View className="flex-row items-center gap-4">
-        <Icon size={20} color="#9CA3AF" />
-        <Text className="text-white font-bold text-sm">{title}</Text>
-      </View>
-      <ExternalLink size={16} color="#4B5563" />
-    </Pressable>
-  );
 
   return (
     <View className="flex-1 bg-[#12081E] pt-14">

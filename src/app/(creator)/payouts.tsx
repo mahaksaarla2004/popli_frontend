@@ -37,7 +37,7 @@ export default function PayoutsScreen() {
       >
         <View className="bg-gradient-to-r from-[#A855F7]/20 to-[#EC4899]/20 border border-white/10 rounded-3xl p-6 items-center gap-2 mb-6">
           <Text className="text-neutral-grey text-xs font-bold uppercase tracking-widest">Available Balance</Text>
-          <Text className="text-white text-4xl font-black tracking-tight">$0.00</Text>
+          <Text className="text-white text-4xl font-black tracking-tight">₹0.00</Text>
           <Pressable className="bg-[#EC4899] px-8 py-3 rounded-full mt-2 shadow-lg shadow-[#EC4899]/30">
             <Text className="text-white font-bold">Withdraw Funds</Text>
           </Pressable>

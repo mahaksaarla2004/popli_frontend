@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, Image, Pressable, Dimensions, StyleSheet, Animated, Platform, Alert, Share } from 'react-native';
+import { View, Text, Pressable, Dimensions, StyleSheet, Animated, Platform, Alert, Share, Modal } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useAudioPlayer } from 'expo-audio';
 import { useEventListener } from 'expo';
-import { Heart, MessageCircle, Share2, Award, Music, Plus, Send, Check, Eye, VolumeX, Volume2 } from 'lucide-react-native';
+import { Heart, MessageCircle, Share2, Award, Music, Plus, Send, Check, Eye, VolumeX, Volume2, Users, MapPin, Bookmark, TrendingUp, Trash2 } from 'lucide-react-native';
 import { Reel } from '../../types';
 import { useFeedStore, useAuthStore, useWalletStore } from '../../store';
-import { formatSocialCount, formatRelativeTime } from '../../utils';
+import { formatSocialCount, formatRelativeTime, getDefaultAvatar } from '../../utils';
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import Svg, { Path, G } from 'react-native-svg';
@@ -19,6 +21,7 @@ interface ReelItemProps {
   onOpenProfile: (creatorId: string) => void;
   windowWidth: number;
   windowHeight: number;
+  isStandalone?: boolean;
 }
 
 const ActiveVideoPlayer = ({ url, isMuted, isActive, isHeldPaused, width, height, onLoaded }: { url: string, isMuted: boolean, isActive: boolean, isHeldPaused: boolean, width: number, height: number, onLoaded: () => void }) => {
@@ -66,6 +69,35 @@ const ActiveVideoPlayer = ({ url, isMuted, isActive, isHeldPaused, width, height
   );
 };
 
+const ActiveAudioPlayer = ({ url, isMuted, isActive, isHeldPaused }: { url: string, isMuted: boolean, isActive: boolean, isHeldPaused: boolean }) => {
+  const audioPlayer = useAudioPlayer(url);
+  
+  useEffect(() => {
+    if (audioPlayer && url) {
+      audioPlayer.loop = true;
+      audioPlayer.muted = isMuted;
+      if (isActive && !isHeldPaused) {
+        audioPlayer.play();
+      } else {
+        audioPlayer.pause();
+      }
+    }
+    
+    // Crucial cleanup: stop audio when component unmounts!
+    return () => {
+      if (audioPlayer) {
+        try {
+          audioPlayer.pause();
+        } catch (e) {
+          console.log('Error pausing audio on unmount:', e);
+        }
+      }
+    };
+  }, [isActive, isHeldPaused, isMuted, audioPlayer, url]);
+  
+  return null;
+};
+
 export const ReelItem = React.memo(({
   item,
   isActive,
@@ -74,15 +106,17 @@ export const ReelItem = React.memo(({
   onOpenGifts,
   onOpenProfile,
   windowWidth: width,
-  windowHeight: height
+  windowHeight: height,
+  isStandalone = false
 }: ReelItemProps) => {
   const router = useRouter();
   const [isMuted, setIsMuted] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isHeldPaused, setIsHeldPaused] = useState(false);
   const [muteIndicator, setMuteIndicator] = useState<'muted' | 'unmuted' | null>(null);
   
-  const { toggleLikeReel, toggleSaveReel, registerValidView } = useFeedStore();
+  const { toggleLikeReel, toggleSaveReel, registerValidView, deleteReel } = useFeedStore();
   const { followingIds, toggleFollow, userProfile } = useAuthStore();
   
   // View tracking
@@ -102,26 +136,31 @@ export const ReelItem = React.memo(({
   const [doubleTapHearts, setDoubleTapHearts] = useState<{ id: number; x: number; y: number }[]>([]);
   const lastTapRef = useRef<number | null>(null);
 
+  const isOwnReel = item.creatorId === userProfile?.id;
+  const safeCreatorUsername = isOwnReel ? userProfile?.username : (item.creator?.username || item.creatorUsername || '');
+  const safeCreatorAvatar = isOwnReel ? userProfile?.avatar : (item.creator?.avatar || item.creatorAvatar || '');
+  const isVerifiedCreator = isOwnReel ? userProfile?.isVerified : (item.creator?.isVerified || ['rahul_dance_off', 'aria_styles', 'marcus_vlogs', 'vikram_tech', 'elena_fashion'].includes(safeCreatorUsername));
+
   // Audio setup for native sound respect
-  // Removed useAudioSession as expo-video handles playback audio directly via the player.muted prop
+  const musicAudioUrl = parsedLayersData?.music?.audioUrl;
 
   // 10-Second View Tracker (Works even if short videos loop)
   useEffect(() => {
     let viewTimer: ReturnType<typeof setTimeout>;
     
     // If the reel is active and we haven't registered a view yet, and it's not the user's own reel
-    if (isActive && !hasRegisteredView && item.creatorUsername !== userProfile.username) {
+    if (isActive && !hasRegisteredView && safeCreatorUsername !== userProfile.username) {
       // Start a 10 second timer
       viewTimer = setTimeout(() => {
         setHasRegisteredView(true);
-        registerValidView(item.id, item.creatorUsername);
+        registerValidView(item.id, safeCreatorUsername);
       }, 10000); // 10 seconds
     }
     
     return () => {
       if (viewTimer) clearTimeout(viewTimer);
     };
-  }, [isActive, hasRegisteredView, item.id, item.creatorUsername, registerValidView, userProfile.username]);
+  }, [isActive, hasRegisteredView, item.id, safeCreatorUsername, registerValidView, userProfile.username]);
 
   const handleDoubleTap = useCallback((e: any) => {
     const now = Date.now();
@@ -163,8 +202,6 @@ export const ReelItem = React.memo(({
   }, [item.isLiked, toggleLikeReel]);
 
   const isFollowing = followingIds.includes(item.creatorId);
-  const safeCreatorUsername = item.creatorUsername || '';
-  const isVerifiedCreator = ['rahul_dance_off', 'aria_styles', 'marcus_vlogs', 'vikram_tech', 'elena_fashion'].includes(safeCreatorUsername);
   
   const safeVideoUrl = item.videoUrl || item.mediaUrl || '';
   const isPhotoPost = safeVideoUrl === '' || safeVideoUrl.includes('unsplash.com') || safeVideoUrl.includes('picsum.photos') || safeVideoUrl.match(/\.(jpeg|jpg|gif|png)$/i) != null;
@@ -203,36 +240,45 @@ export const ReelItem = React.memo(({
         style={StyleSheet.absoluteFill}
       >
         {isPhotoPost ? (
-          <Image
+          <ExpoImage 
             source={{ uri: safeVideoUrl }}
-            style={StyleSheet.absoluteFill}
-            resizeMode="cover"
+            style={{ width: '100%', height: '100%' }}
+            contentFit="cover"
+            transition={200}
           />
         ) : (
           <>
-            {isActive && (
-              <>
-                {console.log('RENDERING ACTIVE PLAYER WITH URL:', safeVideoUrl)}
-                <ActiveVideoPlayer 
-                  url={safeVideoUrl} 
-                  isMuted={isMuted} 
-                  isActive={isActive} 
-                  isHeldPaused={isHeldPaused}
-                  width={width} 
-                  height={height} 
-                  onLoaded={() => {
-                    if (!isLoaded) setIsLoaded(true);
-                  }} 
-                />
-              </>
+            <>
+              {console.log('RENDERING PLAYER WITH URL:', safeVideoUrl)}
+              <ActiveVideoPlayer 
+                url={safeVideoUrl} 
+                isMuted={isMuted} 
+                isActive={isActive} 
+                isHeldPaused={isHeldPaused}
+                width={width} 
+                height={height} 
+                onLoaded={() => {
+                  if (!isLoaded) setTimeout(() => setIsLoaded(true), 0);
+                }}
+              />
+            </>
+
+            {/* Render audio player only if active */}
+            {isActive && musicAudioUrl && (
+              <ActiveAudioPlayer 
+                url={musicAudioUrl} 
+                isMuted={isMuted} 
+                isActive={isActive} 
+                isHeldPaused={isHeldPaused} 
+              />
             )}
 
             {/* Static high-res placeholder before play or fallback */}
             {(!isLoaded || !isActive) && (
-              <Image
+              <ExpoImage
                 source={{ uri: item.thumbnailUrl }}
                 style={StyleSheet.absoluteFill}
-                resizeMode="cover"
+                contentFit="cover"
                 className="blur-lg opacity-80"
               />
             )}
@@ -321,7 +367,7 @@ export const ReelItem = React.memo(({
                       <Text style={{ fontSize: 60 }}>{layer.content}</Text>
                     )}
                     {layer.type === 'sticker' && layer.content && (
-                      <Image source={{ uri: layer.content }} style={{ width: 128, height: 128 }} resizeMode="contain" />
+                      <ExpoImage source={{ uri: layer.content }} style={{ width: 128, height: 128 }} contentFit="contain" />
                     )}
                     {layer.type === 'interactive' && layer.content && layer.content.type === 'location' && (
                       <Pressable 
@@ -373,7 +419,14 @@ export const ReelItem = React.memo(({
             onPress={() => onOpenProfile(safeCreatorUsername)}
             className="w-12 h-12 rounded-full border-2 border-primary-purple overflow-hidden"
           >
-            <Image source={{ uri: item.creatorAvatar }} className="w-full h-full" />
+            <ExpoImage 
+              source={{ 
+                uri: safeCreatorAvatar || getDefaultAvatar(safeCreatorUsername)
+              }} 
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              transition={200}
+            />
           </Pressable>
           
           <Pressable 
@@ -435,7 +488,7 @@ export const ReelItem = React.memo(({
         </Pressable>
 
         {/* Gift Button - Glowing Gold Figma Element */}
-        <View className="items-center">
+        <View className="items-center mb-6">
           <Pressable 
             onPress={() => onOpenGifts(item)} 
             className="w-12 h-12 bg-yellow-500 border-2 border-yellow-400 rounded-full items-center justify-center shadow-lg shadow-yellow-500/50"
@@ -444,10 +497,26 @@ export const ReelItem = React.memo(({
           </Pressable>
           <Text className="text-yellow-400 text-xs font-bold mt-1 shadow-sm shadow-black">Gift</Text>
         </View>
+
+        {/* Delete Button - Only visible if it's the user's own reel */}
+        {isOwnReel && (
+          <View className="items-center">
+            <Pressable 
+              onPress={() => setIsDeleteModalVisible(true)}
+              className="items-center"
+            >
+              <Trash2 size={26} color="#EF4444" />
+              <Text className="text-red-500 text-xs font-semibold mt-1">Delete</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       {/* 4. REEL DESCRIPTIONS (Bottom Overlay) */}
-      <View className="absolute left-4 bottom-28 right-20 gap-3 z-10">
+      <View 
+        className="absolute left-4 right-20 gap-3 z-10"
+        style={{ bottom: isStandalone ? 32 : (Platform.OS === 'ios' ? 95 : 75) }}
+      >
         <View className="flex-row items-center gap-2">
           <Pressable onPress={() => onOpenProfile(safeCreatorUsername)}>
             <Text className="text-white font-bold text-base">@{safeCreatorUsername}</Text>
@@ -484,16 +553,101 @@ export const ReelItem = React.memo(({
         {/* Music Ticker */}
         <View className="flex-row items-center gap-2 pt-1">
           <Music size={14} color="#D1D5DB" />
-          <View className="w-48 overflow-hidden">
+          <View className="overflow-hidden">
             <Text className="text-neutral-silver text-xs font-medium" numberOfLines={1}>
-              {item.musicName}
+              {item.musicName || 'Original Audio'}
             </Text>
           </View>
         </View>
+
+        {/* Location Ticker */}
+        {item.city && (
+          <View className="flex-row items-center gap-2 pt-1">
+            <MapPin size={14} color="#D1D5DB" />
+            <View className="overflow-hidden">
+              <Text className="text-neutral-silver text-xs font-medium" numberOfLines={1}>
+                {item.city}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Tagged Users */}
+        {item.taggedUsers && item.taggedUsers.length > 0 && (
+          <View className="flex-row items-center gap-2 pt-1">
+            <Users size={14} color="#D1D5DB" />
+            <View className="overflow-hidden">
+              <Text className="text-neutral-silver text-xs font-medium" numberOfLines={1}>
+                {item.taggedUsers.map((u: any) => `@${u.username}`).join(', ')}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Creator Insights & Earnings */}
+        {userProfile?.id === item.creatorId && (
+          <View className="flex-row items-center gap-4 pt-3 pb-1">
+            <Pressable 
+              onPress={() => router.push({ pathname: '/analytics', params: { videoId: item.id } })}
+              className="flex-row items-center gap-2"
+            >
+              <TrendingUp size={14} color="#A855F7" />
+              <Text className="text-[#A855F7] text-xs font-bold uppercase tracking-wider">View Insights</Text>
+            </Pressable>
+            
+            {item.isMonetized && (
+              <View className="flex-row items-center gap-1.5 bg-[#F59E0B]/20 px-2 py-0.5 rounded-sm">
+                <Text className="text-[#F59E0B] text-xs font-bold">₹{((item.viewsCount || 0) * 0.0044).toFixed(3)}</Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       {/* Bottom navigation shade blocker */}
       <View style={{ height: Platform.OS === 'ios' ? 88 : 68 }} className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent" />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={isDeleteModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsDeleteModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/70 justify-center items-center px-6">
+          <View className="bg-[#1A1A1A] rounded-3xl w-full max-w-[340px] p-6 border border-white/10 items-center shadow-2xl shadow-black">
+            <View className="w-16 h-16 bg-red-500/10 rounded-full items-center justify-center mb-5 border border-red-500/20">
+              <Trash2 size={32} color="#EF4444" />
+            </View>
+            <Text className="text-white text-xl font-bold mb-2 text-center tracking-wide">Delete Reel?</Text>
+            <Text className="text-white/60 text-center text-sm mb-8 leading-5">
+              Are you sure you want to delete this reel? This action cannot be undone and it will be permanently removed.
+            </Text>
+            <View className="flex-row gap-3 w-full">
+              <Pressable 
+                onPress={() => setIsDeleteModalVisible(false)}
+                className="flex-1 py-3.5 rounded-2xl border border-white/20 items-center bg-white/5 active:bg-white/10"
+              >
+                <Text className="text-white font-semibold text-base">Cancel</Text>
+              </Pressable>
+              <Pressable 
+                onPress={async () => {
+                  try {
+                    await deleteReel(item.id);
+                    setIsDeleteModalVisible(false);
+                  } catch (error) {
+                    Alert.alert("Error", "Failed to delete reel");
+                    setIsDeleteModalVisible(false);
+                  }
+                }}
+                className="flex-1 py-3.5 rounded-2xl bg-red-500 items-center shadow-lg shadow-red-500/30 active:bg-red-600"
+              >
+                <Text className="text-white font-bold text-base">Delete</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 });

@@ -1,13 +1,71 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Image, KeyboardAvoidingView, Platform, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Image, KeyboardAvoidingView, Platform, Modal, TouchableOpacity, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useAuthStore, useChatStore } from '../../store';
+import { useAuthStore, useChatStore, useStoryStore, useFeedStore } from '../../store';
 import { 
   ChevronLeft, Video, Info, Plus, Mic, Image as ImageIcon, 
   Sticker, Play, CheckCheck, Send, BellOff, Ban, X
 } from 'lucide-react-native';
 import StoryRing from '../../components/StoryRing';
 import { formatRelativeTime } from '../../utils';
+import { apiClient } from '../../api/client';
+
+const ReelPreviewCard = ({ reelId }: { reelId: string }) => {
+  const { reels, userReels, likedReels, watchHistory } = useFeedStore();
+  
+  // Try to find the reel in any of our cached lists
+  const allCachedReels = [...reels, ...userReels, ...likedReels, ...watchHistory];
+  const reel = allCachedReels.find(r => r.id === reelId);
+
+  const thumbnailUrl = reel?.thumbnailUrl || reel?.videoUrl;
+  const getSafeThumbnail = (url: string) => {
+    if (!url) return null;
+    if (url.includes('cloudinary') && url.endsWith('.mp4')) {
+      return url.replace('.mp4', '.jpg');
+    }
+    return url;
+  };
+  const safeThumb = thumbnailUrl ? getSafeThumbnail(thumbnailUrl) : null;
+
+  return (
+    <View className="w-full h-full bg-[#1A0E2C] relative border border-white/10">
+      {safeThumb ? (
+        <Image 
+          source={{ uri: safeThumb }} 
+          className="w-full h-full opacity-90"
+          resizeMode="cover"
+        />
+      ) : (
+        <View className="w-full h-full bg-[#2D1B4E] items-center justify-center">
+           <Video size={40} color="#FFFFFF" style={{ opacity: 0.3 }} />
+        </View>
+      )}
+      
+      <View className="absolute inset-0 bg-black/20 items-center justify-center">
+        <View className="w-12 h-12 bg-white/30 rounded-full items-center justify-center backdrop-blur-md">
+          <Play size={20} color="#FFFFFF" fill="#FFFFFF" className="ml-1" />
+        </View>
+      </View>
+
+      <View className="absolute top-0 left-0 right-0 p-3 flex-row items-center gap-2 bg-black/40">
+        {reel?.creatorAvatar ? (
+            <Image source={{ uri: reel.creatorAvatar }} className="w-6 h-6 rounded-full border border-white/20" />
+        ) : (
+            <View className="w-6 h-6 rounded-full bg-white/20" />
+        )}
+        <Text className="text-white text-xs font-bold" style={{ textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 }} numberOfLines={1}>
+          {reel?.creatorUsername || 'Shared Reel'}
+        </Text>
+      </View>
+
+      <View className="absolute bottom-3 left-3 flex-row items-center">
+        <View className="bg-[#D946EF] px-2 py-1 rounded-md shadow-sm">
+          <Text className="text-white text-[10px] font-black uppercase tracking-wider">Reel</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -16,7 +74,8 @@ export default function ChatScreen() {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
 
   const { userProfile, toggleBlock } = useAuthStore();
-  const { chats, messages: storeMessages, fetchMessages, fetchChats, sendMessage, isTyping, toggleMuteChat, mutedChats } = useChatStore();
+  const { chats, messages: storeMessages, fetchMessages, fetchChats, sendMessage, deleteMessage, isTyping, toggleMuteChat, mutedChats } = useChatStore();
+  const { stories } = useStoryStore();
   
   const chat = chats.find(c => c.id === id);
 
@@ -34,6 +93,15 @@ export default function ChatScreen() {
     }
   }, [id]);
 
+  // Failsafe: if userProfile doesn't have an ID (due to older cache), fetch it
+  useEffect(() => {
+    if (!userProfile?.id && useAuthStore.getState().token) {
+      apiClient.get('/users/me').then(res => {
+        useAuthStore.getState().updateProfile({ id: res.data.id });
+      }).catch(e => console.error('Failed failsafe ID fetch', e));
+    }
+  }, [userProfile?.id]);
+
   const handleSend = async () => {
     if (inputText.trim()) {
       const textToSend = inputText.trim();
@@ -42,24 +110,78 @@ export default function ChatScreen() {
     }
   };
 
+  const handleLongPressMessage = (messageId: string) => {
+    Alert.alert(
+      "Unsend Message",
+      "Are you sure you want to unsend this message for everyone?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Unsend", style: "destructive", onPress: () => deleteMessage(id as string, messageId) }
+      ]
+    );
+  };
+
   // Keep scroll view at bottom (handled with contentContainerStyle or a ref)
   const scrollViewRef = useRef<ScrollView>(null);
   
   // Format messages to UI structure
-  const formattedMessages = messages.map(m => ({
-    id: m.id,
-    type: m.senderId === userProfile?.username || m.senderId === userProfile?.id ? 'sent' : 'received',
-    text: m.text,
-    time: m.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    senderAvatar: m.senderId === userProfile?.id ? userProfile?.avatar : displayAvatar, 
-    isSeen: m.status === 'seen'
-  }));
+  const formattedMessages = messages.map(m => {
+    let text = m.text || '';
+    let storyId: string | null = null;
+    let isStoryAvailable = true;
+    let storyCreator = null;
+    let reelId: string | null = null;
+    let isReel = false;
+
+    if (text?.startsWith('[STORY:')) {
+      const match = text.match(/\[STORY:(.*?)\]\s*(.*)/);
+      if (match) {
+        storyId = match[1];
+        text = match[2];
+        const story = stories.find(s => s.id === storyId);
+        isStoryAvailable = !!story;
+        if (story) storyCreator = story.creatorId;
+      }
+    } else if (text?.includes('/reels/')) {
+      const match = text.match(/\/reels\/([a-zA-Z0-9-]+)/);
+      if (match) {
+        reelId = match[1];
+        isReel = true;
+        text = text.replace(/https?:\/\/[^\s]+reels\/[a-zA-Z0-9-]+/i, '')
+                   .replace('Hey, check out this Reel! 🎥', '')
+                   .trim();
+      }
+    }
+
+    return {
+      id: m.id,
+      type: m.senderId === userProfile?.username || m.senderId === userProfile?.id ? 'sent' : 'received',
+      text,
+      storyId,
+      isStoryAvailable,
+      storyCreator,
+      reelId,
+      isReel,
+      time: m.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      senderAvatar: m.senderId === userProfile?.id ? userProfile?.avatar : displayAvatar, 
+      isSeen: m.status === 'seen',
+      attachment: (m as any).mediaUrl,
+      isVideo: (m as any).mediaUrl?.endsWith('.mp4') || (m as any).mediaUrl?.includes('/video/')
+    };
+  });
+
+  const getThumbnailUrl = (url: string) => {
+    if (!url) return '';
+    if (url.includes('cloudinary') && url.endsWith('.mp4')) {
+      return url.replace('.mp4', '.jpg');
+    }
+    return url;
+  };
 
   return (
     <KeyboardAvoidingView 
       style={{ flex: 1, backgroundColor: '#12081E' }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 25}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* HEADER */}
       <View className="flex-row items-center justify-between px-4 pt-14 pb-3 border-b border-white/5 bg-[#12081E] z-10">
@@ -119,8 +241,47 @@ export default function ChatScreen() {
                 <View key={msg.id} className="mb-4">
                   <View className="flex-row items-end gap-3">
                     <Image source={{ uri: msg.senderAvatar }} className="w-8 h-8 rounded-full bg-[#F59E0B]/20" />
-                    <View className="bg-[#2D1B4E] px-4 py-3 rounded-2xl rounded-bl-sm max-w-[75%]">
-                      <Text className="text-white/90 text-[15px] leading-6">{msg.text}</Text>
+                    <View>
+                      {msg.text ? (
+                        <View className="bg-[#2D1B4E] px-4 py-3 rounded-2xl rounded-bl-sm max-w-[75%]">
+                          <Text className="text-white/90 text-[15px] leading-6">{msg.text}</Text>
+                        </View>
+                      ) : null}
+                      
+                      {msg.isReel && msg.reelId ? (
+                        <Pressable 
+                          className="mt-1 rounded-2xl overflow-hidden"
+                          style={{ width: 180, height: 260 }}
+                          onPress={() => router.push(`/reel/${msg.reelId}`)} 
+                        >
+                          <ReelPreviewCard reelId={msg.reelId} />
+                        </Pressable>
+                      ) : msg.storyId && !msg.isStoryAvailable ? (
+                        <View className="bg-[#2D1B4E] p-4 rounded-2xl rounded-bl-sm max-w-[75%] mt-1 opacity-70 items-center justify-center border border-white/10">
+                          <Text className="text-white font-medium">Story Unavailable</Text>
+                          <Text className="text-white/50 text-xs mt-1">This story was deleted or expired.</Text>
+                        </View>
+                      ) : msg.attachment ? (
+                        <Pressable 
+                          className="bg-[#2D1B4E] p-1 rounded-2xl rounded-bl-sm max-w-[65%] mt-1"
+                          onPress={() => {
+                            if (msg.storyId && msg.storyCreator) {
+                              router.push(`/story-viewer/${msg.storyCreator}`);
+                            }
+                          }}
+                        >
+                          <View className="relative rounded-xl overflow-hidden">
+                            <Image source={{ uri: getThumbnailUrl(msg.attachment) }} style={{ width: 180, height: 240 }} resizeMode="cover" />
+                            {msg.isVideo && (
+                              <View className="absolute inset-0 items-center justify-center bg-black/20">
+                                <View className="w-12 h-12 bg-white/30 rounded-full items-center justify-center backdrop-blur-md">
+                                  <Play size={20} color="#FFFFFF" fill="#FFFFFF" className="ml-1" />
+                                </View>
+                              </View>
+                            )}
+                          </View>
+                        </Pressable>
+                      ) : null}
                     </View>
                   </View>
                   <Text className="text-[#6B7280] text-[10px] ml-11 mt-1.5">{msg.time}</Text>
@@ -128,20 +289,45 @@ export default function ChatScreen() {
               );
             } else {
               return (
-                <View key={msg.id} className="items-end mb-1">
-                  {msg.text && (
+                <Pressable 
+                  key={msg.id} 
+                  className="items-end mb-1"
+                  onLongPress={() => handleLongPressMessage(msg.id)}
+                >
+                  {msg.text ? (
                     <View className="rounded-2xl rounded-br-sm px-4 py-3 max-w-[75%] shadow-sm" style={{ backgroundColor: '#A855F7' }}>
                       {/* Fake gradient background using view absolute */}
                       <View className="absolute top-0 bottom-0 left-0 right-0 bg-gradient-to-r from-[#D946EF] to-[#A855F7] rounded-2xl rounded-br-sm opacity-90 overflow-hidden" />
                       <Text className="text-white text-[15px] leading-6 z-10">{msg.text}</Text>
                     </View>
-                  )}
+                  ) : null}
 
-                  {(msg as any).attachment && (
-                    <View className="bg-[#2D1B4E] p-1 rounded-2xl rounded-br-sm max-w-[65%] mt-1">
+                  {msg.isReel && msg.reelId ? (
+                    <Pressable 
+                      className="mt-1 rounded-2xl overflow-hidden shadow-sm max-w-[65%]"
+                      style={{ width: 180, height: 260, borderColor: '#A855F7', borderWidth: 2 }}
+                      onPress={() => router.push(`/reel/${msg.reelId}`)}
+                    >
+                      <ReelPreviewCard reelId={msg.reelId} />
+                    </Pressable>
+                  ) : msg.storyId && !msg.isStoryAvailable ? (
+                    <View className="bg-[#2D1B4E] p-4 rounded-2xl rounded-br-sm max-w-[75%] mt-1 opacity-70 items-center justify-center border border-white/10 shadow-sm" style={{ backgroundColor: '#A855F7' }}>
+                      <Text className="text-white font-medium">Story Unavailable</Text>
+                      <Text className="text-white/70 text-xs mt-1">This story was deleted.</Text>
+                    </View>
+                  ) : msg.attachment ? (
+                    <Pressable 
+                      className="bg-[#2D1B4E] p-1 rounded-2xl rounded-br-sm max-w-[65%] mt-1 shadow-sm"
+                      style={{ backgroundColor: msg.storyId ? '#A855F7' : '#2D1B4E' }}
+                      onPress={() => {
+                        if (msg.storyId && msg.storyCreator) {
+                          router.push(`/story-viewer/${msg.storyCreator}`);
+                        }
+                      }}
+                    >
                       <View className="relative rounded-xl overflow-hidden">
-                        <Image source={{ uri: (msg as any).attachment }} style={{ width: 180, height: 240 }} resizeMode="cover" />
-                        {(msg as any).isVideo && (
+                        <Image source={{ uri: getThumbnailUrl(msg.attachment) }} style={{ width: 180, height: 240 }} resizeMode="cover" />
+                        {msg.isVideo && (
                           <View className="absolute inset-0 items-center justify-center bg-black/20">
                             <View className="w-12 h-12 bg-white/30 rounded-full items-center justify-center backdrop-blur-md">
                               <Play size={20} color="#FFFFFF" fill="#FFFFFF" className="ml-1" />
@@ -149,8 +335,8 @@ export default function ChatScreen() {
                           </View>
                         )}
                       </View>
-                    </View>
-                  )}
+                    </Pressable>
+                  ) : null}
 
                   {msg.isSeen && (
                     <View className="flex-row items-center gap-1 mt-1.5 mb-2">
@@ -158,7 +344,7 @@ export default function ChatScreen() {
                       <CheckCheck size={12} color="#A855F7" />
                     </View>
                   )}
-                </View>
+                </Pressable>
               );
             }
           })}

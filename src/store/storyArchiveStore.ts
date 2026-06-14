@@ -23,12 +23,14 @@ export const useStoryArchiveStore = create<StoryArchiveState>()(
           const res = await apiClient.get('/stories/archive');
           const formattedStories = res.data.map((s: any) => ({
             id: s.id,
-            creatorId: s.creator.username,
+            creatorId: s.creator?.username || s.creatorId,
             mediaUrl: s.mediaUrl,
-            viewers: s.views ? s.views.map((v: any) => v.user.username) : [],
-            isCloseFriends: s.isCloseFriends,
-            repliesAllowed: s.repliesAllowed,
-            reactions: {}
+            mediaType: s.mediaType || 'IMAGE',
+            viewers: s.views ? s.views.map((v: any) => v.user?.username || v.userId) : [],
+            isCloseFriends: s.isCloseFriends || false,
+            repliesAllowed: s.repliesAllowed || false,
+            reactions: {},
+            createdAt: s.createdAt || new Date().toISOString()
           }));
           set({ archivedStories: formattedStories });
         } catch (error) {
@@ -42,4 +44,3 @@ export const useStoryArchiveStore = create<StoryArchiveState>()(
     }
   )
 );
-

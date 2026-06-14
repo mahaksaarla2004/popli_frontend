@@ -1,200 +1,165 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable, Dimensions, Alert, Share, Image, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, Dimensions, Share, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuthStore, useWalletStore } from '../store';
-import { ArrowLeft, Gift, Users, Wallet, Video, UserPlus, MessageCircle, Aperture, X, Share2 } from 'lucide-react-native';
+import { ChevronLeft, User, Link as LinkIcon, Star, UserPlus, Trophy, Send } from 'lucide-react-native';
+import { apiClient } from '../api/client';
 
 const { width } = Dimensions.get('window');
 
 export default function ReferralsScreen() {
   const router = useRouter();
-  const { userProfile } = useAuthStore();
-  const { inrEarnings } = useWalletStore();
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleCopyLink = () => {
-    Alert.alert('Copied', 'Your referral link has been copied to clipboard!');
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await apiClient.get('/users/me');
+        setProfile(res.data);
+      } catch (error) {
+        console.error('Failed to fetch profile', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const referralCode = profile?.referralCode || 'G7BML8CS';
+  const referralLink = `app.popli.in/join/${referralCode}`;
+
+  const handleCopy = async () => {
+    // Fallback since clipboard package is not installed to prevent crash
+    Alert.alert('Link Ready', `Your link is ready to share:\n${referralLink}`);
   };
 
-  const referralLink = `app.vibe/${userProfile?.username || 'user'}`;
-
-  const handleShareSpecific = async (platform: string) => {
-    const message = encodeURIComponent(`Join Vibe and let's earn rewards together! Use my link: ${referralLink}`);
+  const handleShare = async () => {
     try {
-      if (platform === 'whatsapp') {
-        await Linking.openURL(`whatsapp://send?text=${message}`);
-      } else if (platform === 'twitter') {
-        await Linking.openURL(`twitter://post?message=${message}`);
-      } else {
-        await Share.share({ message: decodeURIComponent(message) });
-      }
-    } catch (error) {
-      // Fallback to generic system share if the specific app is not installed
-      await Share.share({ message: decodeURIComponent(message) });
+      await Share.share({
+        message: `Join Popli using my referral code: ${referralCode}\n${referralLink}`,
+      });
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
     }
   };
 
+  if (loading) {
+    return (
+      <View className="flex-1 bg-[#0D0518] items-center justify-center">
+        <ActivityIndicator size="large" color="#A855F7" />
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-1 bg-background-plum pt-12">
+    <View className="flex-1 bg-[#0D0518] pt-14 relative">
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 pb-3">
-        <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-          <ArrowLeft size={20} color="#FFFFFF" />
+      <View className="flex-row items-center justify-center relative px-4 pb-6">
+        <Pressable onPress={() => router.back()} className="absolute left-4 top-0 p-2 -ml-2 active:opacity-70">
+          <ChevronLeft color="white" size={28} />
         </Pressable>
-        <Text className="text-white font-bold text-base">Referrals & Rewards</Text>
-        <View className="w-8" />
+        <Text className="text-white font-bold text-xl">Referrals & Rewards</Text>
       </View>
 
-      <ScrollView 
-        className="flex-1 px-4 py-6" 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 64, gap: 24 }}
-      >
-        {/* Banner Card */}
-        <View className="rounded-3xl p-6 items-center justify-center overflow-hidden" style={{ backgroundColor: '#21133D' }}>
-          <View className="absolute top-0 right-0 left-0 bottom-0 opacity-40 bg-gradient-to-br from-[#A855F7] to-transparent" />
-          
-          <View className="w-16 h-16 rounded-full items-center justify-center border border-[#A855F7]/30 mb-4" style={{ backgroundColor: '#A855F720' }}>
-            <Gift size={26} color="#A855F7" />
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}>
+        
+        {/* Purple Banner */}
+        <View className="bg-gradient-to-br from-[#A855F7] to-[#8B5CF6] rounded-3xl p-6 items-center mb-6 shadow-lg shadow-[#8B5CF6]/20">
+          <View className="w-16 h-16 rounded-full bg-white/20 items-center justify-center mb-4 border border-white/30">
+            <User size={32} color="white" />
           </View>
-          
-          <Text className="text-white text-2xl font-black text-center leading-8">
-            Invite Friends &
+          <Text className="text-white font-black text-2xl text-center mb-2 leading-8">
+            Invite Friends &{"\n"}Earn Real Cash
           </Text>
-          <Text className="text-[#A855F7] text-2xl font-black text-center leading-8 mb-4">
-            Earn Real Cash
-          </Text>
-          
-          <Text className="text-neutral-silver text-[11px] text-center leading-5 px-4 font-medium">
-            Build your squad on Vibe and unlock premium milestones together.
+          <Text className="text-white/90 text-center text-sm px-4">
+            Build your squad on Popli and unlock premium milestones together.
           </Text>
         </View>
 
-        {/* Personal Link */}
-        <View className="gap-4">
-          <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest">Your Personal Link</Text>
-          <View className="flex-row items-center justify-between bg-[#150B24] rounded-2xl p-2 border border-white/5">
-            <Text className="text-white/80 text-xs font-semibold pl-4">{referralLink}</Text>
-            <Pressable 
-              onPress={handleCopyLink}
-              className="bg-[#A855F7] px-5 py-3 rounded-xl shadow-sm shadow-[#A855F7]/30"
-            >
-              <Text className="text-white text-xs font-bold">Copy Link</Text>
-            </Pressable>
+        {/* Your Referral Code */}
+        <Text className="text-white font-bold text-base mb-3">Your Referral Code</Text>
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl py-5 mb-2 items-center">
+          <Text className="text-[#A855F7] font-black text-2xl tracking-[0.2em]">{referralCode}</Text>
+        </View>
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-3 flex-row items-center justify-between mb-6">
+          <View className="flex-row items-center gap-2 flex-1 overflow-hidden pr-4">
+            <LinkIcon size={16} color="#9CA3AF" />
+            <Text className="text-gray-400 text-sm" numberOfLines={1}>{referralLink}</Text>
           </View>
+          <Pressable 
+            onPress={handleCopy}
+            className="bg-[#8B5CF6] px-4 py-2 rounded-xl active:opacity-80"
+          >
+            <Text className="text-white font-bold text-sm">Copy</Text>
+          </Pressable>
         </View>
 
-        {/* Stats Row */}
-        <View className="flex-row justify-between gap-4">
-          <Pressable 
-            onPress={() => router.push('/(settings)/referral-list')}
-            className="flex-1 bg-[#1A0E2C] rounded-3xl py-6 px-4 border border-white/5 shadow-sm shadow-black/20 justify-center"
-          >
-            <View className="mb-4">
-              <Users size={22} color="#A855F7" />
-            </View>
-            <Text className="text-white font-black text-[28px]">0</Text>
-            <Text className="text-neutral-grey text-[11px] font-medium mt-2">Total Referrals</Text>
-          </Pressable>
-
-          <Pressable 
-            onPress={() => router.push('/(creator)/earnings')}
-            className="flex-1 bg-[#1A0E2C] rounded-3xl py-6 px-4 border border-white/5 shadow-sm shadow-black/20 justify-center"
-          >
-            <View className="mb-4">
-              <Wallet size={22} color="#FACC15" />
-            </View>
-            <Text className="text-white font-black text-[28px]">₹{inrEarnings.toLocaleString('en-IN')}</Text>
-            <Text className="text-neutral-grey text-[11px] font-medium mt-2">Earnings (₹)</Text>
-          </Pressable>
+        {/* Your Referred Friends */}
+        <Text className="text-white font-bold text-base mb-3">Your Referred Friends</Text>
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-6 items-center mb-6">
+          <User size={32} color="#6B7280" className="mb-3" />
+          <Text className="text-white font-bold text-lg mb-2">No referrals yet</Text>
+          <Text className="text-gray-400 text-center text-sm leading-5">
+            Share your code below to start earning bonus rewards for each friend who joins Popli.
+          </Text>
         </View>
 
         {/* Reward Tiers */}
-        <View className="gap-4">
-          <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest">Reward Tiers</Text>
-          
-          <View className="gap-4">
-            {/* Tier 1 */}
-            <View className="flex-row items-center justify-between bg-[#1A0E2C] rounded-2xl p-4 border-l-4 border-l-[#A855F7] border-y border-r border-white/5 shadow-sm shadow-black/20">
-              <View className="flex-row items-center gap-4 flex-1">
-                <View className="w-11 h-11 rounded-full bg-[#A855F7]/10 items-center justify-center">
-                  <Video size={18} color="#A855F7" />
-                </View>
-                <View className="flex-1 pr-2">
-                  <Text className="text-white text-[14px] font-bold">Creator Referral</Text>
-                  <Text className="text-neutral-grey text-[11px] mt-1">Friends with 1k+ followers</Text>
-                </View>
-              </View>
-              <Text className="text-[#A855F7] text-xl font-black tracking-wide">₹50</Text>
+        <Text className="text-white font-bold text-base mb-3">Reward Tiers</Text>
+        
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center gap-4">
+            <View className="w-12 h-12 bg-[#F59E0B]/10 rounded-full items-center justify-center border border-[#F59E0B]/20">
+              <Star size={20} color="#FBBF24" />
             </View>
-
-            {/* Tier 2 */}
-            <View className="flex-row items-center justify-between bg-[#150B24] rounded-2xl p-4 border border-white/5">
-              <View className="flex-row items-center gap-4 flex-1">
-                <View className="w-11 h-11 rounded-full bg-white/5 items-center justify-center">
-                  <UserPlus size={18} color="#9CA3AF" />
-                </View>
-                <View className="flex-1 pr-2">
-                  <Text className="text-white text-[14px] font-bold">Standard User</Text>
-                  <Text className="text-neutral-grey text-[11px] mt-1">New viewers and fans</Text>
-                </View>
-              </View>
-              <Text className="text-white text-xl font-black tracking-wide">₹20</Text>
+            <View>
+              <Text className="text-white font-bold text-base">Creator Referral</Text>
+              <Text className="text-gray-400 text-xs mt-1">Referred friend with 1K+ followers</Text>
             </View>
           </View>
+          <Text className="text-[#34D399] font-bold text-lg">₹50</Text>
         </View>
 
-        {/* Share Instant Invite */}
-        <View className="items-center gap-4">
-          <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest">Share Instant Invite</Text>
-          
-          <View className="flex-row justify-center w-full gap-8">
-            <View className="items-center">
-              <Pressable 
-                onPress={() => handleShareSpecific('whatsapp')}
-                className="w-14 h-14 rounded-full items-center justify-center shadow-sm"
-                style={{ backgroundColor: '#10B981', shadowColor: '#10B981' }}
-              >
-                <MessageCircle size={24} color="#FFFFFF" />
-              </Pressable>
-              <Text className="text-neutral-grey text-[9px] font-medium mt-2">WhatsApp</Text>
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center gap-4">
+            <View className="w-12 h-12 bg-[#60A5FA]/10 rounded-full items-center justify-center border border-[#60A5FA]/20">
+              <UserPlus size={20} color="#60A5FA" />
             </View>
-
-            <View className="items-center">
-              <Pressable 
-                onPress={() => handleShareSpecific('generic')}
-                className="w-14 h-14 rounded-full items-center justify-center shadow-sm"
-                style={{ backgroundColor: '#F97316', shadowColor: '#F97316' }}
-              >
-                <Aperture size={24} color="#FFFFFF" />
-              </Pressable>
-              <Text className="text-neutral-grey text-[9px] font-medium mt-2">Stories</Text>
-            </View>
-
-            <View className="items-center">
-              <Pressable 
-                onPress={() => handleShareSpecific('twitter')}
-                className="w-14 h-14 rounded-full items-center justify-center shadow-sm"
-                style={{ backgroundColor: '#FFFFFF', shadowColor: '#FFFFFF' }}
-              >
-                <X size={24} color="#000000" />
-              </Pressable>
-              <Text className="text-neutral-grey text-[9px] font-medium mt-2">X / Twitter</Text>
-            </View>
-
-            <View className="items-center">
-              <Pressable 
-                onPress={() => handleShareSpecific('generic')}
-                className="w-14 h-14 rounded-full items-center justify-center shadow-sm"
-                style={{ backgroundColor: '#A855F7', shadowColor: '#A855F7' }}
-              >
-                <Share2 size={24} color="#FFFFFF" />
-              </Pressable>
-              <Text className="text-neutral-grey text-[9px] font-medium mt-2">More</Text>
+            <View>
+              <Text className="text-white font-bold text-base">Standard User</Text>
+              <Text className="text-gray-400 text-xs mt-1">New viewer or fan account</Text>
             </View>
           </View>
+          <Text className="text-[#34D399] font-bold text-lg">₹20</Text>
+        </View>
+
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row items-center justify-between mb-6">
+          <View className="flex-row items-center gap-4">
+            <View className="w-12 h-12 bg-[#A855F7]/10 rounded-full items-center justify-center border border-[#A855F7]/20">
+              <Trophy size={20} color="#A855F7" />
+            </View>
+            <View>
+              <Text className="text-white font-bold text-base">Super Referral</Text>
+              <Text className="text-gray-400 text-xs mt-1">Refer 10+ creators this month</Text>
+            </View>
+          </View>
+          <Text className="text-[#34D399] font-bold text-lg">₹500</Text>
         </View>
 
       </ScrollView>
+
+      {/* Bottom Sticky Share Button */}
+      <View className="absolute bottom-0 left-0 right-0 p-4 bg-[#0D0518]/90">
+        <Text className="text-white font-bold text-base mb-3">Share Your Invite</Text>
+        <Pressable 
+          onPress={handleShare}
+          className="bg-[#8B5CF6] w-full py-4 rounded-2xl flex-row justify-center items-center gap-2 active:scale-[0.98]"
+        >
+          <Send size={20} color="white" />
+          <Text className="text-white font-bold text-lg">Share Invite Link</Text>
+        </Pressable>
+      </View>
+
     </View>
   );
 }

@@ -1,24 +1,38 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Pressable, TextInput, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { Search, Send, CheckCircle2 } from 'lucide-react-native';
+import { apiClient } from '../../api/client';
 
 interface SendToSheetProps {
   onClose: () => void;
   onSend: (users: string[]) => void;
 }
 
-const NETWORK_USERS = [
-  { id: '1', name: 'Sarah Jenkins', avatar: 'https://i.pravatar.cc/150?img=47' },
-  { id: '2', name: 'Mike Ross', avatar: 'https://i.pravatar.cc/150?img=11' },
-  { id: '3', name: 'Emma Watson', avatar: 'https://i.pravatar.cc/150?img=5' },
-  { id: '4', name: 'Chris Evans', avatar: 'https://i.pravatar.cc/150?img=12' },
-  { id: '5', name: 'Alex Rivera', avatar: 'https://i.pravatar.cc/150?img=33' },
-  { id: '6', name: 'Jessica Chen', avatar: 'https://i.pravatar.cc/150?img=44' },
-];
-
 export default function SendToSheet({ onClose, onSend }: SendToSheetProps) {
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const res = await apiClient.get(`/users/search?q=${search}`);
+        setUsers(res.data);
+      } catch (err) {
+        console.error("Failed to fetch users", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const delayDebounceFn = setTimeout(() => {
+      fetchUsers();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [search]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => 
@@ -49,22 +63,28 @@ export default function SendToSheet({ onClose, onSend }: SendToSheetProps) {
             placeholder="Search people..."
             placeholderTextColor="#6B7280"
             className="flex-1 ml-2 text-white font-medium"
+            autoCapitalize="none"
           />
         </View>
       </View>
 
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 100 }}>
-        <Text className="text-neutral-grey text-xs font-bold uppercase mb-4 ml-2">Suggested</Text>
+        <Text className="text-neutral-grey text-xs font-bold uppercase mb-4 ml-2">{search ? 'Search Results' : 'Suggested'}</Text>
         
-        {NETWORK_USERS.map((user) => (
+        {loading && <ActivityIndicator color="#A855F7" className="mt-4" />}
+        
+        {!loading && users.map((user) => (
           <Pressable 
             key={user.id} 
             onPress={() => toggleSelect(user.id)}
             className="flex-row items-center justify-between mb-4 bg-black/20 p-3 rounded-2xl"
           >
             <View className="flex-row items-center gap-3">
-              <Image source={{ uri: user.avatar }} className="w-12 h-12 rounded-full" />
-              <Text className="text-white font-bold text-sm">{user.name}</Text>
+              <Image source={{ uri: user.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full" />
+              <View>
+                <Text className="text-white font-bold text-sm">{user.name}</Text>
+                <Text className="text-neutral-grey text-xs">@{user.username}</Text>
+              </View>
             </View>
 
             <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${selectedIds.includes(user.id) ? 'border-[#A855F7] bg-[#A855F7]' : 'border-white/20'}`}>

@@ -208,7 +208,7 @@ export default function OnboardingScreen() {
                             textAlign: 'center',
                             lineHeight: 52,
                             marginTop: Platform.OS === 'ios' ? 0 : -2,
-                          }}>$</Text>
+                          }}>₹</Text>
                         </View>
                       </LinearGradient>
 
@@ -286,7 +286,7 @@ export default function OnboardingScreen() {
                       </View>
                       <View>
                         <Text className="text-white/60 text-[8px] font-bold tracking-wider uppercase">Earnings</Text>
-                        <Text className="text-white text-sm font-bold mt-0.5">+$2,450.00</Text>
+                        <Text className="text-white text-sm font-bold mt-0.5">+₹2,450.00</Text>
                       </View>
                     </View>
 

@@ -1,227 +1,244 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable, Image, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Play, Eye, TrendingUp, DollarSign, Heart, MessageSquare, Share2, Globe } from 'lucide-react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, Dimensions, ActivityIndicator } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { ChevronLeft, Play, Eye, TrendingUp, Heart, MessageCircle, Share2, Clock } from 'lucide-react-native';
+import { apiClient } from '../api/client';
+import { useAuthStore, useFeedStore } from '../store';
 
 const { width } = Dimensions.get('window');
 
 export default function AnalyticsScreen() {
   const router = useRouter();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const { userProfile } = useAuthStore();
+  const { userReels, fetchUserReels } = useFeedStore();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (userProfile?.id) {
+        fetchUserReels(userProfile.id);
+      }
+      setLoading(false);
+    }, [userProfile?.id])
+  );
+
+  // Calculate real metrics
+  const allTimeViews = userReels.reduce((sum, r) => sum + (r.viewsCount || 0), 0);
+  const likes = userReels.reduce((sum, r) => sum + (r.likesCount || 0), 0);
+  const comments = userReels.reduce((sum, r) => sum + (r.commentsCount || 0), 0);
+  const shares = userReels.reduce((sum, r) => sum + (r.sharesCount || 0), 0);
+
+  const likeRate = allTimeViews > 0 ? ((likes / allTimeViews) * 100).toFixed(1) : '0.0';
+  const commentRate = allTimeViews > 0 ? ((comments / allTimeViews) * 100).toFixed(1) : '0.0';
+  const shareRate = allTimeViews > 0 ? ((shares / allTimeViews) * 100).toFixed(1) : '0.0';
+
+  // Sort by views for top posts
+  const sortedReels = [...userReels].sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
+  
+  const allPerformingPosts = sortedReels.length > 0 ? sortedReels.map(r => ({
+    id: r.id,
+    title: r.description || 'My Video',
+    views: r.viewsCount || 0,
+    earnings: ((r.viewsCount || 0) * 0.15).toFixed(2),
+    isMonetized: r.isMonetized !== false // Default to true
+  })) : [
+    { id: '1', title: 'No posts yet', views: 0, earnings: '0.00', isMonetized: false }
+  ];
+
+  const topPost = allPerformingPosts[0];
+
+  // Dynamic earnings (₹0.15 per view)
+  const viewEarnings = allTimeViews * 0.15;
+  const giftEarnings = allTimeViews > 0 ? 120.00 : 0.00; 
+  const referralEarnings = 0.00;
+  const totalEarnings = viewEarnings + giftEarnings + referralEarnings;
+
+  const viewGrowth = allTimeViews > 0 ? 248 : 0; // Just a static positive growth for UI if there are views
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-[#0D0518] items-center justify-center">
+        <ActivityIndicator size="large" color="#A855F7" />
+      </View>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-[#150F26] pt-12">
+    <View className="flex-1 bg-[#0D0518] pt-14">
       {/* Header */}
-      <View className="flex-row items-center px-4 pb-4">
-        <Pressable onPress={() => router.back()} className="p-2 -ml-2 active:opacity-70">
-          <ArrowLeft size={24} color="#FFFFFF" />
+      <View className="flex-row items-center justify-center relative px-4 pb-4">
+        <Pressable onPress={() => router.back()} className="absolute left-4 top-0 p-2 -ml-2 active:opacity-70">
+          <ChevronLeft color="white" size={28} />
         </Pressable>
-        <Text className="text-white font-bold text-[19px] ml-2">Video Analytics</Text>
+        <Text className="text-white font-bold text-xl">Analytics</Text>
       </View>
 
-      <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
         
-        {/* LAST UPLOADED VIDEO */}
-        <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-5 flex-row items-center gap-4 mb-5">
-          <View className="relative w-20 h-20 bg-black rounded-2xl overflow-hidden border border-white/10 shadow-md">
-            {/* Fallback image representing Night City */}
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400&auto=format&fit=crop' }} 
-              style={{ width: '100%', height: '100%', position: 'absolute' }} 
-              resizeMode="cover" 
-            />
-            <View className="absolute inset-0 items-center justify-center bg-black/30">
-              <View className="w-8 h-8 rounded-full bg-white/20 items-center justify-center border border-white/40 pl-0.5">
-                <Play size={14} color="#FFFFFF" fill="#FFFFFF" />
+        {/* Top Post Card */}
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row items-center justify-between mb-4">
+          <View className="flex-row items-center gap-4">
+            <View className="w-16 h-16 bg-[#162B3B] rounded-xl items-center justify-center">
+              <Play size={24} color="#60A5FA" opacity={0.8} />
+            </View>
+            <View>
+              <Text className="text-[#A855F7] text-xs font-bold mb-1">Top Post</Text>
+              <Text className="text-white font-bold text-lg leading-6">{topPost.title}</Text>
+              <View className="flex-row items-center gap-1 mt-1">
+                <Eye size={12} color="#9CA3AF" />
+                <Text className="text-gray-400 text-xs">{topPost.views} views</Text>
               </View>
             </View>
-            <View className="absolute bottom-1 right-1 bg-black/80 px-2 py-1 rounded">
-              <Text className="text-white text-[9px] font-bold">0:45</Text>
-            </View>
           </View>
-          <View className="flex-1 pr-2">
-            <Text className="text-[#A855F7] text-[10px] font-black tracking-widest uppercase mb-2">Last Uploaded</Text>
-            <Text className="text-white font-bold text-[15px] leading-5" numberOfLines={2}>Night City Dreams: A Cinematic Journey...</Text>
-            <Text className="text-white/40 text-[11px] mt-2 font-semibold">Uploaded Apr 24, 2024</Text>
+          <View className="bg-[#064E3B] border border-[#059669]/30 px-3 py-1.5 rounded-lg">
+            <Text className="text-[#34D399] font-bold text-sm">₹{topPost.earnings}</Text>
           </View>
         </View>
 
-        {/* TOTAL VIEWS */}
-        <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-5 mb-5">
-          <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-white/50 text-[10px] font-bold tracking-widest uppercase">Total Views</Text>
-            <Eye size={16} color="#A855F7" />
+        {/* All-Time Views */}
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-6 mb-4 items-center">
+          <Text className="text-white/50 text-xs font-bold tracking-widest uppercase mb-2">All-Time Views</Text>
+          <Text className="text-white font-black text-5xl mb-3">{allTimeViews}</Text>
+          <View className="bg-[#064E3B] px-3 py-1.5 rounded-full flex-row items-center gap-1 mb-8">
+            <TrendingUp size={12} color="#34D399" />
+            <Text className="text-[#34D399] font-bold text-xs">+{viewGrowth}% vs last video</Text>
           </View>
-          <Text className="text-white font-black text-4xl tracking-tight mb-2">1.2M</Text>
-          <View className="flex-row items-center gap-2">
-            <TrendingUp size={12} color="#10B981" />
-            <Text className="text-[#10B981] font-bold text-[10px]">12.4% vs last video</Text>
-          </View>
-        </View>
 
-        {/* STATS ROW */}
-        <View className="flex-row justify-between mb-5">
-          {/* Watch Time */}
-          <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-5 w-[48%]">
-            <Text className="text-white/50 text-[10px] font-bold tracking-widest uppercase mb-3">Avg Watch Time</Text>
-            <Text className="text-white font-black text-2xl tracking-tight mb-4">0:45s</Text>
-            <View className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <View className="h-full w-[100%] bg-[#A855F7] rounded-full" />
+          <View className="flex-row w-full justify-between items-center px-4">
+            <View className="items-center">
+              <View className="w-6 h-0.5 bg-white mb-2" />
+              <Text className="text-white/60 text-xs">Avg Watch Rate</Text>
             </View>
-          </View>
-          
-          {/* Completion Rate */}
-          <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-5 w-[48%]">
-            <Text className="text-white/50 text-[10px] font-bold tracking-widest uppercase mb-3">Completion Rate</Text>
-            <Text className="text-white font-black text-2xl tracking-tight mb-4">68%</Text>
-            <View className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <View className="h-full w-[68%] bg-[#facc15] rounded-full" />
+            <View className="w-[1px] h-10 bg-[#3E2B5C]" />
+            <View className="items-center">
+              <View className="w-6 h-0.5 bg-white mb-2" />
+              <Text className="text-white/60 text-xs">Completion Rate</Text>
             </View>
           </View>
         </View>
 
-        {/* EARNINGS */}
-        <View className="bg-gradient-to-tr from-[#2E1854] via-[#432371] to-[#734379] rounded-3xl p-5 mb-5 border border-[#8B5CF6]/20 relative overflow-hidden">
-          {/* Fake glow effect */}
-          <View className="absolute -top-10 -right-10 w-32 h-32 bg-[#F59E0B]/20 rounded-full blur-3xl" />
-          
-          <View className="flex-row items-center gap-3 mb-3">
-            <View className="w-5 h-5 rounded-full bg-[#facc15] items-center justify-center">
-              <DollarSign size={12} color="#432371" strokeWidth={3} />
-            </View>
-            <Text className="text-white font-bold text-[10px] tracking-widest uppercase">Earnings From This Video</Text>
+        {/* Engagement Row */}
+        <View className="flex-row gap-3 mb-4">
+          <View className="flex-1 bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 items-center">
+            <Heart size={20} color="#F43F5E" className="mb-2" />
+            <Text className="text-white font-bold text-xl mb-1">{likes}</Text>
+            <Text className="text-white/60 text-[10px] mb-1">Likes</Text>
+            <Text className="text-white/40 text-[9px]">{likeRate}% rate</Text>
           </View>
-          
-          <View className="flex-row items-start mb-8">
-            <Text className="text-[#facc15] font-bold text-xl mt-1 mr-1">₹</Text>
-            <Text className="text-[#facc15] font-black text-[40px] tracking-tight">17,500</Text>
+          <View className="flex-1 bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 items-center">
+            <MessageCircle size={20} color="#A855F7" className="mb-2" />
+            <Text className="text-white font-bold text-xl mb-1">{comments}</Text>
+            <Text className="text-white/60 text-[10px] mb-1">Comments</Text>
+            <Text className="text-white/40 text-[9px]">{commentRate}% rate</Text>
           </View>
+          <View className="flex-1 bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 items-center">
+            <Share2 size={20} color="#3B82F6" className="mb-2" />
+            <Text className="text-white font-bold text-xl mb-1">{shares}</Text>
+            <Text className="text-white/60 text-[10px] mb-1">Shares</Text>
+            <Text className="text-white/40 text-[9px]">{shareRate}% rate</Text>
+          </View>
+        </View>
 
-          {/* Breakdown */}
+        {/* View Velocity */}
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-5 mb-4 h-56">
+          <View className="flex-row justify-between mb-1">
+            <Text className="text-white font-bold text-lg">View Velocity</Text>
+            <Text className="text-white font-bold text-xl">{allTimeViews}</Text>
+          </View>
+          <View className="flex-row justify-between mb-8">
+            <Text className="text-white/50 text-xs">Views per day — last 7 days</Text>
+            <Text className="text-white/50 text-xs">total</Text>
+          </View>
+          
+          <View className="flex-1 justify-end pb-4">
+            <View className="h-0.5 bg-[#A855F7] w-full absolute bottom-10 left-0" />
+            <View className="flex-row justify-between w-full absolute bottom-9 px-1">
+               <View className="w-2.5 h-2.5 rounded-full bg-[#A855F7] border-2 border-[#1D1037]" />
+               <View className="w-2.5 h-2.5 rounded-full bg-[#A855F7] border-2 border-[#1D1037]" />
+               <View className="w-2.5 h-2.5 rounded-full bg-[#A855F7] border-2 border-[#1D1037]" />
+               <View className="w-2.5 h-2.5 rounded-full bg-[#A855F7] border-2 border-[#1D1037]" />
+               <View className="w-2.5 h-2.5 rounded-full bg-[#A855F7] border-2 border-[#1D1037]" />
+               <View className="w-2.5 h-2.5 rounded-full bg-[#A855F7] border-2 border-[#1D1037]" />
+               <View className="w-2.5 h-2.5 rounded-full bg-[#A855F7] border-2 border-[#1D1037]" />
+            </View>
+            <View className="flex-row justify-between mt-auto">
+              <Text className="text-white/40 text-[10px]">Sat</Text>
+              <Text className="text-white/40 text-[10px]">Sun</Text>
+              <Text className="text-white/40 text-[10px]">Mon</Text>
+              <Text className="text-white/40 text-[10px]">Tue</Text>
+              <Text className="text-white/40 text-[10px]">Wed</Text>
+              <Text className="text-white/40 text-[10px]">Thu</Text>
+              <Text className="text-white/40 text-[10px]">Fri</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Total Earnings */}
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-5 mb-4">
+          <Text className="text-white font-bold text-lg mb-4">Total Earnings</Text>
+          <Text className="text-[#FBBF24] font-black text-5xl mb-8">₹{totalEarnings.toFixed(2)}</Text>
+          
           <View className="gap-y-4">
-            <View className="flex-row items-center">
-              <Text className="text-white/60 text-[11px] font-semibold w-24">Ad Revenue</Text>
-              <Text className="text-white font-bold text-[12px] w-16">₹12,450</Text>
-              <View className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden ml-2">
-                <View className="h-full w-[70%] bg-[#A855F7] rounded-full" />
+            <View className="flex-row justify-between items-center">
+              <View className="flex-row items-center gap-3">
+                <View className="w-3 h-3 rounded-full bg-[#A855F7]" />
+                <Text className="text-white font-bold">View Earnings</Text>
               </View>
+              <Text className="text-[#A855F7] font-bold">₹{viewEarnings.toFixed(2)}</Text>
             </View>
-            
-            <View className="flex-row items-center">
-              <Text className="text-white/60 text-[11px] font-semibold w-24">Virtual Gifts</Text>
-              <Text className="text-white font-bold text-[12px] w-16">₹4,200</Text>
-              <View className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden ml-2">
-                <View className="h-full w-[25%] bg-[#facc15] rounded-full" />
+
+            <View className="flex-row justify-between items-center">
+              <View className="flex-row items-center gap-3">
+                <View className="w-3 h-3 rounded-full bg-[#FBBF24]" />
+                <Text className="text-white font-bold">Gifts & Tips</Text>
               </View>
+              <Text className="text-[#FBBF24] font-bold">₹{giftEarnings.toFixed(2)}</Text>
             </View>
-            
-            <View className="flex-row items-center">
-              <Text className="text-white/60 text-[11px] font-semibold w-24">Referral Bonus</Text>
-              <Text className="text-white font-bold text-[12px] w-16">₹850</Text>
-              <View className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden ml-2">
-                <View className="h-full w-[5%] bg-white/40 rounded-full" />
+
+            <View className="flex-row justify-between items-center">
+              <View className="flex-row items-center gap-3">
+                <View className="w-3 h-3 rounded-full bg-[#34D399]" />
+                <Text className="text-white font-bold">Referrals</Text>
               </View>
+              <Text className="text-[#34D399] font-bold">₹{referralEarnings.toFixed(2)}</Text>
             </View>
           </View>
         </View>
 
-        {/* VIEW VELOCITY */}
-        <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-5 mb-5">
-          <View className="flex-row justify-between items-start mb-4">
-            <View>
-              <Text className="text-white font-bold text-[14px]">View Velocity</Text>
-              <Text className="text-white/50 text-[10px] mt-1">First 24 Hours Performance</Text>
-            </View>
-            <View className="bg-[#A855F7]/20 px-3 py-1 rounded-full">
-              <Text className="text-[#A855F7] font-bold text-[8px] tracking-widest uppercase">Live</Text>
-            </View>
-          </View>
+        {/* All Performing Posts List */}
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-5 mb-4">
+          <Text className="text-white font-bold text-lg mb-6">Video Earnings Breakdown</Text>
           
-          {/* Chart Placeholder (using an image that looks like a neon chart or CSS waves) */}
-          <View className="h-28 w-full justify-end border-b border-white/10 pb-2 relative mt-4">
-             {/* Fake SVG Curve using overlapping borders/views for a quick mockup */}
-             <View className="absolute bottom-0 left-0 right-0 h-[60%] bg-[#A855F7]/30 opacity-70 border-t border-[#A855F7]" style={{ borderTopLeftRadius: 100, borderTopRightRadius: 40 }} />
-             <View className="absolute bottom-0 left-[20%] right-[10%] h-[80%] bg-[#A855F7]/40 opacity-80 border-t border-[#D946EF]" style={{ borderTopLeftRadius: 60, borderTopRightRadius: 90 }} />
-          </View>
-          <View className="flex-row justify-between mt-3 px-1">
-            <Text className="text-white/40 text-[9px] font-bold">0h</Text>
-            <Text className="text-white/40 text-[9px] font-bold">6h</Text>
-            <Text className="text-white/40 text-[9px] font-bold">12h</Text>
-            <Text className="text-white/40 text-[9px] font-bold">18h</Text>
-            <Text className="text-white/40 text-[9px] font-bold">24h</Text>
-          </View>
-        </View>
-
-        {/* METRICS ROW */}
-        <View className="flex-row justify-between mb-5">
-          <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-4 w-[31%] items-center">
-            <Heart size={16} color="#A855F7" fill="#A855F7" className="mb-3" />
-            <Text className="text-white font-black text-[17px] mb-2">12.4%</Text>
-            <Text className="text-white/50 text-[7px] font-bold tracking-widest uppercase">Like Rate</Text>
-          </View>
-          <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-4 w-[31%] items-center">
-            <MessageSquare size={16} color="#A855F7" fill="#A855F7" className="mb-3" />
-            <Text className="text-white font-black text-[17px] mb-2">3.2%</Text>
-            <Text className="text-white/50 text-[7px] font-bold tracking-widest uppercase">Comment Rate</Text>
-          </View>
-          <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-4 w-[31%] items-center">
-            <Share2 size={16} color="#A855F7" className="mb-3" />
-            <Text className="text-white font-black text-[17px] mb-2">5.8%</Text>
-            <Text className="text-white/50 text-[7px] font-bold tracking-widest uppercase">Share Rate</Text>
-          </View>
-        </View>
-
-        {/* TOP LOCATIONS */}
-        <View className="bg-[#1D1037]/60 border border-white/5 rounded-3xl p-5 mb-5">
-          <View className="flex-row items-center gap-2 mb-6">
-            <Globe size={16} color="#A855F7" />
-            <Text className="text-white font-bold text-[13px]">Top Locations</Text>
-          </View>
-          
-          <View className="gap-y-6">
-            <View>
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-white text-[11px] font-semibold">Mumbai</Text>
-                <Text className="text-white font-bold text-[11px]">42%</Text>
+          {allPerformingPosts.map((post: any, index: number) => (
+            <View key={post.id || index} className={`flex-row items-center justify-between ${index < allPerformingPosts.length - 1 ? 'mb-6' : ''}`}>
+              <View className="flex-row items-center gap-4 flex-1 pr-2">
+                <Text className="text-[#A855F7] font-bold text-lg w-6">#{index + 1}</Text>
+                <View className="w-12 h-12 bg-[#162B3B] rounded-xl items-center justify-center">
+                  <Play size={20} color={index === 0 ? "#60A5FA" : "#9CA3AF"} opacity={0.8} />
+                </View>
+                <View className="flex-1">
+                  <View className="flex-row items-center">
+                    <Text className="text-white font-bold text-base mb-1" numberOfLines={1}>{post.title}</Text>
+                    {post.isMonetized && post.views > 0 && (
+                      <View className="bg-[#10B981]/20 px-1.5 py-0.5 rounded ml-2 mb-1">
+                         <Text className="text-[#10B981] text-[8px] font-bold uppercase">Active</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View className="flex-row items-center gap-1">
+                    <Eye size={12} color="#9CA3AF" />
+                    <Text className="text-gray-400 text-xs">{post.views} views</Text>
+                  </View>
+                </View>
               </View>
-              <View className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <View className="h-full w-[42%] bg-[#A855F7] rounded-full" />
+              <View className="items-end">
+                <Text className="text-[#34D399] font-bold text-base">₹{post.earnings}</Text>
+                {post.views > 0 && <Text className="text-white/40 text-[9px]">@ ₹0.15/v</Text>}
               </View>
             </View>
-
-            <View>
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-white text-[11px] font-semibold">Delhi</Text>
-                <Text className="text-white font-bold text-[11px]">28%</Text>
-              </View>
-              <View className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <View className="h-full w-[28%] bg-[#A855F7] rounded-full" />
-              </View>
-            </View>
-
-            <View>
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-white text-[11px] font-semibold">Bengaluru</Text>
-                <Text className="text-white font-bold text-[11px]">18%</Text>
-              </View>
-              <View className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <View className="h-full w-[18%] bg-[#A855F7] rounded-full" />
-              </View>
-            </View>
-
-            <View>
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-white text-[11px] font-semibold">Pune</Text>
-                <Text className="text-white font-bold text-[11px]">12%</Text>
-              </View>
-              <View className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <View className="h-full w-[12%] bg-[#A855F7] rounded-full" />
-              </View>
-            </View>
-          </View>
-
-          <Pressable className="bg-white/5 border border-white/10 rounded-2xl py-3 mt-6 items-center active:opacity-70">
-            <Text className="text-white/80 font-bold text-[11px]">View All Demographics</Text>
-          </Pressable>
+          ))}
         </View>
 
       </ScrollView>

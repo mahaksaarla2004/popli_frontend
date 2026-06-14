@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, Pressable, Dimensions, TextInput, ActivityIndicator, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Clock, Calendar, Bookmark, Plus, Check } from 'lucide-react-native';
-import { useStoryArchiveStore, useStoryHighlightStore } from '../store';
+import { ArrowLeft, Clock, Calendar, Bookmark, Plus, Check, Play } from 'lucide-react-native';
+import { useStoryArchiveStore, useStoryHighlightStore, useAuthStore } from '../store';
 
 const { width } = Dimensions.get('window');
 const colWidth = (width - 40) / 3;
 
 export default function StoryArchiveScreen() {
   const router = useRouter();
+  const { userProfile } = useAuthStore();
   const { archivedStories, fetchArchivedStories } = useStoryArchiveStore();
-  const { createHighlight } = useStoryHighlightStore();
+  const { highlights, createHighlight, fetchHighlights } = useStoryHighlightStore();
 
+  const [activeTab, setActiveTab] = useState<'archive' | 'calendar' | 'highlights'>('archive');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedStoryIds, setSelectedStoryIds] = useState<string[]>([]);
   
@@ -21,6 +23,9 @@ export default function StoryArchiveScreen() {
 
   React.useEffect(() => {
     fetchArchivedStories();
+    if (userProfile?.username) {
+      fetchHighlights(userProfile.username);
+    }
   }, []);
 
   const toggleSelection = (id: string) => {
@@ -75,6 +80,17 @@ export default function StoryArchiveScreen() {
     }
   };
 
+  const getGroupedStories = () => {
+    const groups: Record<string, typeof archivedStories> = {};
+    archivedStories.forEach(story => {
+      const date = new Date(story.createdAt);
+      const monthYear = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      if (!groups[monthYear]) groups[monthYear] = [];
+      groups[monthYear].push(story);
+    });
+    return groups;
+  };
+
   return (
     <View className="flex-1 bg-[#12081E] pt-12">
       <View className="flex-row items-center px-4 pb-4 border-b border-white/10 justify-between">
@@ -100,68 +116,131 @@ export default function StoryArchiveScreen() {
       {/* Tabs - Only show when not in selection mode */}
       {!isSelectionMode && (
         <View className="flex-row border-b border-white/10">
-          <Pressable className="flex-1 py-4 items-center border-b-2 border-white">
-            <Clock size={20} color="#FFFFFF" />
+          <Pressable onPress={() => setActiveTab('archive')} className={`flex-1 py-4 items-center ${activeTab === 'archive' ? 'border-b-2 border-white' : ''}`}>
+            <Clock size={20} color={activeTab === 'archive' ? '#FFFFFF' : '#9CA3AF'} />
           </Pressable>
-          <Pressable className="flex-1 py-4 items-center">
-            <Calendar size={20} color="#9CA3AF" />
+          <Pressable onPress={() => setActiveTab('calendar')} className={`flex-1 py-4 items-center ${activeTab === 'calendar' ? 'border-b-2 border-white' : ''}`}>
+            <Calendar size={20} color={activeTab === 'calendar' ? '#FFFFFF' : '#9CA3AF'} />
           </Pressable>
-          <Pressable className="flex-1 py-4 items-center">
-            <Bookmark size={20} color="#9CA3AF" />
+          <Pressable onPress={() => setActiveTab('highlights')} className={`flex-1 py-4 items-center ${activeTab === 'highlights' ? 'border-b-2 border-white' : ''}`}>
+            <Bookmark size={20} color={activeTab === 'highlights' ? '#FFFFFF' : '#9CA3AF'} />
           </Pressable>
         </View>
       )}
 
       <ScrollView className="flex-1">
-        {archivedStories.length === 0 ? (
-          <View className="items-center justify-center pt-20">
-            <View className="w-24 h-24 rounded-full border-2 border-dashed border-white/30 items-center justify-center mb-4">
-              <Clock size={40} color="rgba(255,255,255,0.3)" />
+        {activeTab === 'archive' && (
+          archivedStories.length === 0 ? (
+            <View className="items-center justify-center pt-20">
+              <View className="w-24 h-24 rounded-full border-2 border-dashed border-white/30 items-center justify-center mb-4">
+                <Clock size={40} color="rgba(255,255,255,0.3)" />
+              </View>
+              <Text className="text-white font-bold text-lg">No Stories Yet</Text>
+              <Text className="text-neutral-grey text-sm mt-2">Stories you share will appear here.</Text>
             </View>
-            <Text className="text-white font-bold text-lg">No Stories Yet</Text>
-            <Text className="text-neutral-grey text-sm mt-2">Stories you share will appear here.</Text>
-          </View>
-        ) : (
-          <View className="p-4 flex-row flex-wrap gap-2">
-            {archivedStories.map(story => {
-              const isSelected = selectedStoryIds.includes(story.id);
-              return (
-                <Pressable 
-                  key={story.id} 
-                  onPress={() => isSelectionMode ? toggleSelection(story.id) : null}
-                  className={`rounded-xl overflow-hidden ${isSelected ? 'border-2 border-[#A855F7]' : 'border-2 border-transparent'}`} 
-                  style={{ width: colWidth, height: colWidth * 1.5 }}
-                >
-                  <Image source={{ uri: story.mediaUrl }} className="w-full h-full opacity-100" style={{ opacity: isSelectionMode && !isSelected ? 0.5 : 1 }} />
-                  
-                  {isSelectionMode && (
-                    <View className={`absolute bottom-2 right-2 w-6 h-6 rounded-full border-2 items-center justify-center ${isSelected ? 'bg-[#A855F7] border-[#A855F7]' : 'border-white/50 bg-black/30'}`}>
-                      {isSelected && <Check size={14} color="#FFFFFF" strokeWidth={3} />}
-                    </View>
-                  )}
-                  
-                  {!isSelectionMode && (
-                    <View className="absolute top-2 right-2 bg-black/50 px-1.5 py-0.5 rounded text-[10px]">
-                      <Text className="text-white text-[10px]">10/12</Text>
-                    </View>
-                  )}
+          ) : (
+            <View className="p-4 flex-row flex-wrap gap-2">
+              {archivedStories.map(story => {
+                const isSelected = selectedStoryIds.includes(story.id);
+                return (
+                  <Pressable 
+                    key={story.id} 
+                    onPress={() => isSelectionMode ? toggleSelection(story.id) : null}
+                    className={`rounded-xl overflow-hidden ${isSelected ? 'border-2 border-[#A855F7]' : 'border-2 border-transparent'}`} 
+                    style={{ width: colWidth, height: colWidth * 1.5 }}
+                  >
+                    <Image source={{ uri: story.mediaUrl }} className="w-full h-full opacity-100" style={{ opacity: isSelectionMode && !isSelected ? 0.5 : 1 }} />
+                    
+                    {isSelectionMode && (
+                      <View className={`absolute bottom-2 right-2 w-6 h-6 rounded-full border-2 items-center justify-center ${isSelected ? 'bg-[#A855F7] border-[#A855F7]' : 'border-white/50 bg-black/30'}`}>
+                        {isSelected && <Check size={14} color="#FFFFFF" strokeWidth={3} />}
+                      </View>
+                    )}
+                    
+                    {!isSelectionMode && (
+                      <View className="absolute top-2 right-2 bg-black/50 px-1.5 py-0.5 rounded text-[10px]">
+                        <Text className="text-white text-[10px]">
+                          {new Date(story.createdAt).getDate()} {new Date(story.createdAt).toLocaleString('en-US', { month: 'short' })}
+                        </Text>
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )
+        )}
+
+        {activeTab === 'calendar' && (
+          archivedStories.length === 0 ? (
+            <View className="items-center justify-center pt-20">
+              <View className="w-24 h-24 rounded-full border-2 border-dashed border-white/30 items-center justify-center mb-4">
+                <Calendar size={40} color="rgba(255,255,255,0.3)" />
+              </View>
+              <Text className="text-white font-bold text-lg">No Archive Data</Text>
+              <Text className="text-neutral-grey text-sm mt-2">Your stories grouped by date will appear here.</Text>
+            </View>
+          ) : (
+            <View className="p-4">
+              {Object.entries(getGroupedStories()).map(([monthYear, stories]) => (
+                <View key={monthYear} className="mb-6">
+                  <Text className="text-white font-bold text-lg mb-3 ml-1">{monthYear}</Text>
+                  <View className="flex-row flex-wrap gap-2">
+                    {stories.map(story => (
+                      <Pressable 
+                        key={story.id} 
+                        className="rounded-xl overflow-hidden border-2 border-transparent" 
+                        style={{ width: colWidth, height: colWidth * 1.5 }}
+                      >
+                        <Image source={{ uri: story.mediaUrl }} className="w-full h-full" />
+                        <View className="absolute top-2 right-2 bg-black/50 px-2 py-1 rounded-full text-[10px]">
+                          <Text className="text-white text-xs font-bold">{new Date(story.createdAt).getDate()}</Text>
+                        </View>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )
+        )}
+
+        {activeTab === 'highlights' && (
+          highlights.length === 0 ? (
+            <View className="items-center justify-center pt-20">
+              <View className="w-24 h-24 rounded-full border-2 border-dashed border-white/30 items-center justify-center mb-4">
+                <Bookmark size={40} color="rgba(255,255,255,0.3)" />
+              </View>
+              <Text className="text-white font-bold text-lg">No Highlights</Text>
+              <Text className="text-neutral-grey text-sm mt-2">Create highlights to save your favorite stories.</Text>
+            </View>
+          ) : (
+            <View className="p-6 flex-row flex-wrap gap-6">
+              {highlights.map(highlight => (
+                <Pressable key={highlight.id} className="items-center gap-2" style={{ width: 80 }} onPress={() => router.push({ pathname: '/highlight-viewer/[id]', params: { id: highlight.id } } as any)}>
+                  <View className="w-20 h-20 rounded-full border-2 border-white/20 overflow-hidden bg-white/5">
+                    <Image source={{ uri: highlight.coverUrl }} className="w-full h-full" />
+                  </View>
+                  <Text className="text-white text-xs text-center font-bold" numberOfLines={1}>{highlight.title}</Text>
                 </Pressable>
-              );
-            })}
-          </View>
+              ))}
+            </View>
+          )
         )}
       </ScrollView>
 
       {/* Bottom Floating Action: Create Highlight or Next */}
-      <Pressable 
-        className={`absolute bottom-8 self-center px-6 py-3 rounded-full shadow-lg flex-row items-center gap-2 ${isSelectionMode ? 'bg-[#A855F7]' : 'bg-white'}`}
-        onPress={handleActionPress}
-      >
-        {!isSelectionMode && <Plus size={20} color="#000000" />}
-        <Text className={`font-bold ${isSelectionMode ? 'text-white' : 'text-black'}`}>
-          {isSelectionMode ? `Next (${selectedStoryIds.length})` : 'Create Highlight'}
-        </Text>
-      </Pressable>
+      {activeTab === 'archive' && (
+        <Pressable 
+          className={`absolute bottom-8 self-center px-6 py-3 rounded-full shadow-lg flex-row items-center gap-2 ${isSelectionMode ? 'bg-[#A855F7]' : 'bg-white'}`}
+          onPress={handleActionPress}
+        >
+          {!isSelectionMode && <Plus size={20} color="#000000" />}
+          <Text className={`font-bold ${isSelectionMode ? 'text-white' : 'text-black'}`}>
+            {isSelectionMode ? `Next (${selectedStoryIds.length})` : 'Create Highlight'}
+          </Text>
+        </Pressable>
+      )}
 
       {/* Title Input Modal */}
       <Modal visible={isTitleModalVisible} transparent animationType="fade">

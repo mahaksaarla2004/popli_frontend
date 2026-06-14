@@ -1,31 +1,87 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Image, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Image, Pressable, TextInput, KeyboardAvoidingView, Platform, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
   ArrowLeft, Edit, Search, MessageSquare, Bell, 
-  Heart, Award, ShieldAlert, Sparkles, ChevronRight, Video
+  Heart, Award, ShieldAlert, Sparkles, ChevronRight, Video, X, User, Trash2
 } from 'lucide-react-native';
+import { apiClient } from '../../api/client';
 import { useAuthStore, useChatStore } from '../../store';
 import StoryRing from '../../components/StoryRing';
 
 export default function InboxScreen() {
   const router = useRouter();
-  const { chats, fetchChats, connectSocket } = useChatStore();
-  const { blockedUsers } = useAuthStore();
+  const { chats, fetchChats, connectSocket, deleteChat } = useChatStore();
+  const { userProfile, blockedUsers } = useAuthStore();
   
   const blockedIds = blockedUsers.map(u => u.id);
   const visibleChats = chats.filter(chat => !blockedIds.includes(chat.creatorId));
+
+  const [isNewMessageModalVisible, setIsNewMessageModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     connectSocket();
     fetchChats();
   }, []);
 
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await apiClient.get(`/users/search?q=${encodeURIComponent(searchQuery)}`);
+        // Filter out current user and blocked users
+        const results = res.data.filter((u: any) => u.id !== userProfile?.id && !blockedIds.includes(u.id));
+        setSearchResults(results);
+      } catch (error) {
+        console.error("Search error:", error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, userProfile]);
+
+  const handleStartChat = async (userId: string, name: string, username: string, avatar: string) => {
+    try {
+      const res = await apiClient.post(`/chats/user/${userId}`);
+      setIsNewMessageModalVisible(false);
+      setSearchQuery('');
+      if (res.data && res.data.id) {
+        router.push({
+          pathname: `/chat/[id]`,
+          params: { id: res.data.id, creatorName: name, creatorUsername: username, creatorAvatar: avatar }
+        });
+      }
+    } catch (e) {
+      console.error("Failed to start chat", e);
+    }
+  };
+
+  const handleLongPressChat = (chatId: string) => {
+    Alert.alert(
+      "Delete Chat",
+      "Are you sure you want to delete this chat? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => deleteChat(chatId) }
+      ]
+    );
+  };
+
   // Map active friends from existing chats (fallback logic until real presence is added)
   const activeFriends = visibleChats.slice(0, 5).map((chat) => ({
-    id: chat.creatorId,
-    name: chat.creatorName.split(' ')[0],
-    avatar: chat.creatorAvatar,
+    id: chat?.id || Math.random().toString(), // Use chat.id for unique React key
+    userId: chat?.creatorId || 'unknown',
+    name: chat?.creatorName ? chat.creatorName.split(' ')[0] : 'Unknown',
+    avatar: chat?.creatorAvatar || 'https://i.pravatar.cc/150',
     active: Math.random() > 0.5 // Simulated online status for now
   }));
 
@@ -37,7 +93,7 @@ export default function InboxScreen() {
           <ArrowLeft size={20} color="#FFFFFF" />
         </Pressable>
         <Text className="text-white font-bold text-base">Messages</Text>
-        <Pressable className="p-2 -mr-2">
+        <Pressable onPress={() => setIsNewMessageModalVisible(true)} className="p-2 -mr-2">
           <Edit size={20} color="#FFFFFF" />
         </Pressable>
       </View>
@@ -73,7 +129,7 @@ export default function InboxScreen() {
                 {activeFriends.map((friend) => (
                   <View key={friend.id} className="items-center">
                     <View className="relative">
-                      <StoryRing userId={friend.name} avatarUrl={friend.avatar} size={56} />
+                      <StoryRing userId={friend.userId} avatarUrl={friend.avatar} size={56} />
                       {friend.active && (
                         <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#10B981] rounded-full border-[2.5px] border-[#12081E]" />
                       )}
@@ -99,6 +155,7 @@ export default function InboxScreen() {
                   <Pressable
                     key={chat.id}
                     onPress={() => router.push(`/chat/${chat.id}`)}
+                    onLongPress={() => handleLongPressChat(chat.id)}
                     className="flex-row items-center justify-between active:scale-[0.99]"
                   >
                     <View className="flex-row items-center gap-3 flex-1 pr-4">
@@ -106,7 +163,7 @@ export default function InboxScreen() {
                       
                       <View className="flex-1 justify-center gap-1">
                         <Text className="text-white font-bold text-sm" numberOfLines={1}>
-                          {chat.creatorName}
+                          {chat?.creatorName || 'Unknown'}
                         </Text>
                         <Text className={`${chat.unreadCount && chat.unreadCount > 0 ? 'text-white font-medium' : 'text-neutral-grey font-medium'} text-xs`} numberOfLines={1}>
                           {chat.lastMessage}
@@ -129,6 +186,61 @@ export default function InboxScreen() {
             </View>
           </View>
       </ScrollView>
+
+      {/* New Message Modal */}
+      <Modal visible={isNewMessageModalVisible} transparent animationType="slide">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
+          <View className="flex-row items-center justify-between px-4 pb-4 border-b border-white/10">
+            <Text className="text-white font-bold text-base">New Message</Text>
+            <Pressable onPress={() => setIsNewMessageModalVisible(false)} className="p-2 -mr-2">
+              <X size={24} color="#FFFFFF" />
+            </Pressable>
+          </View>
+
+          <View className="p-4 border-b border-white/10 flex-row items-center gap-3">
+            <Text className="text-white font-bold">To:</Text>
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search users..."
+              placeholderTextColor="#9CA3AF"
+              className="flex-1 text-white text-base py-2"
+              autoFocus
+            />
+          </View>
+
+          <ScrollView className="flex-1 px-4" keyboardShouldPersistTaps="handled">
+            {isSearching ? (
+              <ActivityIndicator size="small" color="#D946EF" className="mt-6" />
+            ) : searchResults.length > 0 ? (
+              searchResults.map(user => (
+                <Pressable
+                  key={user.id}
+                  onPress={() => handleStartChat(user.id, user.name, user.username, user.avatar)}
+                  className="flex-row items-center gap-3 py-4 border-b border-white/5"
+                >
+                  <View className="w-12 h-12 rounded-full overflow-hidden bg-white/10 items-center justify-center">
+                    {user.avatar ? (
+                      <Image source={{ uri: user.avatar }} className="w-full h-full" />
+                    ) : (
+                      <User size={20} color="#9CA3AF" />
+                    )}
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-white font-bold">{user.name}</Text>
+                    <Text className="text-neutral-grey text-xs">@{user.username}</Text>
+                  </View>
+                </Pressable>
+              ))
+            ) : searchQuery.trim().length > 0 ? (
+              <Text className="text-neutral-grey text-center mt-6">No users found.</Text>
+            ) : (
+              <Text className="text-neutral-grey text-center mt-6">Search for a user to start a chat.</Text>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
     </KeyboardAvoidingView>
   );
 }

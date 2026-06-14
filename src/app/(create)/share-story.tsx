@@ -1,20 +1,22 @@
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useStoryStore, useAuthStore, useFeedStore, useEditorStore } from '../../store';
+import { useStoryStore, useAuthStore, useFeedStore, useEditorStore, useChatStore } from '../../store';
 import { MotiView } from 'moti';
 import { CheckCircle } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
+import * as FileSystem from 'expo-file-system';
 
 export default function ShareStoryScreen() {
   const router = useRouter();
-  const { uri, type, target, text, mode, isStory, speed, effect, musicId } = useLocalSearchParams<{ 
-    uri: string, type: 'photo'|'video', target: string, text: string, mode: string, isStory: string, speed?: string, effect?: string, musicId?: string 
+  const { uri, type, target, text, mode, isStory, speed, effect, musicId, musicName, city, taggedUserIds, targetUserIds, isMonetized } = useLocalSearchParams<{ 
+    uri: string, type: 'photo'|'video', target: string, text: string, mode: string, isStory: string, speed?: string, effect?: string, musicId?: string, musicName?: string, city?: string, taggedUserIds?: string, targetUserIds?: string, isMonetized?: string 
   }>();
   const { addStory } = useStoryStore();
   const { fetchReels } = useFeedStore();
   const { userProfile } = useAuthStore();
   const { layers, timelineData, musicData } = useEditorStore();
+  const { sendDirectMessage } = useChatStore();
   const [status, setStatus] = React.useState<'uploading' | 'success' | 'error'>('uploading');
   const [uploadProgress, setUploadProgress] = React.useState<number>(0);
 
@@ -27,6 +29,17 @@ export default function ShareStoryScreen() {
         let decodedUri = decodeURIComponent(uri);
         if (Platform.OS === 'android' && !decodedUri.startsWith('file://') && !decodedUri.startsWith('content://') && !decodedUri.startsWith('http')) {
           decodedUri = 'file://' + decodedUri;
+        }
+
+        // Check File Size before upload (Cloudinary Free Tier limit is 10MB = 10485760 bytes)
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(decodedUri);
+          if (fileInfo.exists && fileInfo.size && fileInfo.size > 10485760) {
+            throw new Error(`File size is too large (${(fileInfo.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 10MB. Please select a smaller video.`);
+          }
+        } catch (e: any) {
+          if (e.message.includes('too large')) throw e; // rethrow size error
+          console.warn("Failed to read file size", e);
         }
 
         const fileType = decodedUri.split('.').pop() || (type === 'video' ? 'mp4' : 'jpg');
@@ -93,7 +106,10 @@ export default function ShareStoryScreen() {
             mediaType: type === 'video' ? 'VIDEO' : 'PHOTO',
             description: text || 'New post!',
             category: 'comedy', // default for now
-            musicName: musicId ? `Track ${musicId}` : undefined,
+            musicName: musicName || (musicId ? `Track ${musicId}` : undefined),
+            city,
+            isMonetized: isMonetized === 'true',
+            taggedUserIds: taggedUserIds ? JSON.parse(taggedUserIds) : undefined,
             layersData: JSON.stringify(metadata)
           });
           
@@ -154,28 +170,46 @@ export default function ShareStoryScreen() {
             music: musicData
           };
 
-          // Save to backend DB
+          // ALWAYS Save to backend DB as public or close friends story
+          const isPrivateStory = target === 'close_friends' || target === 'share';
           const res = await apiClient.post('/stories', {
             mediaUrl: finalUrl,
             mediaType: type === 'video' ? 'VIDEO' : 'PHOTO',
-            isCloseFriends: target === 'close_friends',
+            isCloseFriends: isPrivateStory,
             repliesAllowed: true,
             layersData: JSON.stringify(metadata)
           });
 
+          const storyId = res.data.id;
+
           // Optimistic UI update
           addStory({
-            id: res.data.id,
-            creatorId: userProfile.username,
+            id: storyId,
+            creatorId: userProfile?.username || 'me',
             mediaUrl: finalUrl,
-            mediaType: type === 'video' ? 'VIDEO' : 'PHOTO',
-            isCloseFriends: target === 'close_friends',
+            mediaType: type === 'video' ? 'VIDEO' : 'IMAGE',
+            isCloseFriends: isPrivateStory,
             repliesAllowed: true,
             viewers: [],
             reactions: {},
             layersData: metadata,
             createdAt: res.data.createdAt
           });
+
+          if (target === 'share' && targetUserIds) {
+            // Direct Message Share
+            let parsedIds: string[] = [];
+            try {
+              parsedIds = JSON.parse(targetUserIds);
+            } catch (e) {
+              console.error("Failed to parse targetUserIds", e);
+            }
+
+            // Iterate over each selected user and send a message
+            for (const userId of parsedIds) {
+              await sendDirectMessage({ id: userId }, `[STORY:${storyId}] Hey, I shared a story with you!`, finalUrl);
+            }
+          }
         }
 
         setStatus('success');
@@ -207,15 +241,17 @@ export default function ShareStoryScreen() {
         >
           <ActivityIndicator size="large" color="#A855F7" />
           <Text className="text-white mt-4 font-bold text-lg">
-            {mode === 'REEL' && isStory !== 'true' ? 'Posting Reel...' : 'Posting Story...'} {uploadProgress > 0 ? `${uploadProgress}%` : ''}
+            {target === 'share' ? 'Sending...' : (mode === 'REEL' && isStory !== 'true' ? 'Posting Reel...' : 'Posting Story...')} {uploadProgress > 0 ? `${uploadProgress}%` : ''}
           </Text>
           <View className="w-48 h-2 bg-white/10 rounded-full mt-4 overflow-hidden">
             <View className="h-full bg-[#A855F7] rounded-full" style={{ width: `${uploadProgress}%` }} />
           </View>
           <Text className="text-neutral-grey mt-4 text-sm text-center px-6">
-            {mode === 'REEL' && isStory !== 'true'
-              ? 'Uploading to Cloudinary (please wait, large videos take time)' 
-              : (target === 'close_friends' ? 'Sharing with Close Friends' : 'Sharing to Your Story')}
+            {target === 'share' 
+              ? 'Sending direct messages to your friends'
+              : (mode === 'REEL' && isStory !== 'true'
+                ? 'Uploading to Cloudinary (please wait, large videos take time)' 
+                : (target === 'close_friends' ? 'Sharing with Close Friends' : 'Sharing to Your Story'))}
           </Text>
         </MotiView>
       ) : status === 'error' ? (
@@ -232,7 +268,9 @@ export default function ShareStoryScreen() {
           <View className="w-20 h-20 bg-[#10B981]/20 rounded-full items-center justify-center mb-4">
             <CheckCircle size={40} color="#10B981" />
           </View>
-          <Text className="text-white font-bold text-2xl">Story Posted!</Text>
+          <Text className="text-white font-bold text-2xl">
+            {target === 'share' ? 'Sent!' : (mode === 'REEL' && isStory !== 'true' ? 'Reel Posted!' : 'Story Posted!')}
+          </Text>
         </MotiView>
       )}
     </View>

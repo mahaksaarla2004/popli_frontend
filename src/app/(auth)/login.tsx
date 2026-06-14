@@ -11,13 +11,9 @@ export default function LoginScreen() {
   const router = useRouter();
   const { setLogin, setFirstLogin, mockRegisteredUsers } = useAuthStore();
   const [identifier, setIdentifier] = useState('');
-  // Password state kept for UI structure but unused for OTP flow
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
     identifier?: string;
-    password?: string;
     api?: string;
   }>({});
   const [accountNotFound, setAccountNotFound] = useState(false);
@@ -27,7 +23,7 @@ export default function LoginScreen() {
 
     const identTrimmed = identifier.trim();
     if (!identTrimmed) {
-      newErrors.identifier = 'Please enter phone, email or username.';
+      newErrors.identifier = 'Please enter your phone number.';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -51,8 +47,10 @@ export default function LoginScreen() {
       }
 
       // 2. Existing user -> Send Firebase OTP
+      const targetPhone = checkRes.data.phone || identTrimmed;
+      
       try {
-        await sendFirebaseOTP(identTrimmed);
+        await sendFirebaseOTP(targetPhone);
       } catch (err: any) {
         console.error('Firebase error:', err);
         setIsLoading(false);
@@ -64,7 +62,7 @@ export default function LoginScreen() {
       // Navigate to OTP screen
       router.push({
         pathname: '/(auth)/otp',
-        params: { target: identTrimmed, type: identTrimmed.includes('@') ? 'email' : 'phone', phone: identTrimmed, isSignup: 'false' }
+        params: { target: targetPhone, type: identTrimmed.includes('@') ? 'email' : 'phone', phone: targetPhone, isSignup: 'false' }
       });
     } catch (error: any) {
       setIsLoading(false);
@@ -120,10 +118,10 @@ export default function LoginScreen() {
                     setIdentifier(val);
                     if (errors.identifier) setErrors(prev => ({ ...prev, identifier: undefined }));
                   }}
-                  placeholder="Phone number, Username or email"
+                  placeholder="Phone number"
                   placeholderTextColor="rgba(255, 255, 255, 0.3)"
                   className="flex-1 text-white text-sm font-semibold py-2"
-                  keyboardType="email-address"
+                  keyboardType="phone-pad"
                   autoCapitalize="none"
                   onFocus={() => setAccountNotFound(false)}
                 />
@@ -133,37 +131,6 @@ export default function LoginScreen() {
               )}
               {errors.api && (
                 <Text className="text-red-500 text-[12px] pl-1 mt-2 font-bold">{errors.api}</Text>
-              )}
-            </View>
-
-            {/* Password Input */}
-            <View className="flex-col">
-              <View className={`bg-[#1D1037]/45 border rounded-2xl px-4 flex-row items-center justify-between h-12 ${errors.password ? 'border-red-500' : 'border-primary-purple/20'}`}>
-                <View className="flex-row items-center gap-3 flex-1">
-                  <Lock size={16} color="rgba(255, 255, 255, 0.4)" />
-                  <TextInput
-                    value={password}
-                    onChangeText={(val) => {
-                      setPassword(val);
-                      if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
-                    }}
-                    secureTextEntry={!showPassword}
-                    placeholder="••••••••"
-                    placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                    className="flex-1 text-white text-sm font-semibold py-2"
-                    autoCapitalize="none"
-                  />
-                </View>
-                <Pressable onPress={() => setShowPassword(!showPassword)} className="p-2">
-                  {showPassword ? (
-                    <EyeOff size={16} color="rgba(255, 255, 255, 0.4)" />
-                  ) : (
-                    <Eye size={16} color="rgba(255, 255, 255, 0.4)" />
-                  )}
-                </Pressable>
-              </View>
-              {errors.password && (
-                <Text className="text-red-500 text-[10px] pl-1 mt-1 font-semibold">{errors.password}</Text>
               )}
             </View>
           </View>
@@ -186,17 +153,6 @@ export default function LoginScreen() {
               </Pressable>
             </MotiView>
           )}
-
-          {/* Forgot password */}
-          <View className="flex-row justify-end px-1 -mt-2">
-            <Pressable 
-              onPress={() => router.push('/(auth)/forgot-password')} 
-              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-            >
-              <Text className="text-primary-purple text-xs font-bold">Forgot Password?</Text>
-            </Pressable>
-          </View>
 
           {/* Login Button */}
           <Pressable

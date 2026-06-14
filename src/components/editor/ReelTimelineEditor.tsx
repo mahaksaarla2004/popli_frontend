@@ -130,7 +130,7 @@ export default function ReelTimelineEditor({ player, duration, initialData, onCo
 
   return (
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>
-      <View className="flex-1 bg-black/90 z-50">
+      <View className="flex-1 bg-black/70 z-50">
         
         {/* Header */}
         <View className="flex-row justify-between items-center px-4 pt-16 pb-4">
@@ -144,12 +144,8 @@ export default function ReelTimelineEditor({ player, duration, initialData, onCo
           </Pressable>
         </View>
 
-        {/* Video Preview Area (Empty space to see the video underneath if opacity was lower, but here we cover it, so we should actually make background black/90) */}
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-white/50 text-center px-8">
-            Preview the trimmed video here.{'\n'}In Phase 6, we will integrate a native video trimmer.
-          </Text>
-        </View>
+        {/* Video Preview Area (Empty space to see the video underneath) */}
+        <View className="flex-1" />
 
         {/* Voice Over Controls */}
         <View className="items-center mb-8">

@@ -40,7 +40,7 @@ export default function EarningsHistoryScreen() {
           <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-neutral-grey text-xs font-medium">Last 30 Days</Text>
-              <Text className="text-white text-3xl font-black mt-1">$0.00</Text>
+              <Text className="text-white text-3xl font-black mt-1">₹0.00</Text>
             </View>
             <View className="w-12 h-12 rounded-full bg-[#3B82F6]/10 items-center justify-center border border-[#3B82F6]/20">
               <TrendingUp size={24} color="#3B82F6" />
@@ -50,15 +50,15 @@ export default function EarningsHistoryScreen() {
           <View className="flex-row gap-4 border-t border-white/5 pt-4">
             <View className="flex-1">
               <Text className="text-neutral-grey text-[10px] uppercase">Ads</Text>
-              <Text className="text-white font-bold mt-1">$0.00</Text>
+              <Text className="text-white font-bold mt-1">₹0.00</Text>
             </View>
             <View className="flex-1 border-l border-white/5 pl-4">
               <Text className="text-neutral-grey text-[10px] uppercase">Gifts</Text>
-              <Text className="text-white font-bold mt-1">$0.00</Text>
+              <Text className="text-white font-bold mt-1">₹0.00</Text>
             </View>
             <View className="flex-1 border-l border-white/5 pl-4">
               <Text className="text-neutral-grey text-[10px] uppercase">Subs</Text>
-              <Text className="text-white font-bold mt-1">$0.00</Text>
+              <Text className="text-white font-bold mt-1">₹0.00</Text>
             </View>
           </View>
         </View>

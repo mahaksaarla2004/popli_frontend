@@ -14,15 +14,18 @@ export default function SignupScreen() {
 
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [dob, setDob] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
     fullName?: string;
     username?: string;
+    email?: string;
     mobile?: string;
     password?: string;
     dob?: string;
@@ -99,6 +102,13 @@ export default function SignupScreen() {
       newErrors.username = 'Username can only contain lowercase letters, numbers, and underscores.';
     }
 
+    const emailTrimmed = email.trim().toLowerCase();
+    if (!emailTrimmed) {
+      newErrors.email = 'Please enter your email.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      newErrors.email = 'Please enter a valid email format.';
+    }
+
     const mobileTrimmed = mobile.trim();
     if (!mobileTrimmed) {
       newErrors.mobile = 'Please enter your mobile number.';
@@ -135,13 +145,16 @@ export default function SignupScreen() {
       // 1. Check if user already exists
       const checkRes = await apiClient.post('/auth/check-user', { 
         identifier: targetPhone,
-        username: usernameTrimmed 
+        username: usernameTrimmed,
+        email: emailTrimmed
       });
       
       if (checkRes.data.exists) {
         setIsLoading(false);
         if (checkRes.data.field === 'username') {
           setErrors({ username: checkRes.data.message });
+        } else if (checkRes.data.field === 'email') {
+          setErrors({ email: checkRes.data.message });
         } else {
           setErrors({ mobile: checkRes.data.message });
         }
@@ -167,8 +180,10 @@ export default function SignupScreen() {
           isSignup: 'true',
           name: nameTrimmed,
           username: usernameTrimmed,
+          email: emailTrimmed,
           phone: targetPhone,
-          dob: dob
+          dob: dob,
+          referredByCode: referralCode.trim()
         }
       });
     } catch (error: any) {
@@ -254,6 +269,28 @@ export default function SignupScreen() {
               )}
             </View>
 
+            {/* Email input */}
+            <View className="flex-col">
+              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.email ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
+                <AtSign size={20} color="#A78BFA" strokeWidth={2} />
+                <TextInput
+                  value={email}
+                  onChangeText={(val) => {
+                    setEmail(val);
+                    if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+                  }}
+                  placeholder="mahaksaarla2004@gmail.com"
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  className="flex-1 text-white text-[14px] py-2"
+                />
+              </View>
+              {errors.email && (
+                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.email}</Text>
+              )}
+            </View>
+
             {/* Mobile Number input */}
             <View className="flex-col">
               <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.mobile ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
@@ -324,6 +361,21 @@ export default function SignupScreen() {
               {errors.dob && (
                 <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.dob}</Text>
               )}
+            </View>
+
+            {/* Referral Code input */}
+            <View className="flex-col">
+              <View className="bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 border-[#3E2B5C]">
+                <User size={20} color="#A78BFA" strokeWidth={2} />
+                <TextInput
+                  value={referralCode}
+                  onChangeText={(val) => setReferralCode(val.toUpperCase())}
+                  placeholder="Referral Code (Optional)"
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  autoCapitalize="characters"
+                  className="flex-1 text-white text-[14px] py-2"
+                />
+              </View>
             </View>
           </View>
 

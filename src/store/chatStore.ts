@@ -17,10 +17,12 @@ interface ChatState {
   notifications: NotificationItem[];
   isTyping: Record<string, boolean>;
   mutedChats: string[];
-  sendMessage: (chatId: string, text: string) => void;
+  sendMessage: (chatId: string, text: string, mediaUrl?: string) => Promise<void>;
   toggleMuteChat: (chatId: string) => void;
-  sendDirectMessage: (receiver: { id: string, name: string, username: string, avatar: string }, text: string) => void;
+  sendDirectMessage: (receiver: { id: string, name?: string, username?: string, avatar?: string }, text?: string, mediaUrl?: string) => void;
   markChatRead: (chatId: string) => void;
+  deleteChat: (chatId: string) => Promise<void>;
+  deleteMessage: (chatId: string, messageId: string) => Promise<void>;
   markNotificationsRead: () => Promise<void>;
   connectSocket: () => void;
   disconnectSocket: () => void;
@@ -64,16 +66,28 @@ export const useChatStore = create<ChatState>()(
           console.log('Chat socket connected:', socket?.id);
         });
 
-        socket.on('new_message', (message: Message) => {
+        socket.on('new_message', (message: any) => {
           set((state) => {
+            if (state.messages.some(m => m.id === message.id)) return state; // Prevent duplicates
+
+            const formattedMsg = {
+              id: message.id,
+              chatId: message.chatId,
+              senderId: message.senderId,
+              text: message.text,
+              mediaUrl: message.mediaUrl,
+              timestamp: formatRelativeTime(message.createdAt || new Date().toISOString()),
+              status: 'seen'
+            };
+
             const isChatActive = state.messages.some(m => m.chatId === message.chatId);
-            const updatedMessages = isChatActive ? [...state.messages, message] : state.messages;
+            const updatedMessages = isChatActive ? [...state.messages, formattedMsg as any] : state.messages;
 
             const updatedChats = state.chats.map((c) => {
               if (c.id === message.chatId) {
                 return {
                   ...c,
-                  lastMessage: message.text,
+                  lastMessage: message.text || 'Sent media',
                   lastMessageTime: formatRelativeTime(new Date().toISOString()),
                   unreadCount: c.unreadCount + 1
                 };
@@ -99,49 +113,48 @@ export const useChatStore = create<ChatState>()(
           socket = null;
         }
       },
-      sendMessage: async (chatId, text) => {
+      sendMessage: async (chatId, text, mediaUrl) => {
         try {
-          const res = await apiClient.post(`/chats/${chatId}/messages`, { text });
-          const newMsg = res.data;
+          const res = await apiClient.post(`/chats/${chatId}/messages`, { text: text || 'Sent media', mediaUrl });
+          const rawMsg = res.data;
           
-          set((state) => ({
-            messages: [...state.messages, newMsg],
+          const newMsg = {
+            id: rawMsg.id,
+            chatId: rawMsg.chatId,
+            senderId: rawMsg.senderId,
+            text: rawMsg.text,
+            mediaUrl: rawMsg.mediaUrl,
+            timestamp: formatRelativeTime(rawMsg.createdAt || new Date().toISOString()),
+            status: 'seen'
+          };
+          
+          set((state) => {
+            if (state.messages.some(m => m.id === newMsg.id)) return state;
+            return {
+            messages: [...state.messages, newMsg as any],
             chats: state.chats.map((c) => {
               if (c.id === chatId) {
                 return {
                   ...c,
-                  lastMessage: text,
+                  lastMessage: text || 'Sent media',
                   lastMessageTime: formatRelativeTime(new Date().toISOString())
                 };
               }
               return c;
             })
-          }));
+            };
+          });
         } catch (error) {
           console.error("Failed to send message:", error);
         }
       },
-      sendDirectMessage: async (receiver, text) => {
-        // Find existing chat with this user
+      sendDirectMessage: async (receiver, text, mediaUrl) => {
         try {
-          const res = await apiClient.get('/chats');
-          const existingChats = res.data;
-          let chat = existingChats.find((c: any) => 
-            c.participants.some((p: any) => p.id === receiver.id)
-          );
+          const chatRes = await apiClient.post(`/chats/user/${receiver.id}`);
+          const chatId = chatRes.data.id;
           
-          let chatId = chat?.id;
-          
-          // If no chat exists, the backend will create one when sending the first message
-          if (!chatId) {
-            // Wait, we need a special endpoint to send a message by userId
-            // For now, let's assume the backend handles creating a chat if we post to `/chats/user/:userId/messages` or similar.
-            // Actually, we can fetch from the backend later. For now, create dummy chat locally and send later,
-            // or post to standard endpoint if supported.
-            const createRes = await apiClient.post(`/chats/user/${receiver.id}/messages`, { text });
-            chatId = createRes.data.chatId;
-          } else {
-            await get().sendMessage(chatId, text);
+          if (chatId) {
+            await get().sendMessage(chatId, text || '', mediaUrl);
           }
           await get().fetchChats();
         } catch (error) {
@@ -157,6 +170,26 @@ export const useChatStore = create<ChatState>()(
             return c;
           })
         })),
+      deleteChat: async (chatId) => {
+        try {
+          await apiClient.delete(`/chats/${chatId}`);
+          set(state => ({
+            chats: state.chats.filter(c => c.id !== chatId)
+          }));
+        } catch (e) {
+          console.error('Error deleting chat:', e);
+        }
+      },
+      deleteMessage: async (chatId, messageId) => {
+        try {
+          await apiClient.delete(`/chats/${chatId}/messages/${messageId}`);
+          set(state => ({
+            messages: state.messages.filter(m => m.id !== messageId)
+          }));
+        } catch (e) {
+          console.error('Error deleting message:', e);
+        }
+      },
       markNotificationsRead: async () => {
         set((state) => ({
           notifications: state.notifications.map((n) => ({ ...n, isRead: true }))
@@ -170,17 +203,21 @@ export const useChatStore = create<ChatState>()(
       fetchChats: async () => {
         try {
           const res = await apiClient.get('/chats');
-          const formattedChats = res.data.map((c: any) => ({
-            id: c.id,
-            creatorId: c.participants[0]?.user?.id || 'unknown',
-            creatorName: c.participants[0]?.user?.name || 'Unknown',
-            creatorAvatar: c.participants[0]?.user?.avatar || 'https://i.pravatar.cc/150',
-            lastMessage: c.lastMessage || 'No messages yet',
-            lastMessageTime: c.lastMessageAt 
-              ? formatRelativeTime(c.lastMessageAt)
-              : '',
-            unreadCount: 0 // Will need to sync from backend if provided
-          }));
+          const formattedChats = res.data.map((cp: any) => {
+            const chat = cp.chat || cp; // Handle both formats just in case
+            return {
+              id: chat.id,
+              creatorId: chat.participants?.[0]?.user?.id || 'unknown',
+              creatorName: chat.participants?.[0]?.user?.name || 'Unknown',
+              creatorUsername: chat.participants?.[0]?.user?.username || 'user',
+              creatorAvatar: chat.participants?.[0]?.user?.avatar || 'https://i.pravatar.cc/150',
+              lastMessage: chat.lastMessage || 'No messages yet',
+              lastMessageTime: chat.lastMessageAt 
+                ? formatRelativeTime(chat.lastMessageAt)
+                : '',
+              unreadCount: cp.unreadCount || 0
+            };
+          });
           set({ chats: formattedChats });
         } catch (error) {
           console.error("Failed to fetch chats:", error);
@@ -194,6 +231,7 @@ export const useChatStore = create<ChatState>()(
             chatId: m.chatId,
             senderId: m.senderId,
             text: m.text,
+            mediaUrl: m.mediaUrl,
             timestamp: formatRelativeTime(m.createdAt),
             status: 'seen'
           }));

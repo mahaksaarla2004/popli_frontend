@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ArrowLeft, Heart, Play } from 'lucide-react-native';
 import { useFeedStore } from '../../store';
 import { Image } from 'expo-image';
@@ -10,9 +10,11 @@ export default function LikedVideosScreen() {
 
   const { likedReels, fetchLikedReels } = useFeedStore();
 
-  React.useEffect(() => {
-    fetchLikedReels();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchLikedReels();
+    }, [])
+  );
 
   return (
     <View className="flex-1 bg-[#12081E] pt-14">
@@ -53,7 +55,7 @@ export default function LikedVideosScreen() {
                 className="w-[48%] aspect-[9/16] bg-[#1A0E2C] rounded-2xl mb-4 overflow-hidden"
               >
                 <Image 
-                  source={{ uri: reel.thumbnailUrl || reel.mediaUrl }} 
+                  source={{ uri: reel.thumbnailUrl || reel.videoUrl }} 
                   style={{ width: '100%', height: '100%' }}
                   contentFit="cover"
                 />

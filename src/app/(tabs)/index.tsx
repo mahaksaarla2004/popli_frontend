@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, Dimensions, FlatList, ViewToken, StyleSheet, useWindowDimensions, ScrollView } from 'react-native';
+import { View, Text, Pressable, Dimensions, FlatList, ViewToken, StyleSheet, useWindowDimensions, ScrollView, RefreshControl } from 'react-native';
 import { Bell, MessageSquare, Send } from 'lucide-react-native';
 import { ReelItem } from '../../components/feed/ReelItem';
 import { CommentsSheet } from '../../components/sheets/CommentsSheet';
@@ -70,6 +70,40 @@ export default function HomeFeedScreen() {
     fetchReels(1, 10, 'all');
     fetchStories();
   }, []);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    const { fetchReels } = useFeedStore.getState();
+    const { fetchStories } = useStoryStore.getState();
+    
+    // Fetch stories and page 1 of reels to reset the feed
+    fetchStories();
+    await fetchReels(1, 10, 'all');
+    
+    // Reset active reel and scroll to top
+    const newReels = useFeedStore.getState().reels;
+    if (newReels.length > 0) {
+      setActiveReelId(newReels[0].id);
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }
+    
+    setRefreshing(false);
+  }, []);
+
+  useEffect(() => {
+    if (userProfile?.id) {
+      const { fetchFollowingIds } = useAuthStore.getState();
+      fetchFollowingIds(userProfile.id);
+    }
+  }, [userProfile?.id]);
+
+  useEffect(() => {
+    if (activeTab === 'following') {
+      const { fetchFollowingReels } = useFeedStore.getState();
+      fetchFollowingReels(1, 10);
+    }
+  }, [activeTab, followingIds.length]);
 
   const getFilteredReels = () => {
     switch (activeTab) {
@@ -189,13 +223,24 @@ export default function HomeFeedScreen() {
           showsVerticalScrollIndicator={false}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
-          maxToRenderPerBatch={2}
-          removeClippedSubviews
+          maxToRenderPerBatch={1}
+          windowSize={3}
+          initialNumToRender={1}
+          removeClippedSubviews={true}
           style={{ width, height }}
           snapToInterval={height}
           snapToAlignment="start"
           decelerationRate="fast"
           disableIntervalMomentum={true}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#A855F7"
+              colors={['#A855F7']}
+              progressViewOffset={100} // Push it below the top tabs
+            />
+          }
         />
       )}
 
@@ -205,17 +250,63 @@ export default function HomeFeedScreen() {
       <GiftSheet reel={selectedReel} isOpen={isGiftsOpen} onClose={() => setIsGiftsOpen(false)} onSendSuccess={handleGiftSendSuccess} />
 
       {burstGift.visible && (
-        <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-black/40 z-50">
+        <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-black/70 z-50" pointerEvents="none">
+          {/* Glowing Aura Behind */}
           <MotiView
-            from={{ scale: 0.1, opacity: 0 }}
-            animate={{ scale: [1, 2.5, 1.8], opacity: 1 }}
-            transition={{ type: 'spring', damping: 8 }}
+            from={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: [1, 2.5], opacity: [0.8, 0] }}
+            transition={{ type: 'timing', duration: 1500, loop: true }}
+            style={{ position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(217, 70, 239, 0.4)' }}
+          />
+
+          {/* Floating Confetti Elements */}
+          {[
+            { x: -100, y: -150, d: 0, s: '✨' },
+            { x: 120, y: -200, d: 100, s: '🎉' },
+            { x: -150, y: 50, d: 200, s: '💫' },
+            { x: 140, y: 80, d: 300, s: '💖' },
+            { x: 0, y: -250, d: 400, s: '🎊' }
+          ].map((confetti, i) => (
+            <MotiView
+              key={i}
+              from={{ translateY: 0, translateX: 0, opacity: 1, scale: 0 }}
+              animate={{ 
+                translateY: confetti.y, 
+                translateX: confetti.x, 
+                opacity: 0, 
+                scale: 1.5,
+                rotate: `${confetti.x}deg` 
+              }}
+              transition={{ type: 'timing', duration: 1200, delay: confetti.d }}
+              style={{ position: 'absolute' }}
+            >
+              <Text style={{ fontSize: 28 }}>{confetti.s}</Text>
+            </MotiView>
+          ))}
+
+          {/* Main Animated Icon & Text */}
+          <MotiView
+            from={{ scale: 0.1, opacity: 0, rotate: '-20deg', translateY: 50 }}
+            animate={{ scale: [1.2, 2.2, 1.8], opacity: 1, rotate: '0deg', translateY: 0 }}
+            transition={{ type: 'spring', damping: 6, stiffness: 120 }}
             style={{ alignItems: 'center' }}
           >
-            <Text style={{ fontSize: 110 }}>{burstGift.icon}</Text>
-            <Text className="text-accent-yellow font-black text-2xl mt-4 uppercase tracking-widest text-shadow shadow-black/80">
-              Gift Sent! 🎉
+            <Text style={{ fontSize: 130, textShadowColor: 'rgba(255,255,255,0.4)', textShadowRadius: 30 }}>
+              {burstGift.icon}
             </Text>
+            <MotiView
+              from={{ opacity: 0, translateY: 20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: 'timing', delay: 300, duration: 400 }}
+              style={{ alignItems: 'center' }}
+            >
+              <Text className="text-yellow-400 font-black text-4xl mt-6 uppercase tracking-widest text-shadow shadow-black">
+                GIFT SENT!
+              </Text>
+              <Text className="text-white font-bold text-sm tracking-widest mt-2 opacity-80">
+                AWESOME VIBES 🚀
+              </Text>
+            </MotiView>
           </MotiView>
         </View>
       )}

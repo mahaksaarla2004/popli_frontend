@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Platform, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { useFeedStore, useAuthStore } from '../../store';
 import { ChevronLeft, Compass, Sparkles, Navigation, ChevronRight, Check } from 'lucide-react-native';
 import { MotiView } from 'moti';
@@ -16,7 +16,6 @@ const FALLBACK_CITIES = [
 ];
 
 export default function LocationScreen() {
-  const router = useRouter();
   const { setGPS, setNearbyEnabled } = useFeedStore();
   const { updateProfile } = useAuthStore();
 

@@ -13,7 +13,8 @@ export interface Story {
   id: string;
   creatorId: string;
   mediaUrl: string;
-  mediaType: 'IMAGE' | 'VIDEO';
+  mediaType: 'IMAGE' | 'VIDEO' | 'PHOTO';
+  creatorAvatar?: string;
   viewers: string[];
   isCloseFriends: boolean;
   repliesAllowed: boolean;
@@ -82,7 +83,9 @@ export const useStoryStore = create<StoryState>()(
           const formattedStories = res.data.map((s: any) => ({
             id: s.id,
             creatorId: s.creator?.username || s.creatorId,
+            creatorAvatar: s.creator?.avatar,
             mediaUrl: s.mediaUrl,
+            mediaType: s.mediaType || 'IMAGE', // Provide default just in case
             viewers: (s.viewers || []).map((v: any) => v.id || v.userId), // The backend only returns the viewer record ID right now if viewed
             isCloseFriends: s.isCloseFriends,
             repliesAllowed: s.repliesAllowed,

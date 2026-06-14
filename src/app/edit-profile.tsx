@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, AtSign, Link as LinkIcon, UserPlus } from 'lucide-react-native';
-import { useAuthStore } from '../store';
+import { ArrowLeft, AtSign, Link as LinkIcon, UserPlus, Check } from 'lucide-react-native';
+import { useAuthStore, useFeedStore } from '../store';
 import * as ImagePicker from 'expo-image-picker';
 
 const InputField = ({ 
@@ -11,7 +11,8 @@ const InputField = ({
   onChange, 
   placeholder, 
   rightIcon: RightIcon, 
-  multiline = false 
+  multiline = false,
+  ...rest
 }: any) => (
   <View className="mb-4">
     <Text className="text-white/60 text-[9px] font-bold uppercase tracking-widest pl-1 mb-2">{label}</Text>
@@ -29,6 +30,7 @@ const InputField = ({
         multiline={multiline}
         className={`flex-1 text-white font-medium text-sm ${multiline ? 'leading-5' : ''}`}
         style={multiline ? { textAlignVertical: 'top' } : {}}
+        {...rest}
       />
       {RightIcon && label === 'USERNAME' && (
         <View className="ml-3">
@@ -42,6 +44,7 @@ export default function EditProfileScreen() {
   const router = useRouter();
 
   const { userProfile, updateProfile } = useAuthStore();
+  const { fetchReels, fetchUserReels } = useFeedStore();
 
   const [username, setUsername] = useState(userProfile.username);
   const [fullName, setFullName] = useState(userProfile.name);
@@ -51,6 +54,7 @@ export default function EditProfileScreen() {
   const [website, setWebsite] = useState(''); // not in store currently
   const [avatarUri, setAvatarUri] = useState(userProfile.avatar || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handlePickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -65,18 +69,44 @@ export default function EditProfileScreen() {
   };
 
   const handleSave = async () => {
+    // Basic validation
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        Alert.alert('Invalid Email', 'Please enter a valid email address format.');
+        return;
+      }
+    }
+
+    if (phone) {
+      const phoneRegex = /^[0-9+\s-]{10,15}$/;
+      if (!phoneRegex.test(phone)) {
+        Alert.alert('Invalid Phone', 'Please enter a valid phone number (only numbers, min 10 digits).');
+        return;
+      }
+    }
+
     setIsSaving(true);
-    await updateProfile({
+    const result = await updateProfile({
       name: fullName,
       username: username,
       bio: bio,
-      avatar: avatarUri
+      avatar: avatarUri,
+      // email and phone can be sent to backend if supported
+      email: email || undefined,
+      phone: phone || undefined,
     });
     setIsSaving(false);
+    
+    if (result.success) {
+      // Refresh feed stores to instantly reflect new profile data
+      fetchReels(1);
+      fetchUserReels(userProfile.id);
 
-    Alert.alert('Success', 'Profile changes saved successfully.', [
-      { text: 'OK', onPress: () => router.back() }
-    ]);
+      setShowSuccessModal(true);
+    } else {
+      Alert.alert('Error', result.error || 'Failed to save profile changes. Please try again.');
+    }
   };
 
 
@@ -113,8 +143,26 @@ export default function EditProfileScreen() {
         {/* Inputs */}
         <InputField label="USERNAME" value={username} onChange={setUsername} rightIcon={AtSign} />
         <InputField label="FULL NAME" value={fullName} onChange={setFullName} />
-        <InputField label="EMAIL ID" value={email} onChange={setEmail} />
-        <InputField label="PHONE NUMBER" value={phone} onChange={setPhone} />
+          <InputField 
+            label="EMAIL ID" 
+            value={email} 
+            onChange={setEmail} 
+            placeholder="mahaksaarla2004@gmail.com" 
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <InputField 
+            label="PHONE NUMBER" 
+            value={phone} 
+            onChange={(text: string) => {
+              // Only allow numbers, plus sign, and spaces
+              const filtered = text.replace(/[^0-9+\s-]/g, '');
+              setPhone(filtered);
+            }} 
+            placeholder="+91 0000000000" 
+            keyboardType="phone-pad"
+            maxLength={15}
+          />
         <InputField label="BIO" value={bio} onChange={setBio} multiline />
         <InputField label="WEBSITE OR CONTACT LINK" value={website} onChange={setWebsite} rightIcon={LinkIcon} />
 
@@ -138,6 +186,31 @@ export default function EditProfileScreen() {
         </Pressable>
 
       </ScrollView>
+
+      {/* Premium Success Modal */}
+      <Modal visible={showSuccessModal} transparent animationType="fade">
+        <View className="flex-1 bg-black/80 justify-center items-center px-6">
+          <View className="bg-[#1A0E2C] rounded-3xl w-full p-8 items-center border border-green-500/30 shadow-2xl shadow-green-500/20">
+            <View className="w-20 h-20 bg-green-500/10 rounded-full items-center justify-center mb-6 border-2 border-green-500/30">
+               <Check size={40} color="#22C55E" />
+            </View>
+            <Text className="text-white text-2xl font-bold mb-3 text-center">Profile Updated!</Text>
+            <Text className="text-white/60 text-center text-sm mb-8 leading-5">
+              Your profile changes have been saved successfully and are now live.
+            </Text>
+            <Pressable 
+              onPress={() => {
+                setShowSuccessModal(false);
+                router.back();
+              }}
+              className="w-full h-14 rounded-full bg-green-500 items-center justify-center active:bg-green-600 shadow-lg shadow-green-500/30"
+            >
+              <Text className="text-white font-bold text-base">Awesome!</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
     </KeyboardAvoidingView>
   );
 }

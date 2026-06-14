@@ -1,16 +1,18 @@
 import React, { useEffect } from 'react';
 import { Stack, router, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore, useKYCStore } from '../store';
 import { useFCM } from '../hooks/useFCM';
 import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
 import '../global.css';
 
-import { Platform } from 'react-native';
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Register background handler safely
 try {
@@ -85,6 +87,15 @@ export default function RootLayout() {
       }
     }
   }, [isLoggedIn, isOnboarded, segments]);
+
+  // Handle Splash Screen Removal
+  useEffect(() => {
+    if (rootNavigationState?.key) {
+      setTimeout(() => {
+        SplashScreen.hideAsync().catch(() => {});
+      }, 500); 
+    }
+  }, [rootNavigationState?.key]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

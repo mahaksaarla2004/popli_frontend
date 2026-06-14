@@ -4,26 +4,26 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Shield, EyeOff, Lock, UserX, VolumeX, MessageSquareOff } from 'lucide-react-native';
 import { useAuthStore } from '../../store';
 
+const ToggleRow = ({ icon: Icon, title, description, enabled = false, onToggle }: any) => (
+  <View className="flex-row items-center justify-between border-b border-white/5 py-4">
+    <View className="flex-row items-center gap-4 flex-1 pr-4">
+      <Icon size={20} color="#9CA3AF" />
+      <View>
+        <Text className="text-white font-bold text-sm">{title}</Text>
+        <Text className="text-neutral-grey text-[10px] mt-1">{description}</Text>
+      </View>
+    </View>
+    <Switch
+      value={enabled}
+      onValueChange={onToggle}
+      trackColor={{ false: '#374151', true: '#A855F7' }}
+      thumbColor={'#FFFFFF'}
+    />
+  </View>
+);
+
 export default function PrivacyScreen() {
   const router = useRouter();
-
-  const ToggleRow = ({ icon: Icon, title, description, enabled = false, onToggle }: any) => (
-    <View className="flex-row items-center justify-between border-b border-white/5 py-4">
-      <View className="flex-row items-center gap-4 flex-1 pr-4">
-        <Icon size={20} color="#9CA3AF" />
-        <View>
-          <Text className="text-white font-bold text-sm">{title}</Text>
-          <Text className="text-neutral-grey text-[10px] mt-1">{description}</Text>
-        </View>
-      </View>
-      <Switch
-        value={enabled}
-        onValueChange={onToggle}
-        trackColor={{ false: '#374151', true: '#A855F7' }}
-        thumbColor={'#FFFFFF'}
-      />
-    </View>
-  );
 
   const { preferences, updatePreferences } = useAuthStore();
 

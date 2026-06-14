@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Image, Pressable, TextInput, Dimensions, KeyboardAvoidingView, Platform, Animated, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useStoryStore, useAuthStore } from '../../store';
-import { Heart, Send, MoreHorizontal, X, MessageCircle, Trash2 } from 'lucide-react-native';
+import { Heart, Send, MoreHorizontal, X, MessageCircle, Trash2, Eye } from 'lucide-react-native';
 import Svg, { Path, G } from 'react-native-svg';
-import { formatRelativeTime } from '../../utils';
+import { formatRelativeTime, getDefaultAvatar } from '../../utils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -246,7 +246,14 @@ export default function StoryViewerScreen() {
         {/* Header Info */}
         <View className="absolute top-16 left-4 right-4 flex-row items-center justify-between z-20">
           <View className="flex-row items-center gap-2">
-            <Image source={{ uri: 'https://i.pravatar.cc/150' }} className="w-8 h-8 rounded-full border border-white/20" />
+            <Image 
+              source={{ 
+                uri: activeStory.creatorAvatar?.includes('unsplash.com') 
+                  ? getDefaultAvatar(activeStory.creatorId) 
+                  : (activeStory.creatorAvatar || getDefaultAvatar(activeStory.creatorId))
+              }} 
+              className="w-8 h-8 rounded-full border border-white/20" 
+            />
             <Text className="text-white font-bold text-sm">{activeStory.creatorId}</Text>
             <Text className="text-white/60 text-xs">{formatRelativeTime(activeStory.createdAt)}</Text>
           </View>
@@ -290,10 +297,8 @@ export default function StoryViewerScreen() {
 
         {/* View Count for own stories */}
         {activeStory.creatorId === userProfile.username && (
-          <View className="absolute bottom-6 left-4 z-30 flex-row items-center gap-2">
-            <Image source={{ uri: 'https://i.pravatar.cc/100' }} className="w-6 h-6 rounded-full" />
-            <Image source={{ uri: 'https://i.pravatar.cc/101' }} className="w-6 h-6 rounded-full -ml-3" />
-            <Text className="text-white text-xs font-bold ml-1">{activeStory.viewers.length} Views</Text>
+          <View className="absolute bottom-6 left-4 z-30 flex-row items-center gap-1 bg-black/40 px-3 py-1.5 rounded-full border border-white/10">
+            <Text className="text-white text-xs font-bold">👁️ {activeStory.viewers.length} Views</Text>
           </View>
         )}
 

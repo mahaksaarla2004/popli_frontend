@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, Image, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView, Modal, ActivityIndicator } from 'react-native';
 import { X, Search, Send } from 'lucide-react-native';
-import { useAuthStore, useChatStore, useFeedStore } from '../../store';
+import { useAuthStore, useChatStore } from '../../store';
 import { MotiView } from 'moti';
+import { apiClient, BASE_URL } from '../../api/client';
 
 interface SendSheetProps {
   reelId: string;
@@ -13,43 +14,47 @@ interface SendSheetProps {
 export const SendSheet = ({ reelId, isOpen, onClose }: SendSheetProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sentTo, setSentTo] = useState<string[]>([]);
-  const { userProfile, followingIds } = useAuthStore();
-  const { chats, sendDirectMessage } = useChatStore();
-  const { reels } = useFeedStore();
+  const { sendDirectMessage } = useChatStore();
+  
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const chatFriends = chats.map(c => ({
-    id: c.creatorId,
-    username: c.creatorUsername,
-    name: c.creatorName,
-    avatar: c.creatorAvatar
-  }));
+  useEffect(() => {
+    if (!isOpen) return;
 
-  const followedCreators = reels
-    .filter(r => followingIds.includes(r.creatorId))
-    .map(r => ({
-      id: r.creatorId,
-      username: r.creatorUsername,
-      name: r.creatorName,
-      avatar: r.creatorAvatar
-    }));
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        if (!searchQuery.trim()) {
+          const { userProfile } = useAuthStore.getState();
+          const res = await apiClient.get(`/social/${userProfile.id}/following`);
+          setUsers(res.data.map((item: any) => item.following));
+        } else {
+          const res = await apiClient.get(`/users/search?q=${searchQuery}`);
+          setUsers(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch users", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Combine chats and followed creators, then deduplicate by ID
-  const allCandidates = [...chatFriends, ...followedCreators];
-  let friendsList = Array.from(new Map(allCandidates.map(item => [item.id, item])).values());
+    const delayDebounceFn = setTimeout(() => {
+      fetchUsers();
+    }, 300);
 
-  // Optional: Prioritize strictly followed users or just show all combined
-  // Since user asked for "following", we can ensure following users are at the top or just show them.
-  // We'll show all (chats + following) as it's standard for sharing, but now following are included!
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, isOpen]);
 
-  const handleSend = (friend: typeof friendsList[0]) => {
+  const handleSend = (friend: any) => {
     setSentTo(prev => [...prev, friend.id]);
-    sendDirectMessage(friend, `Hey, check out this Reel! 🎥 popli.app/reels/${reelId}`);
+    // The mediaUrl is technically not the direct video file unless we fetch the Reel,
+    // but we can just send the text link for now since we don't have the mediaUrl in this context,
+    // OR we could pass mediaUrl to SendSheetProps! 
+    // The user's goal is sharing the reel, so sending the link is standard.
+    sendDirectMessage(friend, `Hey, check out this Reel! 🎥 ${BASE_URL.replace('/api', '')}/reels/${reelId}`);
   };
-
-  const filteredFriends = friendsList.filter(f => 
-    f.username.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    f.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   if (!isOpen) return null;
 
@@ -91,6 +96,7 @@ export const SendSheet = ({ reelId, isOpen, onClose }: SendSheetProps) => {
                 placeholder="Search..."
                 placeholderTextColor="#9CA3AF"
                 className="flex-1 text-white text-sm ml-2 font-normal"
+                autoCapitalize="none"
               />
             </View>
           </View>
@@ -101,12 +107,14 @@ export const SendSheet = ({ reelId, isOpen, onClose }: SendSheetProps) => {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {filteredFriends.map((friend) => {
+            {loading && <ActivityIndicator color="#A855F7" className="mt-4" />}
+            
+            {!loading && users.map((friend) => {
               const isSent = sentTo.includes(friend.id);
               return (
                 <View key={friend.id} className="flex-row items-center justify-between py-3 gap-3 border-b border-white/5">
                   <View className="flex-row items-center gap-3">
-                    <Image source={{ uri: friend.avatar }} className="w-12 h-12 rounded-full" />
+                    <Image source={{ uri: friend.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full" />
                     <View className="flex-col">
                       <Text className="text-white font-bold text-sm">{friend.name}</Text>
                       <Text className="text-white/60 text-xs">@{friend.username}</Text>

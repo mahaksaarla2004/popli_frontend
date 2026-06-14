@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, Platform, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { apiClient } from '../../api/client';
 import { ChevronLeft, Sparkles, ChevronRight, Check } from 'lucide-react-native';
@@ -21,7 +21,6 @@ const INTERESTS = [
 ];
 
 export default function InterestsScreen() {
-  const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [interests, setInterests] = useState<any[]>(INTERESTS);
   const [isSaving, setIsSaving] = useState(false);

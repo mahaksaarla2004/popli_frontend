@@ -8,6 +8,38 @@ import {
   UserPlus, HelpCircle, AlertOctagon, Info, ChevronRight 
 } from 'lucide-react-native';
 
+const SectionTitle = ({ title }: { title: string }) => (
+  <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest mt-6 mb-4">{title}</Text>
+);
+
+const ListItem = ({ 
+  icon: Icon, 
+  title, 
+  subtitle, 
+  rightElement, 
+  onPress 
+}: { 
+  icon: any, 
+  title: string, 
+  subtitle?: string, 
+  rightElement?: React.ReactNode,
+  onPress?: () => void 
+}) => (
+  <Pressable 
+    onPress={onPress}
+    className="flex-row items-center justify-between bg-[#1A0E2C] border-b border-[#2D1B4E]/50 px-4 py-4"
+  >
+    <View className="flex-row items-center gap-4">
+      <Icon size={20} color="#9CA3AF" />
+      <View>
+        <Text className="text-white font-medium text-sm">{title}</Text>
+        {subtitle && <Text className="text-neutral-grey text-[10px] mt-1">{subtitle}</Text>}
+      </View>
+    </View>
+    {rightElement || <ChevronRight size={18} color="#4B5563" />}
+  </Pressable>
+);
+
 export default function SettingsScreen() {
   const router = useRouter();
   const { userProfile, notificationsEnabled, toggleNotifications, logout } = useAuthStore();
@@ -33,38 +65,6 @@ export default function SettingsScreen() {
       ]
     );
   };
-
-  const SectionTitle = ({ title }: { title: string }) => (
-    <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest mt-6 mb-4">{title}</Text>
-  );
-
-  const ListItem = ({ 
-    icon: Icon, 
-    title, 
-    subtitle, 
-    rightElement, 
-    onPress 
-  }: { 
-    icon: any, 
-    title: string, 
-    subtitle?: string, 
-    rightElement?: React.ReactNode,
-    onPress?: () => void 
-  }) => (
-    <Pressable 
-      onPress={onPress}
-      className="flex-row items-center justify-between bg-[#1A0E2C] border-b border-[#2D1B4E]/50 px-4 py-4"
-    >
-      <View className="flex-row items-center gap-4">
-        <Icon size={20} color="#9CA3AF" />
-        <View>
-          <Text className="text-white font-medium text-sm">{title}</Text>
-          {subtitle && <Text className="text-neutral-grey text-[10px] mt-1">{subtitle}</Text>}
-        </View>
-      </View>
-      {rightElement || <ChevronRight size={18} color="#4B5563" />}
-    </Pressable>
-  );
 
   return (
     <View className="flex-1 bg-[#12081E] pt-14">

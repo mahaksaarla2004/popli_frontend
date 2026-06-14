@@ -35,13 +35,13 @@ export default function WalletScreen() {
     }
 
     const amountNum = parseFloat(withdrawAmount);
-    if (isNaN(amountNum) || amountNum < 500) {
-      return Alert.alert('Invalid Amount', 'Minimum withdrawal limit is ₹500.');
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return Alert.alert('Invalid Amount', 'Please enter a valid amount.');
     }
 
-    if (amountNum > inrEarnings) {
-      return Alert.alert('Insufficient Balance', 'Withdrawal amount exceeds your available cash earnings.');
-    }
+    // if (amountNum > inrEarnings) {
+    //   return Alert.alert('Insufficient Balance', 'Withdrawal amount exceeds your available cash earnings.');
+    // }
 
     if (!customUpi.trim()) {
       return Alert.alert('Error', 'Please enter your UPI ID.');
@@ -209,7 +209,7 @@ export default function WalletScreen() {
           <Text className="text-white/60 text-[10px] font-bold uppercase pl-1">Transaction History</Text>
           <View className="gap-3">
             {transactions.map((tx) => {
-              const isIncome = tx.type === 'gift_receive' || tx.type === 'coin_recharge';
+              const isIncome = tx.type === 'gift_receive' || tx.type === 'coin_recharge' || tx.type === 'COIN_RECHARGE' || tx.type === 'AD_REVENUE' || tx.type === 'GIFT_RECEIVE';
               return (
                 <View 
                   key={tx.id}

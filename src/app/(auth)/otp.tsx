@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Pressable, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+// (assuming we can just replace Pressable with TouchableOpacity inside renderOtpBoxes)
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore, useKYCStore } from '../../store';
+import { getDefaultAvatar } from '../../utils';
 import { ChevronLeft } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '../../api/client';
-import { verifyFirebaseOTP } from '../../lib/firebase';
+import { sendFirebaseOTP, verifyFirebaseOTP } from '../../lib/firebase';
 
 export default function OTPScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ mode?: string; type?: string; target?: string; isSignup?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; type?: string; target?: string; isSignup?: string; referredByCode?: string; }>();
   
   const isResetMode = params.mode === 'reset';
   const isEmailType = params.type === 'email';
@@ -24,7 +27,7 @@ export default function OTPScreen() {
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   
-  const inputRefs = useRef<TextInput[]>([]);
+  const hiddenInputRef = useRef<TextInput>(null);
 
   // Initialize otpArray size dynamically on mount or parameter changes
   useEffect(() => {
@@ -32,7 +35,7 @@ export default function OTPScreen() {
     setFocusedIndex(0);
     // Focus first input box on load
     setTimeout(() => {
-      inputRefs.current[0]?.focus();
+      hiddenInputRef.current?.focus();
     }, 450);
   }, [otpLength]);
 
@@ -62,8 +65,20 @@ export default function OTPScreen() {
           throw new Error('Invalid OTP or Firebase not configured.');
         }
 
-        // 2. Authenticate with backend using the Firebase Token
-        const response = await apiClient.post('/auth/verify-firebase-token', { idToken });
+        // 2. Ensure deviceId is generated and stored persistently
+        let deviceId = await SecureStore.getItemAsync('deviceId');
+        if (!deviceId) {
+          // Generate a pseudo-random device ID and save it
+          deviceId = `device_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
+          await SecureStore.setItemAsync('deviceId', deviceId);
+        }
+
+        // 3. Authenticate with backend using the Firebase Token
+        const response = await apiClient.post('/auth/verify-firebase-token', { 
+          idToken,
+          deviceId,
+          referredByCode: params.referredByCode
+        });
 
         if (response.data.accessToken) {
           const { setToken, setLogin, setFirstLogin, updateProfile } = useAuthStore.getState();
@@ -80,9 +95,10 @@ export default function OTPScreen() {
               });
               const fullProfile = fullProfileRes.data;
               updateProfile({
+                id: fullProfile.id,
                 name: fullProfile.name || 'Popli User',
                 username: fullProfile.username,
-                avatar: fullProfile.avatar || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&auto=format&fit=crop',
+                avatar: fullProfile.avatar || getDefaultAvatar(fullProfile.username),
                 bio: fullProfile.bio || 'Living the life your style with your rules',
                 city: fullProfile.city || '',
                 category: fullProfile.category || '',
@@ -94,9 +110,10 @@ export default function OTPScreen() {
             } catch (err) {
               console.error("Failed to fetch full profile", err);
               updateProfile({
+                id: userFromBackend.id,
                 name: userFromBackend.name || 'Popli User',
                 username: userFromBackend.username,
-                avatar: userFromBackend.avatar || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&auto=format&fit=crop',
+                avatar: userFromBackend.avatar || getDefaultAvatar(userFromBackend.username),
               });
             }
             
@@ -123,15 +140,18 @@ export default function OTPScreen() {
             await apiClient.put('/users/me', {
               name: (params as any).name,
               username: (params as any).username,
+              email: (params as any).email,
               dob: dobIso
             }, {
               headers: { Authorization: `Bearer ${response.data.accessToken}` }
             });
             
-            updateProfile({ name: (params as any).name, username: (params as any).username });
+            updateProfile({ id: userFromBackend.id, name: (params as any).name, username: (params as any).username, email: (params as any).email });
             
             setIsVerifying(false);
             setIsSuccess(true);
+            setLogin(true);
+            setFirstLogin(false);
             setTimeout(() => {
               router.replace('/(auth)/profile-setup');
             }, 800);
@@ -141,6 +161,7 @@ export default function OTPScreen() {
           // Existing User but profile not complete
           try {
             updateProfile({
+              id: userFromBackend.id,
               name: userFromBackend.name || 'Popli User',
               username: userFromBackend.username,
             });
@@ -176,7 +197,7 @@ export default function OTPScreen() {
     setTimerSeconds(36);
     setFocusedIndex(0);
     setTimeout(() => {
-      inputRefs.current[0]?.focus();
+      hiddenInputRef.current?.focus();
     }, 100);
   };
 
@@ -192,94 +213,65 @@ export default function OTPScreen() {
     }
   };
 
-  // Safe text change handler across slots
-  const handleTextChange = (text: string, index: number) => {
-    const cleanText = text.replace(/[^0-9]/g, '');
-
-    // 1. Capture Paste Events (only when text length matches otpLength, and index is 0)
-    if (cleanText.length === otpLength && index === 0) {
-      const nextOtp = Array(otpLength).fill('');
-      for (let i = 0; i < otpLength; i++) {
-        nextOtp[i] = cleanText[i] || '';
-      }
-      setOtpArray(nextOtp);
-      
-      // Focus last pasted index
-      const focusTarget = otpLength - 1;
-      inputRefs.current[focusTarget]?.focus();
-      setFocusedIndex(focusTarget);
-      return;
+  // Single text change handler
+  const handleTextChange = (text: string) => {
+    const cleanText = text.replace(/[^0-9]/g, '').slice(0, otpLength);
+    
+    const nextOtp = Array(otpLength).fill('');
+    for (let i = 0; i < cleanText.length; i++) {
+      nextOtp[i] = cleanText[i];
     }
-
-    // 2. Capture regular slot keyboard change: take ONLY the last character if multiple characters are present
-    const cleanChar = cleanText.length > 0 ? cleanText[cleanText.length - 1] : '';
-    const nextOtp = [...otpArray];
-    nextOtp[index] = cleanChar;
     setOtpArray(nextOtp);
-
-    // Auto-focus next slot on valid numeric typing
-    if (cleanChar && index < otpLength - 1) {
-      inputRefs.current[index + 1]?.focus();
-      setFocusedIndex(index + 1);
-    }
+    setFocusedIndex(Math.min(cleanText.length, otpLength - 1));
   };
-
-  // Backspace capture support on empty boxes
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace') {
-      // If slot is empty and we have a previous slot, clear previous slot and jump focus back
-      if (!otpArray[index] && index > 0) {
-        const nextOtp = [...otpArray];
-        nextOtp[index - 1] = '';
-        setOtpArray(nextOtp);
-        inputRefs.current[index - 1]?.focus();
-        setFocusedIndex(index - 1);
-      }
-    }
-  };
-  // Render individual inputs
+  // Render visual boxes + single hidden input
   const renderOtpBoxes = () => {
     const boxes = [];
     for (let i = 0; i < otpLength; i++) {
       const char = otpArray[i] || '';
-      const isFocused = focusedIndex === i;
       const isFilled = char !== '';
+      const isFocused = focusedIndex === i;
 
       boxes.push(
-        <Pressable
+        <View
           key={i}
-          onPress={() => {
-            inputRefs.current[i]?.focus();
-            setFocusedIndex(i);
+          style={{ 
+            width: isEmailType ? 40 : 64, 
+            height: isEmailType ? 48 : 64,
+            backgroundColor: '#1D1037',
+            borderRadius: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 2,
+            borderColor: isFocused ? '#A78BFA' : isFilled ? 'rgba(167, 139, 250, 0.6)' : '#3E2B5C',
+            transform: isFocused ? [{ scale: 1.05 }] : [{ scale: 1 }]
           }}
-          style={{ width: isEmailType ? 40 : 64, height: isEmailType ? 48 : 64 }}
-          className={`bg-[#1D1037] rounded-2xl items-center justify-center border-2 ${
-            isFocused 
-              ? 'border-[#A78BFA] shadow-lg shadow-[#A78BFA]/30 scale-105' 
-              : isFilled 
-                ? 'border-[#A78BFA]/60' 
-                : 'border-[#3E2B5C]'
-          } active:scale-[0.97]`}
         >
-          <TextInput
-            ref={(ref) => {
-              if (ref) inputRefs.current[i] = ref;
-            }}
-            value={char}
-            onChangeText={(text) => handleTextChange(text, i)}
-            onKeyPress={(e) => handleKeyPress(e, i)}
-            onFocus={() => setFocusedIndex(i)}
-            keyboardType="number-pad"
-            maxLength={otpLength} // allows paste expansion
-            selectTextOnFocus={true}
-            style={styles.otpInput}
-            editable={!isVerifying && !isSuccess}
-            placeholderTextColor="rgba(255, 255, 255, 0.15)"
-          />
-        </Pressable>
+          <Text style={styles.otpInputText}>{char}</Text>
+        </View>
       );
     }
-    return boxes;
+
+    return (
+      <TouchableOpacity activeOpacity={1} onPress={() => hiddenInputRef.current?.focus()} style={{ width: '100%', position: 'relative' }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }} pointerEvents="none">
+          {boxes}
+        </View>
+        <TextInput
+          ref={hiddenInputRef}
+          value={otpArray.join('')}
+          onChangeText={handleTextChange}
+          keyboardType="numeric"
+          inputMode="numeric"
+          textContentType="oneTimeCode"
+          autoComplete="sms-otp"
+          maxLength={otpLength}
+          style={styles.hiddenInput}
+          editable={!isVerifying && !isSuccess}
+          caretHidden={true}
+        />
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -348,11 +340,9 @@ export default function OTPScreen() {
                 </Text>
               </View>
 
-              {/* Passcode Box Grid Layout */}
-              <View className="gap-6">
-                <View className="flex-row justify-between w-full">
+                {/* Passcode Box Grid Layout */}
+                <View className="gap-6">
                   {renderOtpBoxes()}
-                </View>
 
                 {/* Centered purple timer below OTP grid */}
                 <View className="items-center mt-4">
@@ -411,13 +401,16 @@ export default function OTPScreen() {
 }
 
 const styles = StyleSheet.create({
-  otpInput: {
-    width: '100%',
-    height: '100%',
-    textAlign: 'center',
+  otpInputText: {
     color: '#FFFFFF',
     fontSize: 24,
     fontWeight: '900',
-    padding: 0,
+  },
+  hiddenInput: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0,
+    color: 'transparent',
   },
 });

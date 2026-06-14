@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Image, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView, Modal } from 'react-native';
 import { X, Send, Heart, Smile } from 'lucide-react-native';
 import { useFeedStore, useAuthStore } from '../../store';
-import { formatSocialCount } from '../../utils';
+import { formatSocialCount, getDefaultAvatar } from '../../utils';
 import { MotiView } from 'moti';
 import { apiClient } from '../../api/client';
 import { Comment } from '../../types';
@@ -137,7 +137,14 @@ export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) =
 
   const renderCommentRow = (comment: Comment, isReply = false) => (
     <View key={comment.id} className={`flex-row items-start py-3.5 gap-3 border-b border-white/5 ${isReply ? 'ml-10 border-b-0 py-2' : ''}`}>
-      <Image source={{ uri: comment.user?.avatar || 'https://i.pravatar.cc/150' }} className="w-9 h-9 rounded-full" />
+      <Image 
+        source={{ 
+          uri: comment.user?.avatar?.includes('unsplash.com') 
+            ? getDefaultAvatar(comment.user?.username || 'user') 
+            : (comment.user?.avatar || getDefaultAvatar(comment.user?.username || 'user'))
+        }} 
+        className="w-9 h-9 rounded-full" 
+      />
       
       <View className="flex-1 gap-1">
         <View className="flex-row items-center flex-wrap gap-1.5">
@@ -233,7 +240,14 @@ export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) =
           </View>
         )}
         <View className="px-4 py-4 pb-8 flex-row items-center gap-4">
-          <Image source={{ uri: userProfile.avatar }} className="w-10 h-10 rounded-full bg-neutral-grey" />
+          <Image 
+            source={{ 
+              uri: userProfile.avatar?.includes('unsplash.com') 
+                ? getDefaultAvatar(userProfile.username) 
+                : (userProfile.avatar || getDefaultAvatar(userProfile.username))
+            }} 
+            className="w-10 h-10 rounded-full bg-neutral-grey" 
+          />
           
           <View className="flex-1 flex-row items-center bg-[#1D1037] rounded-full px-4 py-2.5 border border-white/5">
             <TextInput

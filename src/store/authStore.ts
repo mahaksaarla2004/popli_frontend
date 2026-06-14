@@ -25,6 +25,8 @@ interface AuthState {
     giftsReceivedCount: number;
     isVerified: boolean;
     isProfileComplete?: boolean;
+    email?: string;
+    phone?: string;
   };
   followingIds: string[];
   theme: 'dark' | 'light';
@@ -34,7 +36,8 @@ interface AuthState {
   setLogin: (status: boolean) => void;
   setOnboardingComplete: (status: boolean) => void;
   setFirstLogin: (status: boolean) => void;
-  updateProfile: (profile: Partial<AuthState['userProfile']>) => Promise<void>;
+  updateProfile: (profile: Partial<AuthState['userProfile']>) => Promise<{ success: boolean; error?: string }>;
+  fetchProfile: () => Promise<void>;
   toggleTheme: () => void;
   setLanguage: (lang: AuthState['language']) => void;
   toggleNotifications: () => void;
@@ -46,6 +49,7 @@ interface AuthState {
   setToken: (token: string | null) => void;
   blockedUsers: Creator[];
   fetchBlockedUsers: () => Promise<void>;
+  fetchFollowingIds: (userId: string) => Promise<void>;
   toggleBlock: (creatorId: string) => Promise<void>;
   updatePreferences: (prefs: any) => Promise<void>;
   preferences: {
@@ -93,8 +97,26 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({ userProfile: { ...state.userProfile, ...profile } }));
         try {
           await apiClient.put('/users/me', profile);
+          
+          // Also update the feedStore so reels instantly show the new name/username/avatar
+          const { useFeedStore } = require('./feedStore');
+          useFeedStore.getState().updateCreatorInfo(useAuthStore.getState().userProfile.id, profile);
+          
+          return { success: true };
         } catch (e: any) {
-          console.error("Failed to update profile to backend:", e.response?.data || e.message);
+          const errorMessage = e.response?.data?.message || e.message || 'Failed to update profile';
+          console.error("Failed to update profile to backend:", errorMessage);
+          return { success: false, error: errorMessage };
+        }
+      },
+      fetchProfile: async () => {
+        try {
+          const res = await apiClient.get('/users/me');
+          if (res.data) {
+            set((state) => ({ userProfile: { ...state.userProfile, ...res.data } }));
+          }
+        } catch (error) {
+          console.error("Failed to fetch fresh profile data:", error);
         }
       },
       updatePreferences: async (prefs) => {
@@ -111,6 +133,16 @@ export const useAuthStore = create<AuthState>()(
           set({ blockedUsers: res.data });
         } catch (error) {
           console.error("Failed to fetch blocked users:", error);
+        }
+      },
+      fetchFollowingIds: async (userId: string) => {
+        if (!userId) return;
+        try {
+          const res = await apiClient.get(`/social/${userId}/following`);
+          const ids = res.data.filter((f: any) => f.following?.id).map((f: any) => f.following.id);
+          set({ followingIds: ids });
+        } catch (error) {
+          console.error("Failed to fetch following ids:", error);
         }
       },
       toggleBlock: async (creatorId) => {
@@ -155,14 +187,22 @@ export const useAuthStore = create<AuthState>()(
 
         // API Call to sync with backend
         try {
-          const { apiClient } = require('../api/client');
+          console.log(`Attempting to toggle follow for creator: ${creatorId}`);
           await apiClient.post(`/social/follow/${creatorId}`);
-        } catch (error) {
-          console.error("Failed to toggle follow on backend:", error);
-          // Optional: Revert local state on failure
+          console.log(`Successfully toggled follow on backend for: ${creatorId}`);
+        } catch (error: any) {
+          console.error("Failed to toggle follow on backend:", error?.message || error);
+          // Revert local state on failure
+          set({
+            followingIds: state.followingIds,
+            userProfile: {
+              ...state.userProfile,
+              followingCount: state.userProfile.followingCount // Restore original
+            }
+          });
         }
       },
-      logout: () => set({ isLoggedIn: false, isOnboarded: false, followingIds: [], token: null })
+      logout: () => set({ isLoggedIn: false, followingIds: [], token: null })
     }),
     {
       name: 'popli-auth-store',

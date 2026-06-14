@@ -1,8 +1,8 @@
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+// import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
-export const firebaseAuth = auth();
+// export const firebaseAuth = auth();
 
-let confirmationResult: FirebaseAuthTypes.ConfirmationResult | null = null;
+let confirmationResult: any | null = null;
 
 let mockPhone: string | null = null;
 

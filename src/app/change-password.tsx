@@ -3,6 +3,22 @@ import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingVi
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 
+const InputField = ({ label, value, onChange, placeholder }: any) => (
+  <View className="mb-5">
+    <Text className="text-white/60 text-[9px] font-bold uppercase tracking-widest pl-1 mb-2">{label}</Text>
+    <View className="bg-[#1A0E2C] border border-white/5 rounded-2xl flex-row px-4 h-[52px] items-center">
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor="rgba(255, 255, 255, 0.2)"
+        secureTextEntry
+        className="flex-1 text-white font-medium text-sm"
+      />
+    </View>
+  </View>
+);
+
 export default function ChangePasswordScreen() {
   const router = useRouter();
 
@@ -22,22 +38,6 @@ export default function ChangePasswordScreen() {
       { text: 'OK', onPress: () => router.back() }
     ]);
   };
-
-  const InputField = ({ label, value, onChange, placeholder }: any) => (
-    <View className="mb-5">
-      <Text className="text-white/60 text-[9px] font-bold uppercase tracking-widest pl-1 mb-2">{label}</Text>
-      <View className="bg-[#1A0E2C] border border-white/5 rounded-2xl flex-row px-4 h-[52px] items-center">
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          placeholder={placeholder}
-          placeholderTextColor="rgba(255, 255, 255, 0.2)"
-          secureTextEntry
-          className="flex-1 text-white font-medium text-sm"
-        />
-      </View>
-    </View>
-  );
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">

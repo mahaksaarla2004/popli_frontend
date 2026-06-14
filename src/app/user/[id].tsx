@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, Pressable, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, MapPin, Award, Play } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Award, Play, LayoutGrid } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiClient } from '../../api/client';
 import { useAuthStore, useChatStore, useFeedStore } from '../../store';
-import { formatSocialCount } from '../../utils';
-
-const { width } = Dimensions.get('window');
-const REEL_THUMB_WIDTH = (width - 4) / 3;
+import { getDefaultAvatar, formatSocialCount } from '../../utils';
 
 export default function PublicProfileScreen() {
   const { id: username } = useLocalSearchParams<{ id: string }>();
@@ -22,6 +19,7 @@ export default function PublicProfileScreen() {
   const [profile, setProfile] = useState<any>(cachedProfile || null);
   const [loading, setLoading] = useState(!cachedProfile);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<'reels' | 'awards'>('reels');
 
   const { followingIds, toggleFollow, userProfile, blockedUsers, toggleBlock } = useAuthStore();
   const isFollowing = profile ? followingIds.includes(profile.id) : false;
@@ -85,7 +83,7 @@ export default function PublicProfileScreen() {
             {/* Avatar */}
             <View className="w-20 h-20 rounded-full border-[3px] border-primary-purple overflow-hidden">
               <Image 
-                source={{ uri: profile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=250&auto=format&fit=crop' }} 
+                source={{ uri: profile.avatar || getDefaultAvatar(profile.username) }} 
                 className="w-full h-full" 
               />
             </View>
@@ -96,14 +94,20 @@ export default function PublicProfileScreen() {
                 <Text className="text-white font-bold text-lg">{formatSocialCount(profile.reels?.length || 0)}</Text>
                 <Text className="text-neutral-silver text-xs">Reels</Text>
               </View>
-              <View className="items-center">
+              <Pressable 
+                onPress={() => router.push({ pathname: '/network', params: { userId: profile.id, type: 'followers' } })}
+                className="items-center"
+              >
                 <Text className="text-white font-bold text-lg">{formatSocialCount(profile.followersCount || 0)}</Text>
                 <Text className="text-neutral-silver text-xs">Followers</Text>
-              </View>
-              <View className="items-center">
+              </Pressable>
+              <Pressable 
+                onPress={() => router.push({ pathname: '/network', params: { userId: profile.id, type: 'following' } })}
+                className="items-center"
+              >
                 <Text className="text-white font-bold text-lg">{formatSocialCount(profile.followingCount || 0)}</Text>
                 <Text className="text-neutral-silver text-xs">Following</Text>
-              </View>
+              </Pressable>
             </View>
           </View>
 
@@ -193,42 +197,65 @@ export default function PublicProfileScreen() {
           </View>
         ) : (
           <View className="mt-4">
-            <View className="flex-row items-center border-b border-white/20">
-              <View className="flex-1 items-center pb-2 border-b-2 border-primary-pink">
-                <Play size={20} color="#FFFFFF" />
-              </View>
-              <View className="flex-1 items-center pb-2">
-                <Award size={20} color="#6B7280" />
-              </View>
+            <View className="flex-row border-t border-b border-white/5 py-2 mt-4">
+              <Pressable 
+                onPress={() => setActiveTab('reels')} 
+                className={`flex-1 items-center justify-center py-2 ${activeTab === 'reels' ? 'border-b-2 border-[#A855F7]' : ''}`}
+              >
+                <LayoutGrid size={22} color={activeTab === 'reels' ? '#A855F7' : '#9CA3AF'} />
+              </Pressable>
+              <Pressable 
+                onPress={() => setActiveTab('awards')} 
+                className={`flex-1 items-center justify-center py-2 ${activeTab === 'awards' ? 'border-b-2 border-[#A855F7]' : ''}`}
+              >
+                <Award size={22} color={activeTab === 'awards' ? '#A855F7' : '#9CA3AF'} />
+              </Pressable>
             </View>
 
-            <View className="flex-row flex-wrap mt-[2px] gap-[2px]">
-              {profile.reels && profile.reels.length > 0 ? (
-                profile.reels.map((reel: any) => (
-                  <Pressable 
-                    key={reel.id} 
-                    style={{ width: REEL_THUMB_WIDTH, height: REEL_THUMB_WIDTH * 1.5 }}
-                    className="bg-neutral-grey relative"
-                  >
-                    <Image 
-                      source={{ uri: reel.thumbnailUrl || reel.mediaUrl }} 
-                      className="w-full h-full opacity-90"
-                      resizeMode="cover"
-                    />
-                    <View className="absolute bottom-1.5 left-1.5 flex-row items-center">
-                      <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
-                      <Text className="text-white text-xs font-bold ml-1">
-                        {formatSocialCount(reel.viewsCount || 0)}
-                      </Text>
+            {activeTab === 'reels' ? (
+              <View className="flex-row flex-wrap">
+                {profile.reels && profile.reels.length > 0 ? (
+                  profile.reels.map((reel: any) => (
+                    <Pressable 
+                      key={reel.id} 
+                      onPress={() => {
+                        router.push(`/reel/${reel.id}`);
+                      }}
+                      className="w-[33.33%] h-44 border-[0.5px] border-black active:opacity-80 relative bg-neutral-grey"
+                    >
+                      <Image 
+                        source={{ uri: reel.thumbnailUrl || reel.mediaUrl }} 
+                        className="w-full h-full"
+                        resizeMode="cover"
+                      />
+                      <View className="absolute bottom-2 left-2 flex-row items-center gap-1">
+                        <Play size={10} color="#FFFFFF" fill="#FFFFFF" />
+                        <Text className="text-white text-[10px] font-bold drop-shadow-md">
+                          {formatSocialCount(reel.viewsCount || 0)}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))
+                ) : (
+                  <View className="py-24 items-center justify-center w-full">
+                    <View className="w-20 h-20 rounded-full bg-white/5 items-center justify-center mb-4">
+                      <LayoutGrid size={32} color="#FFFFFF" opacity={0.5} />
                     </View>
-                  </Pressable>
-                ))
-              ) : (
-                <View className="flex-1 items-center justify-center py-20">
-                  <Text className="text-neutral-silver font-semibold">No reels yet</Text>
+                    <Text className="text-white font-bold text-lg mb-2">No reels yet</Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <View className="py-24 items-center justify-center px-6">
+                <View className="w-16 h-16 rounded-full bg-white/5 items-center justify-center mb-4">
+                  <Award size={32} color="#D946EF" />
                 </View>
-              )}
-            </View>
+                <Text className="text-white font-bold text-lg text-center mb-2">Awards & Gifts</Text>
+                <Text className="text-neutral-silver text-sm text-center">
+                  This user hasn't received any public awards or gifts yet.
+                </Text>
+              </View>
+            )}
           </View>
         )}
         

@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, Dimensions, Image, Alert, Platform } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { CameraView, useCameraPermissions, useMicrophonePermissions, CameraType, FlashMode } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { X, Settings, RefreshCcw, Zap, ZapOff, Aperture, Timer, Wand2, Music, ChevronDown, MonitorPlay, AlignCenter, Type, Mic, ListVideo, Scissors, SlidersHorizontal, Volume2 } from 'lucide-react-native';
@@ -13,9 +13,9 @@ import Svg, { Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
-type CameraMode = 'STORY' | 'REEL' | 'LIVE';
+type CameraMode = 'POST' | 'STORY' | 'REEL' | 'LIVE';
 
-const MODES: CameraMode[] = ['STORY', 'REEL', 'LIVE'];
+const MODES: CameraMode[] = ['POST', 'STORY', 'REEL', 'LIVE'];
 
 export default function CreateScreen() {
   const router = useRouter();
@@ -58,6 +58,16 @@ export default function CreateScreen() {
 
   const cameraRef = useRef<CameraView>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Screen focused
+      return () => {
+        // Screen blurred
+        try { player?.pause(); } catch(e) {}
+      };
+    }, [player])
+  );
 
   useEffect(() => {
     if (cameraPermission && !cameraPermission.granted && cameraPermission.canAskAgain) {
@@ -111,7 +121,75 @@ export default function CreateScreen() {
 
   const toggleSpeed = () => setSpeedMultiplier(prev => prev === 1 ? 2 : prev === 2 ? 3 : 1);
 
+  const takePhoto = async () => {
+    if (!cameraRef.current) return;
+    try {
+      const photo = await cameraRef.current.takePictureAsync();
+      if (photo) {
+        router.push({ pathname: '/(create)/story-editor', params: { uri: photo.uri, type: 'photo', mode: activeMode } });
+      }
+    } catch (err) {
+      console.warn('Failed to take photo', err);
+    }
+  };
+
+  const startRecording = async () => {
+    if (!cameraRef.current || isRecording) return;
+    setIsRecording(true);
+    setRecordingTime(0);
+    player?.seekTo(0);
+    player?.play();
+    
+    if (recordingInterval.current) clearInterval(recordingInterval.current);
+    recordingInterval.current = setInterval(() => {
+      setRecordingTime(prev => prev + 1);
+    }, 1000);
+
+    try {
+      const video = await cameraRef.current.recordAsync({ maxDuration: 60 });
+      if (recordingInterval.current) clearInterval(recordingInterval.current);
+      setIsRecording(false);
+
+      if (video) {
+        router.push({ 
+          pathname: '/(create)/story-editor', 
+          params: { 
+            uri: video.uri, 
+            type: 'video', 
+            mode: activeMode,
+            speed: speedMultiplier.toString(),
+            effect: selectedEffect.name,
+            musicId: selectedMusicId
+          } 
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to record video', err);
+      if (recordingInterval.current) clearInterval(recordingInterval.current);
+      setIsRecording(false);
+      player?.pause();
+    }
+  };
+
+  const stopRecording = () => {
+    if (cameraRef.current && isRecording) {
+      cameraRef.current.stopRecording();
+      setIsRecording(false);
+      if (recordingInterval.current) clearInterval(recordingInterval.current);
+      player?.pause();
+    }
+  };
+
   const handleCapture = async () => {
+    if (activeMode === 'REEL') {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+      return;
+    }
+
     if (timerDelay > 0 && !isRecording) {
       setTimerCountdown(timerDelay);
       let count = timerDelay;
@@ -122,78 +200,20 @@ export default function CreateScreen() {
         } else {
           clearInterval(interval);
           setTimerCountdown(null);
-          executeCapture();
+          takePhoto();
         }
       }, 1000);
     } else {
-      executeCapture();
-    }
-  };
-
-  const executeCapture = async () => {
-    if (!cameraRef.current) return;
-
-    if (activeMode === 'STORY') {
-      // For stories, short tap is photo, hold is video (simplified here to just photo for now unless held)
-      // In a real app we'd use onPressIn / onPressOut to handle video
-      try {
-        const photo = await cameraRef.current.takePictureAsync();
-        if (photo) {
-          router.push({ pathname: '/(create)/story-editor', params: { uri: photo.uri, type: 'photo', mode: activeMode } });
-        }
-      } catch (err) {
-        console.warn('Failed to take photo', err);
-      }
-    } else if (activeMode === 'REEL') {
-      if (isRecording) {
-        cameraRef.current.stopRecording();
-        setIsRecording(false);
-        if (recordingInterval.current) clearInterval(recordingInterval.current);
-        player?.pause();
-      } else {
-        setIsRecording(true);
-        setRecordingTime(0);
-        player?.seekTo(0);
-        player?.play();
-        
-        recordingInterval.current = setInterval(() => {
-          setRecordingTime(prev => prev + 1);
-        }, 1000);
-
-        try {
-          const video = await cameraRef.current.recordAsync({ maxDuration: 60 });
-          
-          if (recordingInterval.current) clearInterval(recordingInterval.current);
-          setIsRecording(false);
-
-          if (video) {
-            router.push({ 
-              pathname: '/(create)/story-editor', 
-              params: { 
-                uri: video.uri, 
-                type: 'video', 
-                mode: activeMode,
-                speed: speedMultiplier.toString(),
-                effect: selectedEffect.name,
-                musicId: selectedMusicId
-              } 
-            });
-          }
-        } catch (err) {
-          console.warn('Failed to record video', err);
-          if (recordingInterval.current) clearInterval(recordingInterval.current);
-          setIsRecording(false);
-          player?.pause();
-        }
-      }
-    } else if (activeMode === 'LIVE') {
-      router.push('/(create)/live-setup');
+      takePhoto();
     }
   };
 
   const openGallery = async () => {
+    const mediaType = activeMode === 'REEL' ? ['videos'] : 
+                      activeMode === 'POST' ? ['images'] : ['images', 'videos'];
+    
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: activeMode === 'REEL' ? ImagePicker.MediaTypeOptions.Videos : ImagePicker.MediaTypeOptions.All,
+      mediaTypes: mediaType as any,
       allowsEditing: true,
       quality: 1,
     });
@@ -342,17 +362,23 @@ export default function CreateScreen() {
           <View className="relative items-center justify-center">
             {/* Timer Display above shutter when recording */}
             {activeMode === 'REEL' && isRecording && (
-               <View className="absolute -top-12 items-center w-full min-w-[80px]">
-                 <View className="bg-red-500/90 backdrop-blur-md px-3 py-1.5 rounded-full flex-row items-center gap-1.5 shadow-lg shadow-red-500/30">
-                   <View className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                   <Text className="text-white font-bold text-[10px] tracking-widest">
-                     00:{recordingTime.toString().padStart(2, '0')} / 01:00
+               <View className="absolute -top-16 items-center w-full min-w-[100px]">
+                 <View className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full flex-row items-center gap-2 border border-white/20 shadow-lg shadow-black/30">
+                   <View className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+                   <Text className="text-white font-bold text-xs tracking-wider">
+                     00:{recordingTime.toString().padStart(2, '0')} <Text className="text-white/50">/ 01:00</Text>
                    </Text>
                  </View>
                </View>
             )}
 
-            <Pressable onPress={handleCapture} className="items-center justify-center">
+            <Pressable 
+              onPress={activeMode === 'LIVE' ? () => router.push('/(create)/live-setup') : handleCapture} 
+              onLongPress={activeMode !== 'LIVE' ? startRecording : undefined}
+              onPressOut={activeMode !== 'LIVE' ? stopRecording : undefined}
+              delayLongPress={300}
+              className="items-center justify-center"
+            >
               {activeMode === 'LIVE' ? (
                 <View className="w-20 h-20 rounded-full border-4 border-[#EC4899] items-center justify-center p-1 bg-black/20">
                   <View className="w-full h-full rounded-full bg-[#EC4899] items-center justify-center flex-row">

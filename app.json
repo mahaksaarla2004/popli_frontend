@@ -4,11 +4,11 @@
     "slug": "PopliApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/custom_logo_square.png",
+    "icon": "./assets/images/popli_logo.png",
     "scheme": "popliapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/images/custom_logo_square.png",
+      "icon": "./assets/images/popli_logo.png",
       "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.mahak2004.popliapp",
       "infoPlist": {
@@ -18,7 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#12081E",
-        "foregroundImage": "./assets/images/custom_logo_square.png"
+        "foregroundImage": "./assets/images/popli_logo.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.mahak2004.popliapp",
@@ -40,7 +40,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#12081E",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/images/custom_logo.png",
           "resizeMode": "contain"
         }
@@ -74,7 +74,8 @@
           }
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -83,12 +84,11 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "4e08129d-ad66-47dd-a095-d335f2260877"
+        "projectId": "f9c80428-4640-411f-8380-814c56b760f9"
       }
     },
     "assetBundlePatterns": [
       "**/*"
-    ],
-    "owner": "aditya8103"
+    ]
   }
 }

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Image, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useEditorStore } from '../../store';
 import { ChevronLeft, ChevronRight, Type, Sticker as StickerIcon, Music as MusicIcon, MoreHorizontal, Download, Sparkles, Navigation, Send as SendIcon, PlusCircle, Play, Pause, Trash2, Pencil } from 'lucide-react-native';
 import { useAudioPlayer } from 'expo-audio';
@@ -73,14 +73,22 @@ export default function StoryEditorScreen() {
 
   const audioPlayer = useAudioPlayer();
 
-  useEffect(() => {
-    return () => {
-      try { audioPlayer?.pause(); } catch(e) {}
-      try { videoPlayer?.pause(); } catch(e) {}
-    };
-  }, [audioPlayer, videoPlayer]);
+  useFocusEffect(
+    useCallback(() => {
+      if (isVideo) {
+        try { videoPlayer?.play(); if (videoPlayer) videoPlayer.muted = false; } catch(e) {}
+      }
+      if (selectedMusic && isPlayingMusic) {
+        try { audioPlayer?.play(); } catch(e) {}
+      }
+      return () => {
+        try { audioPlayer?.pause(); } catch(e) {}
+        try { if (videoPlayer) { videoPlayer.pause(); videoPlayer.muted = true; } } catch(e) {}
+      };
+    }, [videoPlayer, audioPlayer, isVideo, selectedMusic, isPlayingMusic])
+  );
 
-  const navigateToShare = (target: 'your_story' | 'close_friends' | 'share') => {
+  const navigateToShare = (target: 'your_story' | 'close_friends' | 'share', targetUserIds?: string[]) => {
     try { audioPlayer?.pause(); } catch(e) {}
     try { videoPlayer?.pause(); } catch(e) {}
     setEditorData({
@@ -96,7 +104,8 @@ export default function StoryEditorScreen() {
         musicTitle: selectedMusic?.title,
         musicArtist: selectedMusic?.artist,
         musicUrl: selectedMusic?.audioUrl,
-        isStory: 'true' 
+        isStory: 'true',
+        ...(targetUserIds && { targetUserIds: JSON.stringify(targetUserIds) })
       }
     });
   };
@@ -377,27 +386,42 @@ export default function StoryEditorScreen() {
 
 
         {!textMode && !drawingMode && (
-          <View className="absolute top-4 left-4 right-4 flex-row justify-between items-center z-10">
-            <Pressable onPress={() => router.back()} className="w-10 h-10 items-center justify-center bg-black/40 rounded-full">
+          <View className="absolute top-12 left-0 right-0 px-4 flex-row justify-between items-center z-10 pt-2">
+            <Pressable onPress={() => router.back()} className="w-[44px] h-[44px] items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/20 active:scale-95 transition-transform">
               <ChevronLeft size={24} color="#FFFFFF" />
             </Pressable>
-            <View className="flex-row items-center gap-4">
-              <Pressable onPress={() => setTextMode(true)} className="w-10 h-10 items-center justify-center bg-black/40 rounded-full">
-                <Type size={20} color="#FFFFFF" />
+            {mode === 'POST' && (
+              <Pressable 
+                onPress={() => {
+                  try { audioPlayer?.pause(); } catch(e) {}
+                  try { videoPlayer?.pause(); } catch(e) {}
+                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId } });
+                }}
+                className="bg-[#A855F7] px-6 py-2.5 rounded-full active:scale-95 transition-transform shadow-lg shadow-purple-500/40"
+              >
+                <Text className="text-white font-bold text-sm tracking-wide">Next</Text>
               </Pressable>
-              <Pressable onPress={() => setDrawingMode(true)} className="w-10 h-10 items-center justify-center bg-black/40 rounded-full">
-                <Pencil size={20} color="#FFFFFF" />
-              </Pressable>
-              <Pressable onPress={() => setShowStickerSheet(true)} className="w-10 h-10 items-center justify-center bg-black/40 rounded-full">
-                <StickerIcon size={20} color="#FFFFFF" />
-              </Pressable>
-              <Pressable onPress={() => setShowMusicSheet(true)} className="w-10 h-10 items-center justify-center bg-black/40 rounded-full">
-                <MusicIcon size={20} color="#FFFFFF" />
-              </Pressable>
-              <Pressable onPress={() => setShowEffectsSheet(true)} className="w-10 h-10 items-center justify-center bg-black/40 rounded-full">
-                <Sparkles size={20} color="#FFFFFF" />
-              </Pressable>
-            </View>
+            )}
+          </View>
+        )}
+
+        {!textMode && !drawingMode && (
+          <View className="absolute top-32 right-4 gap-4 items-center z-10">
+            <Pressable onPress={() => setTextMode(true)} className="w-[46px] h-[46px] items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 rounded-full active:scale-95 shadow-lg shadow-black/20">
+              <Type size={20} color="#FFFFFF" />
+            </Pressable>
+            <Pressable onPress={() => setDrawingMode(true)} className="w-[46px] h-[46px] items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 rounded-full active:scale-95 shadow-lg shadow-black/20">
+              <Pencil size={20} color="#FFFFFF" />
+            </Pressable>
+            <Pressable onPress={() => setShowStickerSheet(true)} className="w-[46px] h-[46px] items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 rounded-full active:scale-95 shadow-lg shadow-black/20">
+              <StickerIcon size={20} color="#FFFFFF" />
+            </Pressable>
+            <Pressable onPress={() => setShowMusicSheet(true)} className="w-[46px] h-[46px] items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 rounded-full active:scale-95 shadow-lg shadow-black/20">
+              <MusicIcon size={20} color="#FFFFFF" />
+            </Pressable>
+            <Pressable onPress={() => setShowEffectsSheet(true)} className="w-[46px] h-[46px] items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 rounded-full active:scale-95 shadow-lg shadow-black/20">
+              <Sparkles size={20} color="#FFFFFF" />
+            </Pressable>
           </View>
         )}
 
@@ -410,36 +434,49 @@ export default function StoryEditorScreen() {
         )}
       </Pressable>
 
-      {!textMode && !drawingMode && (
+      {!textMode && !drawingMode && !showTimelineEditor && (
         <View className="absolute bottom-6 left-4 right-4 flex-row justify-between items-center z-10">
           {mode === 'REEL' ? (
             <>
-              <Pressable onPress={() => setShowTimelineEditor(true)} className="bg-black/60 px-4 py-2 rounded-full flex-row items-center gap-2">
-                <Text className="text-white font-bold">Edit video</Text>
-              </Pressable>
+              <View className="flex-row items-center gap-2 flex-1">
+                <Pressable onPress={() => setShowTimelineEditor(true)} className="bg-black/60 backdrop-blur-md border border-white/20 px-4 py-3.5 rounded-[20px] flex-row items-center justify-center flex-1 active:scale-95 transition-all">
+                  <Text className="text-white font-bold text-[14px]">Edit video</Text>
+                </Pressable>
+                <Pressable 
+                  onPress={() => {
+                    try { audioPlayer?.pause(); } catch(e) {}
+                    try { videoPlayer?.pause(); } catch(e) {}
+                    setEditorData({
+                      layers,
+                      timelineData,
+                      musicData: selectedMusic
+                    });
+                    router.push({ 
+                      pathname: '/(create)/post-editor', 
+                      params: { 
+                        uri, mode, type, speed, effect, 
+                        musicId: selectedMusic?.id || musicId,
+                        musicTitle: selectedMusic?.title,
+                        musicUrl: selectedMusic?.audioUrl
+                      }
+                    });
+                  }}
+                  className="bg-black/60 backdrop-blur-md border border-white/20 px-4 py-3.5 rounded-[20px] flex-row items-center justify-center flex-1 active:scale-95 transition-all"
+                >
+                  <Text className="text-white font-bold text-[14px]">Edit Layers</Text>
+                </Pressable>
+              </View>
+
               <Pressable 
                 onPress={() => {
                   try { audioPlayer?.pause(); } catch(e) {}
-                  try { videoPlayer?.pause(); } catch(e) {}
-                  setEditorData({
-                    layers,
-                    timelineData,
-                    musicData: selectedMusic
-                  });
-                  router.push({ 
-                    pathname: '/(create)/post-editor', 
-                    params: { 
-                      uri, mode, type, speed, effect, 
-                      musicId: selectedMusic?.id || musicId,
-                      musicTitle: selectedMusic?.title,
-                      musicUrl: selectedMusic?.audioUrl
-                    } 
-                  });
+                  try { if (videoPlayer) { videoPlayer.pause(); videoPlayer.muted = true; } } catch(e) {}
+                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId } });
                 }}
-                className="items-center justify-center bg-[#A855F7] px-8 py-3 rounded-full flex-row gap-2 shadow-lg"
+                className="items-center justify-center bg-[#A855F7] px-8 py-3.5 rounded-[20px] flex-row gap-2 shadow-xl shadow-purple-500/30 ml-3 active:scale-95 transition-transform"
               >
-                <Text className="text-white text-sm font-bold">Next</Text>
-                <ChevronRight size={16} color="#FFFFFF" />
+                <Text className="text-white text-[15px] font-black tracking-wide">Next</Text>
+                <ChevronRight size={18} color="#FFFFFF" strokeWidth={3} />
               </Pressable>
             </>
           ) : (
@@ -500,7 +537,7 @@ export default function StoryEditorScreen() {
           onClose={() => setShowSendToSheet(false)} 
           onSend={(users) => {
             setShowSendToSheet(false);
-            navigateToShare('share');
+            navigateToShare('share', users);
           }} 
         />
       </>

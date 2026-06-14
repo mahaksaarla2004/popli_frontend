@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Switch, Platform, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Switch, Platform, StyleSheet, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { X, Award, Coins } from 'lucide-react-native';
 import { useWalletStore, useFeedStore } from '../../store';
 import { GIFT_CATALOG } from '../../constants/staticData';
@@ -19,23 +20,32 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const router = useRouter();
   const { coinBalance, sendGiftCoins, rechargeCoins } = useWalletStore();
 
   const selectedGift = GIFT_CATALOG.find((g) => g.id === selectedGiftId)!;
 
 
   const handleSendGift = async () => {
-    if (!reel) return;
+    if (!reel || isSending) return;
 
-    // Show native popup as requested by user
-    Alert.alert(
-      'Insufficient Balance', 
-      `You need more coins to send ${selectedGift.name}. Please recharge your wallet!`,
-      [{ text: 'OK', style: 'cancel' }]
-    );
+    if (coinBalance < selectedGift.cost) {
+      setShowInsufficientModal(true);
+      return;
+    }
+
+    setIsSending(true);
+    const success = await sendGiftCoins(reel.creatorId, selectedGift.id, selectedGift.cost, giftMessage);
+    setIsSending(false);
     
-    // Also trigger the custom modal just in case
-    setShowInsufficientModal(true);
+    if (success) {
+      onClose();
+      onSendSuccess(selectedGift.icon);
+    } else {
+      setShowErrorModal(true);
+    }
   };
 
   if (!isOpen || !reel) return null;
@@ -149,11 +159,19 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
       <View className="px-5 py-3 pb-[90px]">
         <TouchableOpacity
           onPress={handleSendGift}
-          className="bg-primary-purple py-3.5 rounded-2xl items-center justify-center shadow-lg shadow-primary-purple/30"
+          disabled={isSending}
+          className={`py-3.5 rounded-2xl items-center justify-center flex-row shadow-lg shadow-primary-purple/30 ${isSending ? 'bg-primary-purple/50' : 'bg-primary-purple'}`}
         >
-          <Text className="text-white text-sm font-bold uppercase tracking-wider">
-            Send {selectedGift.name} ({selectedGift.cost})
-          </Text>
+          {isSending ? (
+            <>
+              <ActivityIndicator size="small" color="#FFFFFF" className="mr-2" />
+              <Text className="text-white text-sm font-bold uppercase tracking-wider">Sending...</Text>
+            </>
+          ) : (
+            <Text className="text-white text-sm font-bold uppercase tracking-wider">
+              Send {selectedGift.name} ({selectedGift.cost})
+            </Text>
+          )}
         </TouchableOpacity>
         
         {/* Notice text below the button */}
@@ -167,23 +185,28 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
       {/* Premium Insufficient Balance Modal */}
       {showInsufficientModal && (
         <View style={StyleSheet.absoluteFill} className="z-[100] flex-1 bg-black/80 items-center justify-center px-6">
-          <View className="bg-[#1A0E2C] w-full rounded-3xl p-6 items-center border border-[#EF4444]/30 shadow-2xl shadow-[#EF4444]/20">
+          <MotiView 
+            from={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', damping: 15 }}
+            className="bg-[#1A0E2C] w-full rounded-[24px] p-6 items-center border border-[#EF4444]/30 shadow-2xl shadow-[#EF4444]/20"
+          >
             <View className="w-16 h-16 rounded-full bg-[#EF4444]/20 items-center justify-center mb-4">
               <Coins size={32} color="#EF4444" />
             </View>
             <Text className="text-white text-xl font-black mb-2 text-center">Insufficient Balance</Text>
             <Text className="text-neutral-silver text-xs text-center leading-5 mb-6 px-4">
-              You need {selectedGift.cost - coinBalance} more coins to send this {selectedGift.name}. Recharge your wallet!
+              You need {selectedGift.cost - coinBalance} more coins to send this {selectedGift.name}.
             </Text>
             <TouchableOpacity 
               onPress={() => {
                 setShowInsufficientModal(false);
-                rechargeCoins(500);
-                setShowSuccessModal(true);
+                onClose();
+                router.push('/wallet');
               }}
-              className="bg-[#A855F7] w-full py-4 rounded-xl items-center active:scale-95 transition-all mb-3"
+              className="bg-[#A855F7] w-full py-4 rounded-full items-center active:scale-95 transition-all mb-3"
             >
-              <Text className="text-white font-bold text-sm">Recharge 500 Coins</Text>
+              <Text className="text-white font-bold text-sm">Go to Wallet</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={() => setShowInsufficientModal(false)}
@@ -191,14 +214,19 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
             >
               <Text className="text-white/50 font-medium text-xs">Cancel</Text>
             </TouchableOpacity>
-          </View>
+          </MotiView>
         </View>
       )}
 
       {/* Premium Recharge Success Modal */}
       {showSuccessModal && (
         <View style={StyleSheet.absoluteFill} className="z-[100] flex-1 bg-black/80 items-center justify-center px-6">
-          <View className="bg-[#1A0E2C] w-full rounded-3xl p-6 items-center border border-[#10B981]/30 shadow-2xl shadow-[#10B981]/20">
+          <MotiView 
+            from={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', damping: 15 }}
+            className="bg-[#1A0E2C] w-full rounded-[24px] p-6 items-center border border-[#10B981]/30 shadow-2xl shadow-[#10B981]/20"
+          >
             <View className="w-16 h-16 rounded-full bg-[#10B981]/20 items-center justify-center mb-4">
               <Award size={32} color="#10B981" />
             </View>
@@ -208,11 +236,37 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
             </Text>
             <TouchableOpacity 
               onPress={() => setShowSuccessModal(false)}
-              className="bg-[#10B981] w-full py-4 rounded-xl items-center active:scale-95 transition-all"
+              className="bg-[#10B981] w-full py-4 rounded-full items-center active:scale-95 transition-all"
             >
               <Text className="text-white font-bold text-sm">Awesome</Text>
             </TouchableOpacity>
-          </View>
+          </MotiView>
+        </View>
+      )}
+
+      {/* Premium Error Modal */}
+      {showErrorModal && (
+        <View style={StyleSheet.absoluteFill} className="z-[100] flex-1 bg-black/80 items-center justify-center px-6">
+          <MotiView 
+            from={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', damping: 15 }}
+            className="bg-[#1A0E2C] w-full rounded-[24px] p-6 items-center border border-[#EF4444]/30 shadow-2xl shadow-[#EF4444]/20"
+          >
+            <View className="w-16 h-16 rounded-full bg-[#EF4444]/20 items-center justify-center mb-4">
+              <X size={32} color="#EF4444" />
+            </View>
+            <Text className="text-white text-xl font-black mb-2 text-center">Transfer Failed</Text>
+            <Text className="text-neutral-silver text-xs text-center leading-5 mb-6 px-4">
+              Failed to send gift. Please try again later.
+            </Text>
+            <TouchableOpacity 
+              onPress={() => setShowErrorModal(false)}
+              className="bg-[#EF4444] w-full py-4 rounded-full items-center active:scale-95 transition-all"
+            >
+              <Text className="text-white font-bold text-sm">Dismiss</Text>
+            </TouchableOpacity>
+          </MotiView>
         </View>
       )}
     </>
