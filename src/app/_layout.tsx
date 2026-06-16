@@ -9,6 +9,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore, useKYCStore } from '../store';
 import { useFCM } from '../hooks/useFCM';
 import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
+import axios from 'axios';
+import { BASE_URL } from '../api/client';
 import '../global.css';
 
 // Keep the splash screen visible while we fetch resources
@@ -38,6 +40,24 @@ export default function RootLayout() {
 
   // Initialize FCM
   useFCM();
+
+  // Verify API Connection on Startup
+  useEffect(() => {
+    const verifyApiConnection = async () => {
+      console.log(`[STARTUP] Verifying API Connection to: ${BASE_URL}`);
+      try {
+        const response = await axios.get(`${BASE_URL}/health`, { timeout: 3000 });
+        if (response.status === 200) {
+          console.log(`✅ [STARTUP] API Connected successfully to ${BASE_URL}`);
+        }
+      } catch (error: any) {
+        console.warn(`❌ [STARTUP WARNING] API Unreachable at ${BASE_URL}`);
+        console.warn(`Error details: ${error.message}`);
+        console.warn(`Please check if your backend is running or update EXPO_PUBLIC_API_URL in .env`);
+      }
+    };
+    verifyApiConnection();
+  }, []);
 
   // Root Navigation Guard: Ensures absolute route safety across groups
   useEffect(() => {

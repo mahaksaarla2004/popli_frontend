@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, Dimensions, FlatList, ViewToken, StyleSheet, useWindowDimensions, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, Pressable, Dimensions, ViewToken, StyleSheet, useWindowDimensions, ScrollView, RefreshControl } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Bell, MessageSquare, Send } from 'lucide-react-native';
 import { ReelItem } from '../../components/feed/ReelItem';
 import { CommentsSheet } from '../../components/sheets/CommentsSheet';
@@ -23,7 +24,11 @@ export default function HomeFeedScreen() {
   const [activeTab, setActiveTab] = useState<TopTabType>('for_you');
   const [activeReelId, setActiveReelId] = useState<string>('');
   const [isFocused, setIsFocused] = useState(true);
-  const flatListRef = useRef<FlatList>(null);
+  const [listHeight, setListHeight] = useState(height);
+  const [page, setPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreReels, setHasMoreReels] = useState(true);
+  const flashListRef = useRef<any>(null);
   
   useFocusEffect(
     useCallback(() => {
@@ -67,7 +72,11 @@ export default function HomeFeedScreen() {
     // Fetch real reels on mount
     const { fetchReels } = useFeedStore.getState();
     const { fetchStories } = useStoryStore.getState();
-    fetchReels(1, 10, 'all');
+    fetchReels(1, 10, 'all').then(() => {
+      // If we got less than 10, there might not be more
+      const currentReels = useFeedStore.getState().reels;
+      if (currentReels.length < 10) setHasMoreReels(false);
+    });
     fetchStories();
   }, []);
 
@@ -80,16 +89,36 @@ export default function HomeFeedScreen() {
     // Fetch stories and page 1 of reels to reset the feed
     fetchStories();
     await fetchReels(1, 10, 'all');
+    setPage(1);
+    setHasMoreReels(true);
     
     // Reset active reel and scroll to top
     const newReels = useFeedStore.getState().reels;
     if (newReels.length > 0) {
       setActiveReelId(newReels[0].id);
-      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      flashListRef.current?.scrollToOffset({ offset: 0, animated: true });
     }
     
     setRefreshing(false);
   }, []);
+
+  const loadMoreReels = useCallback(async () => {
+    if (isLoadingMore || !hasMoreReels || refreshing || activeTab !== 'for_you') return;
+    setIsLoadingMore(true);
+    const nextPage = page + 1;
+    const { fetchReels } = useFeedStore.getState();
+    const beforeCount = useFeedStore.getState().reels.length;
+    
+    await fetchReels(nextPage, 10, 'all');
+    const afterCount = useFeedStore.getState().reels.length;
+    
+    if (afterCount === beforeCount) {
+      setHasMoreReels(false); // No new reels added
+    } else {
+      setPage(nextPage);
+    }
+    setIsLoadingMore(false);
+  }, [isLoadingMore, hasMoreReels, refreshing, page, activeTab]);
 
   useEffect(() => {
     if (userProfile?.id) {
@@ -127,7 +156,7 @@ export default function HomeFeedScreen() {
       const firstReel = reels[0];
       if (firstReel.creatorUsername === userProfile.username && activeReelId !== firstReel.id) {
         setActiveReelId(firstReel.id);
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+        flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
       }
     }
   }, [reels.length]);
@@ -138,7 +167,10 @@ export default function HomeFeedScreen() {
     }
   }).current;
 
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80 }).current;
+  const viewabilityConfig = useRef({ 
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 50
+  }).current;
 
   const handleOpenComments = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsCommentsOpen(true); }, []);
   const handleOpenSend = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsSendOpen(true); }, []);
@@ -150,25 +182,41 @@ export default function HomeFeedScreen() {
     setTimeout(() => setBurstGift({ visible: false, icon: '' }), 1500);
   };
 
-  const renderItem = useCallback(({ item }: { item: Reel }) => {
+  const renderItem = useCallback(({ item, index }: { item: Reel; index: number }) => {
+    const activeIndex = filteredReels.findIndex(r => r.id === activeReelId);
+    // Keep 1 previous video, the current video, and preload the next 2 videos for smooth vertical scrolling
+    const isAdjacent = index >= activeIndex - 1 && index <= activeIndex + 2;
+
     return (
       <ReelItem
         item={item}
         isActive={isFocused && item.id === activeReelId}
+        isAdjacent={isAdjacent}
         onOpenComments={handleOpenComments}
         onOpenSend={handleOpenSend}
         onOpenGifts={handleOpenGifts}
         onOpenProfile={handleOpenProfile}
         windowWidth={width}
-        windowHeight={height}
+        windowHeight={listHeight}
       />
     );
-  }, [isFocused, activeReelId, handleOpenComments, handleOpenSend, handleOpenGifts, handleOpenProfile, width, height]);
+  }, [isFocused, activeReelId, filteredReels, handleOpenComments, handleOpenSend, handleOpenGifts, handleOpenProfile, width, listHeight]);
 
   const keyExtractor = useCallback((item: Reel) => item.id, []);
 
+  // Removed getItemLayout as FlashList handles it efficiently with estimatedItemSize
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000' }} className="relative">
+    <View 
+      style={{ flex: 1, backgroundColor: '#000000' }} 
+      className="relative"
+      onLayout={(e) => {
+        const measuredHeight = Math.floor(e.nativeEvent.layout.height);
+        if (measuredHeight > 0) {
+          setListHeight(measuredHeight);
+        }
+      }}
+    >
       
       {/* Top Segmented Tabs Overlay & Notification Bell */}
       <View className="absolute top-12 left-0 right-0 z-20 flex-row justify-between items-center px-4">
@@ -214,24 +262,23 @@ export default function HomeFeedScreen() {
           <Text className="text-white/60 text-sm font-semibold">No reels available in this tab yet.</Text>
         </View>
       ) : (
-        <FlatList
-          ref={flatListRef}
+        <FlashList
+          ref={flashListRef}
           data={filteredReels}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
-          pagingEnabled
+          pagingEnabled={true}
           showsVerticalScrollIndicator={false}
+          bounces={false}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
-          maxToRenderPerBatch={1}
-          windowSize={3}
-          initialNumToRender={1}
-          removeClippedSubviews={true}
-          style={{ width, height }}
-          snapToInterval={height}
-          snapToAlignment="start"
-          decelerationRate="fast"
-          disableIntervalMomentum={true}
+          // @ts-ignore
+          estimatedItemSize={listHeight || 800}
+          // @ts-ignore
+          extraData={{ activeReelId, isFocused, listHeight, width }}
+          onEndReached={loadMoreReels}
+          onEndReachedThreshold={0.5}
+          contentContainerStyle={{ backgroundColor: '#000' }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

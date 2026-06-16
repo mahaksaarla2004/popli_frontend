@@ -35,25 +35,8 @@ export const useWalletStore = create<WalletState>()(
           get().fetchWallet(); // Fetch updated transactions from backend
           return true;
         } catch (e: any) {
-          console.warn("Recharge API failed, applying dummy recharge for testing:", e?.message);
-          
-          // DUMMY BYPASS FOR TESTING
-          const newTx = {
-            id: 'dummy_' + Date.now(),
-            type: 'coin_recharge' as any,
-            amount: coins,
-            currency: 'coins' as any,
-            status: 'SUCCESS' as any,
-            description: `Dummy Recharge of ${coins} coins`,
-            timestamp: new Date().toISOString()
-          };
-          
-          set((state) => ({
-            coinBalance: state.coinBalance + coins,
-            transactions: [newTx, ...state.transactions]
-          }));
-          
-          return true;
+          console.error("Recharge API failed:", e?.message);
+          return false;
         }
       },
       sendGiftCoins: async (receiverId, giftId, cost, message) => {
@@ -71,23 +54,10 @@ export const useWalletStore = create<WalletState>()(
             get().fetchWallet();
             return true;
           } catch (e: any) {
-            console.warn("Gift API failed, applying dummy gift success for testing:", e?.message);
-            // DUMMY BYPASS FOR TESTING
-            // We won't revert the coin balance since it was optimistically updated
-            // Add a dummy transaction for the gift
-            const newTx = {
-              id: 'dummy_gift_' + Date.now(),
-              type: 'gift_send' as any,
-              amount: cost,
-              currency: 'coins' as any,
-              status: 'SUCCESS' as any,
-              description: `Dummy Gift Sent (${cost} coins)`,
-              timestamp: new Date().toISOString()
-            };
-            set((state) => ({
-              transactions: [newTx, ...state.transactions]
-            }));
-            return true;
+            console.error("Gift API failed:", e?.message);
+            // Revert optimistic update
+            set((state) => ({ coinBalance: state.coinBalance + cost }));
+            return false;
           }
         }
         return false;

@@ -62,7 +62,7 @@ export default function LoginScreen() {
       // Navigate to OTP screen
       router.push({
         pathname: '/(auth)/otp',
-        params: { target: targetPhone, type: identTrimmed.includes('@') ? 'email' : 'phone', phone: targetPhone, isSignup: 'false' }
+        params: { target: targetPhone, type: identTrimmed.includes('@') ? 'email' : 'phone', phone: targetPhone, isSignup: 'false', intent: 'login' }
       });
     } catch (error: any) {
       setIsLoading(false);
@@ -157,38 +157,17 @@ export default function LoginScreen() {
           {/* Login Button */}
           <Pressable
             onPress={handleLogin}
-            className="bg-primary-purple py-4 rounded-2xl items-center justify-center shadow-lg shadow-primary-purple/40 active:scale-[0.98] transition-all"
+            disabled={isLoading}
+            className={`bg-primary-purple py-4 rounded-2xl items-center justify-center shadow-lg shadow-primary-purple/40 transition-all ${isLoading ? 'opacity-70' : 'active:scale-[0.98]'}`}
           >
-            <Text className="text-white text-base font-black tracking-wide">Login</Text>
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white text-base font-black tracking-wide">Login</Text>
+            )}
           </Pressable>
 
-          {/* Divider */}
-          <View className="items-center mt-2 w-full">
-            <View className="flex-row items-center justify-center gap-3 w-full px-2">
-              <View className="flex-1 h-[1px] bg-white/5" />
-              <Text className="text-white/30 text-[9px] font-black uppercase tracking-widest">Or Connect With</Text>
-              <View className="flex-1 h-[1px] bg-white/5" />
-            </View>
-          </View>
-            
-          {/* Social login buttons */}
-          <View className="flex-row justify-center gap-5 w-full mt-2">
-            <Pressable 
-              onPress={() => { setLogin(true); }}
-              className="flex-1 flex-row bg-[#1D1037]/30 border border-white/10 py-3 rounded-2xl items-center justify-center gap-2 h-12 active:scale-[0.97]"
-            >
-              <Text className="text-white text-sm font-black mr-0.5">G</Text>
-              <Text className="text-white text-xs font-bold">Google</Text>
-            </Pressable>
-            
-            <Pressable 
-              onPress={() => { setLogin(true); }}
-              className="flex-1 flex-row bg-[#1D1037]/30 border border-white/10 py-3 rounded-2xl items-center justify-center gap-2 h-12 active:scale-[0.97]"
-            >
-              <Text className="text-white text-sm font-black mr-0.5">f</Text>
-              <Text className="text-white text-xs font-bold">Facebook</Text>
-            </Pressable>
-          </View>
+
 
           {/* Footer links */}
           <View className="flex-row items-center justify-center gap-1 mt-4">

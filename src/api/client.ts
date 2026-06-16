@@ -1,8 +1,31 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 
-// We use EXPO_PUBLIC_API_URL from .env. If not set, fallback to the production URL.
-export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://popli-backend.onrender.com';
+import Constants from 'expo-constants';
+
+// Cloudflare fallback for remote testing if all else fails
+const CLOUDFLARE_FALLBACK = 'https://lamp-rides-compiled-belkin.trycloudflare.com';
+
+const resolveBaseUrl = () => {
+  // 1. Primary: Use exactly what is configured in .env
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // 2. Optional Development Convenience: Extract from Expo Host URI
+  if (__DEV__) {
+    const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost;
+    if (hostUri) {
+      const lanIp = hostUri.split(':')[0]; // e.g. "192.168.1.28"
+      return `http://${lanIp}:3000`;
+    }
+  }
+
+  // 3. Ultimate Fallback
+  return CLOUDFLARE_FALLBACK;
+};
+
+export const BASE_URL = resolveBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -12,9 +35,11 @@ export const apiClient = axios.create({
   },
 });
 
-// Request interceptor to attach JWT token
+// Request interceptor to attach JWT token and log requests
 apiClient.interceptors.request.use(
   (config) => {
+    console.log(`[API REQUEST] ${config.method?.toUpperCase()} ${config.url}`, config.params || '');
+    
     // Dynamically require to avoid require cycle with authStore
     const { useAuthStore } = require('../store/authStore');
     const { token } = useAuthStore.getState();
@@ -24,19 +49,42 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error(`[API REQUEST ERROR]`, error);
     return Promise.reject(error);
   }
 );
 
-// Optional: Response interceptor to handle token refresh automatically if needed in the future
+// Response interceptor to handle token refresh automatically and log responses
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`[API RESPONSE] ${response.config.method?.toUpperCase()} ${response.config.url} - Status: ${response.status}`);
+    return response;
+  },
   async (error) => {
-    if (error.response?.status === 401) {
-      // Token might be expired. For Phase 1, we just log out.
-      // In Phase 2, implement refresh token logic here.
-      const { useAuthStore } = require('../store/authStore');
-      useAuthStore.getState().logout();
+    const originalRequest = error.config;
+    console.error(`[API ERROR] ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} - Status: ${error.response?.status || 'NETWORK_ERROR'}`);
+    
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const { useAuthStore } = require('../store/authStore');
+        const SecureStore = require('expo-secure-store');
+        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        if (refreshToken) {
+          const res = await axios.post(`${BASE_URL}/auth/refresh-token`, { refreshToken });
+          if (res.data.accessToken) {
+            useAuthStore.getState().setToken(res.data.accessToken);
+            originalRequest.headers.Authorization = `Bearer ${res.data.accessToken}`;
+            return apiClient(originalRequest);
+          }
+        }
+      } catch (refreshError) {
+        // Refresh token failed -> Log out
+        const { useAuthStore } = require('../store/authStore');
+        const SecureStore = require('expo-secure-store');
+        await SecureStore.deleteItemAsync('refreshToken');
+        useAuthStore.getState().logout();
+      }
     }
     return Promise.reject(error);
   }

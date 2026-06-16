@@ -21,6 +21,10 @@ export async function sendFirebaseOTP(phoneNumber: string) {
 export async function verifyFirebaseOTP(otp: string) {
   if (!mockPhone) throw new Error('No OTP requested. Please go back and request a new one.');
   
+  if (otp !== '123456') {
+    throw new Error('Invalid OTP. For testing, please use 123456.');
+  }
+
   try {
     // ACCEPT ANY OTP FOR MOCKING
     console.log('MOCK OTP VERIFIED!');

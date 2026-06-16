@@ -30,13 +30,32 @@ export default function InterestsScreen() {
     apiClient.get('/interests')
       .then(res => {
         if (res.data && res.data.length > 0) {
-          // Mapping backend structure to frontend structure
-          const mapped = res.data.map((i: any) => ({
-            id: i.id, // backend UUID
-            label: i.name,
-            emoji: i.emoji || '✨',
-            description: i.description || ''
-          }));
+          const EMOJI_MAP: Record<string, string> = {
+            technology: '💻',
+            tech: '💻',
+            sports: '🏏',
+            music: '🎵',
+            art: '🎨',
+            gaming: '🎮',
+            fashion: '👗',
+            comedy: '😂',
+            emotional: '😢',
+            dance: '💃',
+            'village life': '🌾',
+            motivation: '🔥',
+            fitness: '💪',
+            food: '🥘',
+          };
+
+          const mapped = res.data.map((i: any) => {
+            const localMatch = INTERESTS.find(local => local.label.toLowerCase() === i.name.toLowerCase());
+            return {
+              id: i.id, // backend UUID
+              label: i.name,
+              emoji: i.emoji || EMOJI_MAP[i.name.toLowerCase()] || localMatch?.emoji || '✨',
+              description: i.description || localMatch?.description || ''
+            };
+          });
           setInterests(mapped);
         }
       })

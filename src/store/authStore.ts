@@ -202,7 +202,19 @@ export const useAuthStore = create<AuthState>()(
           });
         }
       },
-      logout: () => set({ isLoggedIn: false, followingIds: [], token: null })
+      logout: async () => {
+        try {
+          const SecureStore = require('expo-secure-store');
+          const refreshToken = await SecureStore.getItemAsync('refreshToken');
+          if (refreshToken) {
+            await apiClient.post('/auth/logout', { refreshToken }).catch(() => {});
+            await SecureStore.deleteItemAsync('refreshToken');
+          }
+        } catch (e) {
+          console.error('Logout error', e);
+        }
+        set({ isLoggedIn: false, followingIds: [], token: null });
+      }
     }),
     {
       name: 'popli-auth-store',

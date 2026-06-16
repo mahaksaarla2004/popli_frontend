@@ -16,10 +16,8 @@ export default function SignupScreen() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
-  const [password, setPassword] = useState('');
   const [dob, setDob] = useState('');
   const [referralCode, setReferralCode] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
@@ -27,7 +25,6 @@ export default function SignupScreen() {
     username?: string;
     email?: string;
     mobile?: string;
-    password?: string;
     dob?: string;
     agreeTerms?: string;
     api?: string;
@@ -116,11 +113,7 @@ export default function SignupScreen() {
       newErrors.mobile = 'Please enter a valid 10-digit mobile number (starting with 6-9).';
     }
 
-    if (!password) {
-      newErrors.password = 'Please enter a password.';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters.';
-    }
+
 
     const dobError = validateDOB(dob);
     if (dobError) {
@@ -183,7 +176,8 @@ export default function SignupScreen() {
           email: emailTrimmed,
           phone: targetPhone,
           dob: dob,
-          referredByCode: referralCode.trim()
+          referredByCode: referralCode.trim(),
+          intent: 'signup'
         }
       });
     } catch (error: any) {
@@ -313,36 +307,7 @@ export default function SignupScreen() {
               )}
             </View>
 
-            {/* Password input */}
-            <View className="flex-col">
-              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center justify-between h-14 ${errors.password ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
-                <View className="flex-row items-center gap-4 flex-1">
-                  <Lock size={20} color="#A78BFA" strokeWidth={2} />
-                  <TextInput
-                    value={password}
-                    onChangeText={(val) => {
-                      setPassword(val);
-                      if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
-                    }}
-                    secureTextEntry={!showPassword}
-                    placeholder="••••••••"
-                    placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                    className="flex-1 text-white text-[14px] py-2"
-                    autoCapitalize="none"
-                  />
-                </View>
-                <Pressable onPress={() => setShowPassword(!showPassword)} className="p-2 -mr-2">
-                  {showPassword ? (
-                    <EyeOff size={20} color="rgba(255, 255, 255, 0.4)" />
-                  ) : (
-                    <Eye size={20} color="rgba(255, 255, 255, 0.4)" />
-                  )}
-                </Pressable>
-              </View>
-              {errors.password && (
-                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.password}</Text>
-              )}
-            </View>
+
 
             {/* DOB input */}
             <View className="flex-col">
@@ -410,31 +375,7 @@ export default function SignupScreen() {
             <Text className="text-white text-[16px] font-bold">Sign Up</Text>
           </Pressable>
 
-          {/* Social connections */}
-          <View className="items-center gap-4 pt-6">
-            <View className="flex-row items-center justify-center gap-2 w-full px-4">
-              <View className="flex-1 h-[1px] bg-white/5" />
-              <Text className="text-white/40 text-[11px] uppercase tracking-wider">Or Connect With</Text>
-              <View className="flex-1 h-[1px] bg-white/5" />
-            </View>
-            
-            <View className="flex-row justify-center gap-4 w-full mt-1">
-              <Pressable 
-                onPress={handleSignupSubmit}
-                className="flex-1 flex-row bg-[#1D1037]/80 border border-[#3E2B5C] h-14 rounded-full items-center justify-center gap-2 active:scale-[0.97]"
-              >
-                <Text className="text-white text-[15px] font-bold mr-1">G</Text>
-                <Text className="text-white text-[15px]">Google</Text>
-              </Pressable>
-              
-              <Pressable 
-                onPress={handleSignupSubmit}
-                className="flex-1 flex-row bg-[#1D1037]/80 border border-[#3E2B5C] h-14 rounded-full items-center justify-center gap-2 active:scale-[0.97]"
-              >
-                <Text className="text-white text-[15px] font-bold mr-1">f</Text>
-                <Text className="text-white text-[15px]">Facebook</Text>
-              </Pressable>
-            </View>
+
 
             {/* Footer Navigation */}
             <View className="flex-row items-center justify-center gap-1 pt-4">
@@ -448,7 +389,6 @@ export default function SignupScreen() {
                 <Text className="text-[#A78BFA] text-[14px] font-bold">Log in</Text>
               </Pressable>
             </View>
-          </View>
         </MotiView>
       </ScrollView>
     </KeyboardAvoidingView>

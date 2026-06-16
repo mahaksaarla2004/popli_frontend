@@ -39,6 +39,10 @@ interface FeedState {
   fetchFollowingReels: (page?: number, limit?: number) => Promise<void>;
   updateCreatorInfo: (creatorId: string, updates: Partial<{name: string, username: string, avatar: string}>) => void;
   deleteReel: (reelId: string) => Promise<void>;
+  isGlobalMuted: boolean;
+  toggleGlobalMute: () => void;
+  seenReelIds: string[];
+  clearSeenReels: () => void;
 }
 
 export const useFeedStore = create<FeedState>()(
@@ -50,11 +54,15 @@ export const useFeedStore = create<FeedState>()(
       watchHistory: [],
       userReels: [],
       comments: [],
+      seenReelIds: [],
       moodFilter: 'all',
       gpsLatitude: null,
       gpsLongitude: null,
       gpsCity: null,
       nearbyEnabled: false,
+      isGlobalMuted: false,
+      clearSeenReels: () => set({ seenReelIds: [] }),
+      toggleGlobalMute: () => set((state) => ({ isGlobalMuted: !state.isGlobalMuted })),
       setGPS: (lat, lon, city) => {
         set({ gpsLatitude: lat, gpsLongitude: lon, gpsCity: city });
         // Recalculate distances for all creators dynamically
@@ -200,11 +208,21 @@ export const useFeedStore = create<FeedState>()(
       },
       setMoodFilter: (filter) => set({ moodFilter: filter }),
       registerValidView: async (reelId, creatorUsername) => {
-        set((state) => ({
-          reels: state.reels.map(r => 
-            r.id === reelId ? { ...r, viewsCount: (r.viewsCount || 0) + 1 } : r
-          )
-        }));
+        set((state) => {
+          // Track seen reel to prevent repetition (limit to 50 max)
+          let newSeenIds = [...state.seenReelIds];
+          if (!newSeenIds.includes(reelId)) {
+            newSeenIds.push(reelId);
+            if (newSeenIds.length > 50) newSeenIds.shift();
+          }
+
+          return {
+            reels: state.reels.map(r => 
+              r.id === reelId ? { ...r, viewsCount: (r.viewsCount || 0) + 1 } : r
+            ),
+            seenReelIds: newSeenIds
+          };
+        });
         
         try {
           await apiClient.post(`/reels/${reelId}/view`);
@@ -215,8 +233,23 @@ export const useFeedStore = create<FeedState>()(
       fetchReels: async (page = 1, limit = 10, category = 'all') => {
         try {
           const currentReels = get().reels;
-          const excludeIds = page === 1 ? '' : currentReels.map(r => r.id).join(',');
-          const res = await apiClient.get(`/reels/feed?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIds}`);
+          const seenIds = get().seenReelIds;
+          
+          // Combine persistent seenIds with current page reels, taking up to 50 max
+          let allExcludeIds = page === 1 ? [...seenIds] : [...seenIds, ...currentReels.map(r => r.id)];
+          // Only send the last 50 to avoid huge query strings
+          let excludeIdsParam = allExcludeIds.slice(-50).join(',');
+          
+          let res = await apiClient.get(`/reels/feed?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIdsParam}`);
+          
+          // Fallback: If we exhausted the pool, clear seenReels and retry once!
+          if (res.data.length === 0 && seenIds.length > 0) {
+            console.log("Feed exhausted! Clearing seenReelIds and looping.");
+            get().clearSeenReels();
+            excludeIdsParam = page === 1 ? '' : currentReels.map(r => r.id).join(',');
+            res = await apiClient.get(`/reels/feed?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIdsParam}`);
+          }
+
           const fetchedReels = res.data.map((r: any) => ({
             id: r.id,
             creatorId: r.creatorId,

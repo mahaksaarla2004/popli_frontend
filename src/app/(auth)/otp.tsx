@@ -17,13 +17,13 @@ export default function OTPScreen() {
   
   const isResetMode = params.mode === 'reset';
   const isEmailType = params.type === 'email';
-  const otpLength = isEmailType ? 6 : 4;
+  const otpLength = 6;
   const targetLabel = params.target || '+91 987 xxx xxxx';
 
   const { setOnboardingComplete, setLogin } = useAuthStore();
-  const [otpArray, setOtpArray] = useState<string[]>(() => Array(isEmailType ? 6 : 4).fill(''));
+  const [otpArray, setOtpArray] = useState<string[]>(() => Array(6).fill(''));
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
-  const [timerSeconds, setTimerSeconds] = useState<number>(36);
+  const [timerSeconds, setTimerSeconds] = useState<number>(300);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   
@@ -68,7 +68,6 @@ export default function OTPScreen() {
         // 2. Ensure deviceId is generated and stored persistently
         let deviceId = await SecureStore.getItemAsync('deviceId');
         if (!deviceId) {
-          // Generate a pseudo-random device ID and save it
           deviceId = `device_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
           await SecureStore.setItemAsync('deviceId', deviceId);
         }
@@ -77,17 +76,25 @@ export default function OTPScreen() {
         const response = await apiClient.post('/auth/verify-firebase-token', { 
           idToken,
           deviceId,
-          referredByCode: params.referredByCode
+          referredByCode: params.referredByCode,
+          intent: (params as any).intent || (params.isSignup === 'true' ? 'signup' : 'login'),
+          name: (params as any).name,
+          username: (params as any).username,
+          email: (params as any).email,
+          dob: (params as any).dob
         });
 
         if (response.data.accessToken) {
           const { setToken, setLogin, setFirstLogin, updateProfile } = useAuthStore.getState();
           setToken(response.data.accessToken);
 
+          if (response.data.refreshToken) {
+            await SecureStore.setItemAsync('refreshToken', response.data.refreshToken);
+          }
+
           const userFromBackend = response.data.user;
 
           // If the user already completed their profile, they are an existing user.
-          // Don't overwrite their data even if they came through the Sign Up screen.
           if (userFromBackend?.isProfileComplete) {
             try {
               const fullProfileRes = await apiClient.get('/users/me', {
@@ -108,7 +115,6 @@ export default function OTPScreen() {
                 isVerified: fullProfile.isVerified || false
               });
             } catch (err) {
-              console.error("Failed to fetch full profile", err);
               updateProfile({
                 id: userFromBackend.id,
                 name: userFromBackend.name || 'Popli User',
@@ -119,45 +125,14 @@ export default function OTPScreen() {
             
             setIsVerifying(false);
             setIsSuccess(true);
-            setLogin(true);
-            setFirstLogin(false);
             setTimeout(() => {
+              setLogin(true);
+              setFirstLogin(false);
               router.replace('/(tabs)');
             }, 800);
             return;
           }
 
-          // If this was signup AND user is not complete, update their name/username
-          if (params.isSignup === 'true') {
-            let dobIso = undefined;
-            if ((params as any).dob) {
-              const parts = ((params as any).dob as string).split('/');
-              if (parts.length === 3) {
-                dobIso = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])).toISOString();
-              }
-            }
-
-            await apiClient.put('/users/me', {
-              name: (params as any).name,
-              username: (params as any).username,
-              email: (params as any).email,
-              dob: dobIso
-            }, {
-              headers: { Authorization: `Bearer ${response.data.accessToken}` }
-            });
-            
-            updateProfile({ id: userFromBackend.id, name: (params as any).name, username: (params as any).username, email: (params as any).email });
-            
-            setIsVerifying(false);
-            setIsSuccess(true);
-            setLogin(true);
-            setFirstLogin(false);
-            setTimeout(() => {
-              router.replace('/(auth)/profile-setup');
-            }, 800);
-            return;
-          }
-          
           // Existing User but profile not complete
           try {
             updateProfile({
@@ -168,11 +143,11 @@ export default function OTPScreen() {
 
             setIsVerifying(false);
             setIsSuccess(true);
-            setLogin(true);
-            setFirstLogin(false);
 
             setTimeout(() => {
-              router.replace('/(tabs)');
+              setLogin(true);
+              setFirstLogin(false);
+              router.replace('/(auth)/profile-setup');
             }, 800);
           } catch (profileError) {
             console.error('Failed to process user profile:', profileError);
@@ -191,14 +166,19 @@ export default function OTPScreen() {
     }
   }, [isVerifying, isSuccess, isOtpComplete, otp, params]);
 
-  const handleResendOTP = () => {
+  const handleResendOTP = async () => {
     if (timerSeconds > 0) return;
-    setOtpArray(Array(otpLength).fill(''));
-    setTimerSeconds(36);
-    setFocusedIndex(0);
-    setTimeout(() => {
-      hiddenInputRef.current?.focus();
-    }, 100);
+    try {
+      await sendFirebaseOTP(params.target as string);
+      setOtpArray(Array(otpLength).fill(''));
+      setTimerSeconds(300);
+      setFocusedIndex(0);
+      setTimeout(() => {
+        hiddenInputRef.current?.focus();
+      }, 100);
+    } catch (err: any) {
+      alert('Failed to resend OTP');
+    }
   };
 
   const handleBack = () => {
@@ -236,10 +216,11 @@ export default function OTPScreen() {
         <View
           key={i}
           style={{ 
-            width: isEmailType ? 40 : 64, 
-            height: isEmailType ? 48 : 64,
+            flex: 1,
+            marginHorizontal: 4,
+            height: 56,
             backgroundColor: '#1D1037',
-            borderRadius: 16,
+            borderRadius: 12,
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: 2,
@@ -354,7 +335,7 @@ export default function OTPScreen() {
                   >
                     <Text className={`text-[13px] font-bold ${timerSeconds > 0 ? 'text-[#A78BFA]' : 'text-[#A78BFA] hover:underline'}`}>
                       {timerSeconds > 0 
-                        ? `Resend OTP 00:${timerSeconds < 10 ? '0' + timerSeconds : timerSeconds}` 
+                        ? `Resend OTP in ${Math.floor(timerSeconds / 60)}:${(timerSeconds % 60).toString().padStart(2, '0')}` 
                         : 'Resend Verification Code'
                       }
                     </Text>
@@ -387,7 +368,7 @@ export default function OTPScreen() {
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
                     <Text className="color-white font-bold text-[16px]">
-                      Sign Up
+                      {params.isSignup === 'true' ? 'Sign Up' : 'Log In'}
                     </Text>
                   )}
                 </Pressable>

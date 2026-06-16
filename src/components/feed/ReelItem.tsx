@@ -22,6 +22,7 @@ interface ReelItemProps {
   windowWidth: number;
   windowHeight: number;
   isStandalone?: boolean;
+  isAdjacent?: boolean;
 }
 
 const ActiveVideoPlayer = ({ url, isMuted, isActive, isHeldPaused, width, height, onLoaded }: { url: string, isMuted: boolean, isActive: boolean, isHeldPaused: boolean, width: number, height: number, onLoaded: () => void }) => {
@@ -107,16 +108,16 @@ export const ReelItem = React.memo(({
   onOpenProfile,
   windowWidth: width,
   windowHeight: height,
-  isStandalone = false
+  isStandalone = false,
+  isAdjacent = true
 }: ReelItemProps) => {
   const router = useRouter();
-  const [isMuted, setIsMuted] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isHeldPaused, setIsHeldPaused] = useState(false);
   const [muteIndicator, setMuteIndicator] = useState<'muted' | 'unmuted' | null>(null);
   
-  const { toggleLikeReel, toggleSaveReel, registerValidView, deleteReel } = useFeedStore();
+  const { toggleLikeReel, toggleSaveReel, registerValidView, deleteReel, isGlobalMuted, toggleGlobalMute } = useFeedStore();
   const { followingIds, toggleFollow, userProfile } = useAuthStore();
   
   // View tracking
@@ -188,18 +189,17 @@ export const ReelItem = React.memo(({
       }, 800);
     } else {
       // Toggle play/pause or mute on single tap
-      setIsMuted((prev) => {
-        const newMutedState = !prev;
-        // Show mute indicator briefly
-        setMuteIndicator(newMutedState ? 'muted' : 'unmuted');
-        setTimeout(() => {
-          setMuteIndicator(null);
-        }, 1000);
-        return newMutedState;
-      });
+      toggleGlobalMute();
+      const newMutedState = !isGlobalMuted;
+      
+      // Show mute indicator briefly
+      setMuteIndicator(newMutedState ? 'muted' : 'unmuted');
+      setTimeout(() => {
+        setMuteIndicator(null);
+      }, 1000);
     }
     lastTapRef.current = now;
-  }, [item.isLiked, toggleLikeReel]);
+  }, [item.isLiked, toggleLikeReel, isGlobalMuted, toggleGlobalMute]);
 
   const isFollowing = followingIds.includes(item.creatorId);
   
@@ -248,11 +248,10 @@ export const ReelItem = React.memo(({
           />
         ) : (
           <>
-            <>
-              {console.log('RENDERING PLAYER WITH URL:', safeVideoUrl)}
+            {isAdjacent ? (
               <ActiveVideoPlayer 
                 url={safeVideoUrl} 
-                isMuted={isMuted} 
+                isMuted={isGlobalMuted} 
                 isActive={isActive} 
                 isHeldPaused={isHeldPaused}
                 width={width} 
@@ -261,13 +260,13 @@ export const ReelItem = React.memo(({
                   if (!isLoaded) setTimeout(() => setIsLoaded(true), 0);
                 }}
               />
-            </>
+            ) : null}
 
             {/* Render audio player only if active */}
             {isActive && musicAudioUrl && (
               <ActiveAudioPlayer 
                 url={musicAudioUrl} 
-                isMuted={isMuted} 
+                isMuted={isGlobalMuted} 
                 isActive={isActive} 
                 isHeldPaused={isHeldPaused} 
               />
@@ -279,7 +278,7 @@ export const ReelItem = React.memo(({
                 source={{ uri: item.thumbnailUrl }}
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
-                className="blur-lg opacity-80"
+                // Removed blur-lg and opacity-80 to make it exactly match the video's first frame, avoiding flicker
               />
             )}
           </>
@@ -597,7 +596,7 @@ export const ReelItem = React.memo(({
             
             {item.isMonetized && (
               <View className="flex-row items-center gap-1.5 bg-[#F59E0B]/20 px-2 py-0.5 rounded-sm">
-                <Text className="text-[#F59E0B] text-xs font-bold">₹{((item.viewsCount || 0) * 0.0044).toFixed(3)}</Text>
+                <Text className="text-[#F59E0B] text-xs font-bold">₹{((item.viewsCount || 0) * 0.0045).toFixed(3)}</Text>
               </View>
             )}
           </View>
