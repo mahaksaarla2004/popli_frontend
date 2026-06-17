@@ -13,7 +13,7 @@ import { MotiView } from 'moti';
 const { height, width } = Dimensions.get('window');
 
 export default function ReelViewerScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, commentId } = useLocalSearchParams<{ id: string, commentId?: string }>();
   const router = useRouter();
   
   const [reel, setReel] = useState<Reel | null>(null);
@@ -24,6 +24,12 @@ export default function ReelViewerScreen() {
   const [isSendOpen, setIsSendOpen] = useState(false);
   const [isGiftsOpen, setIsGiftsOpen] = useState(false);
   const [burstGift, setBurstGift] = useState<{ visible: boolean; icon: string }>({ visible: false, icon: '' });
+
+  useEffect(() => {
+    if (commentId && reel) {
+      setTimeout(() => setIsCommentsOpen(true), 0);
+    }
+  }, [commentId, reel]);
 
   useEffect(() => {
     const fetchReel = async () => {
@@ -118,7 +124,7 @@ export default function ReelViewerScreen() {
       </View>
 
       {/* Sheets & Overlays */}
-      <CommentsSheet reelId={reel.id} isOpen={isCommentsOpen} onClose={() => setIsCommentsOpen(false)} />
+      <CommentsSheet reelId={reel.id} isOpen={isCommentsOpen} onClose={() => setIsCommentsOpen(false)} highlightedCommentId={commentId} />
       <SendSheet reelId={reel.id} isOpen={isSendOpen} onClose={() => setIsSendOpen(false)} />
       <GiftSheet reel={reel} isOpen={isGiftsOpen} onClose={() => setIsGiftsOpen(false)} onSendSuccess={handleGiftSendSuccess} />
 

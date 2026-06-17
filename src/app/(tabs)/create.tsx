@@ -35,6 +35,7 @@ export default function CreateScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [timerDelay, setTimerDelay] = useState<0 | 3 | 10>(0);
   const [timerCountdown, setTimerCountdown] = useState<number | null>(null);
+  const [isFocused, setIsFocused] = useState(true);
   
   // New States for functional sweep
   const [speedMultiplier, setSpeedMultiplier] = useState<1 | 2 | 3>(1);
@@ -46,11 +47,12 @@ export default function CreateScreen() {
   const recordingInterval = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Music state from params
-  const { selectedMusicId, selectedMusicTitle, selectedMusicArtist, selectedMusicUrl } = useLocalSearchParams<{ 
+  const { selectedMusicId, selectedMusicTitle, selectedMusicArtist, selectedMusicUrl, challengeId } = useLocalSearchParams<{ 
     selectedMusicId?: string, 
     selectedMusicTitle?: string, 
     selectedMusicArtist?: string,
-    selectedMusicUrl?: string
+    selectedMusicUrl?: string,
+    challengeId?: string
   }>();
 
   // Audio Player
@@ -62,8 +64,10 @@ export default function CreateScreen() {
   useFocusEffect(
     useCallback(() => {
       // Screen focused
+      setIsFocused(true);
       return () => {
         // Screen blurred
+        setIsFocused(false);
         try { player?.pause(); } catch(e) {}
       };
     }, [player])
@@ -126,7 +130,7 @@ export default function CreateScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync();
       if (photo) {
-        router.push({ pathname: '/(create)/story-editor', params: { uri: photo.uri, type: 'photo', mode: activeMode } });
+        router.push({ pathname: '/(create)/story-editor', params: { uri: photo.uri, type: 'photo', mode: activeMode, challengeId } });
       }
     } catch (err) {
       console.warn('Failed to take photo', err);
@@ -159,7 +163,8 @@ export default function CreateScreen() {
             mode: activeMode,
             speed: speedMultiplier.toString(),
             effect: selectedEffect.name,
-            musicId: selectedMusicId
+            musicId: selectedMusicId,
+            challengeId
           } 
         });
       }
@@ -224,7 +229,8 @@ export default function CreateScreen() {
         params: { 
           uri: result.assets[0].uri, 
           type: result.assets[0].type === 'video' ? 'video' : 'photo', 
-          mode: activeMode 
+          mode: activeMode,
+          challengeId
         } 
       });
     }
@@ -256,13 +262,15 @@ export default function CreateScreen() {
   return (
     <View className="flex-1 bg-black">
       <View className="flex-1 rounded-b-3xl overflow-hidden relative">
-        <CameraView 
-          ref={cameraRef}
-          style={{ flex: 1 }} 
-          facing={facing} 
-          flash={flash}
-          mode={activeMode === 'REEL' ? 'video' : 'picture'}
-        />
+        {isFocused && (
+          <CameraView 
+            ref={cameraRef}
+            style={{ flex: 1 }} 
+            facing={facing} 
+            flash={flash}
+            mode={activeMode === 'REEL' ? 'video' : 'picture'}
+          />
+        )}
 
         {/* Local Filter Overlay Preview */}
         {selectedEffect.name !== 'None' && (

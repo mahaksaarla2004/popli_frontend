@@ -29,7 +29,7 @@ export default function InboxScreen() {
 
   useEffect(() => {
     if (!searchQuery.trim()) {
-      setSearchResults([]);
+      setTimeout(() => setSearchResults([]), 0);
       return;
     }
     const timer = setTimeout(async () => {
@@ -78,11 +78,11 @@ export default function InboxScreen() {
 
   // Map active friends from existing chats (fallback logic until real presence is added)
   const activeFriends = visibleChats.slice(0, 5).map((chat) => ({
-    id: chat?.id || Math.random().toString(), // Use chat.id for unique React key
+    id: chat?.id || ('active-' + (chat?.creatorId || 'unknown')), // Use chat.id for unique React key
     userId: chat?.creatorId || 'unknown',
     name: chat?.creatorName ? chat.creatorName.split(' ')[0] : 'Unknown',
     avatar: chat?.creatorAvatar || 'https://i.pravatar.cc/150',
-    active: Math.random() > 0.5 // Simulated online status for now
+    active: (chat?.creatorName ? chat.creatorName.length : 0) % 2 === 0 // Simulated online status
   }));
 
   return (
@@ -142,7 +142,7 @@ export default function InboxScreen() {
 
             {/* Messages List */}
             <View className="px-4 gap-6">
-              {visibleChats.length === 0 ? (
+              {visibleChats.filter(c => c.lastMessage !== 'No messages yet').length === 0 ? (
                 <View className="items-center justify-center py-10">
                   <MessageSquare size={48} color="#9CA3AF" />
                   <Text className="text-white font-bold mt-4 text-center">No messages yet</Text>
@@ -151,7 +151,7 @@ export default function InboxScreen() {
                   </Text>
                 </View>
               ) : (
-                visibleChats.map((chat) => (
+                visibleChats.filter(c => c.lastMessage !== 'No messages yet').map((chat) => (
                   <Pressable
                     key={chat.id}
                     onPress={() => router.push(`/chat/${chat.id}`)}

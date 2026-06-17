@@ -6,13 +6,22 @@ interface ChallengeSubmissionSheetProps {
   visible: boolean;
   onClose: () => void;
   onSubmit: () => void;
+  challengeId?: string;
 }
 
-export default function ChallengeSubmissionSheet({ visible, onClose, onSubmit }: ChallengeSubmissionSheetProps) {
-  const recentVideos = [
-    { id: '1', title: 'Indore', views: 174, category: 'Dance' },
-    { id: '2', title: 'My new video', views: 50, category: 'Music' },
-  ];
+export default function ChallengeSubmissionSheet({ visible, onClose, onSubmit, challengeId }: ChallengeSubmissionSheetProps) {
+  const router = require('expo-router').useRouter();
+  
+
+
+  const handleRecordNew = () => {
+    onClose();
+    if (challengeId) {
+      router.push({ pathname: '/(tabs)/create', params: { challengeId } });
+    } else {
+      router.push('/(tabs)/create');
+    }
+  };
 
   return (
     <Modal
@@ -29,39 +38,27 @@ export default function ChallengeSubmissionSheet({ visible, onClose, onSubmit }:
           <View className="w-12 h-1.5 bg-[#3E2B5C] rounded-full self-center mb-6" />
           
           <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-white font-bold text-xl">Pick a Video to Submit</Text>
+            <Text className="text-white font-bold text-xl">Submit Entry</Text>
             <Pressable onPress={onClose} className="p-2 -mr-2 bg-[#2D1B4E] rounded-full active:opacity-70">
               <X size={20} color="white" />
             </Pressable>
           </View>
-          <Text className="text-white/60 mb-6">Choose one of your recent videos as your challenge entry</Text>
+          <Text className="text-white/60 mb-6">Record a new video or choose a recent one</Text>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
-            {recentVideos.map((video) => (
-              <Pressable
-                key={video.id}
-                onPress={onSubmit}
-                className="bg-[#0D0518] border border-[#3E2B5C] rounded-2xl p-4 flex-row items-center active:bg-[#2D1B4E] transition-colors"
-              >
-                <View className="w-16 h-20 bg-blue-900/40 rounded-xl items-center justify-center mr-4 relative overflow-hidden">
-                   <View className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20" />
-                   <Play size={24} color="white" fill="transparent" opacity={0.8} />
-                </View>
-                
-                <View className="flex-1">
-                  <Text className="text-white font-bold text-base mb-1">{video.title}</Text>
-                  <View className="flex-row items-center gap-2">
-                    <Text className="text-white/50 text-xs flex-row items-center gap-1">
-                      👁 {video.views}
-                    </Text>
-                    <Text className="text-white/30 text-xs">•</Text>
-                    <Text className="text-white/50 text-xs">{video.category}</Text>
-                  </View>
-                </View>
+            {/* Record New Button */}
+            <Pressable
+              onPress={handleRecordNew}
+              className="bg-gradient-to-r from-[#A855F7] to-[#D946EF] rounded-2xl p-4 flex-row items-center justify-center active:opacity-80 mt-2"
+            >
+              <Text className="text-white font-bold text-lg">🎥 Record New Video</Text>
+            </Pressable>
 
-                <Text className="text-white/50 text-lg">›</Text>
-              </Pressable>
-            ))}
+            {/* In a real implementation we would fetch user's recent reels here */}
+            <View className="items-center justify-center mt-6 p-4">
+              <Text className="text-white/40 text-sm text-center">To submit a recent video, go to your profile and link it to the challenge.</Text>
+            </View>
+
           </ScrollView>
         </View>
       </View>

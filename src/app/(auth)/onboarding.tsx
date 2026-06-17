@@ -28,7 +28,7 @@ const SLIDES = [
 
 export default function OnboardingScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const [scrollX] = useState(() => new Animated.Value(0));
   const scrollViewRef = useRef<ScrollView>(null);
   const { setOnboardingComplete } = useAuthStore();
   const router = useRouter();

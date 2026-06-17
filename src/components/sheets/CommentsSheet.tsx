@@ -6,22 +6,36 @@ import { formatSocialCount, getDefaultAvatar } from '../../utils';
 import { MotiView } from 'moti';
 import { apiClient } from '../../api/client';
 import { Comment } from '../../types';
+import { useRouter } from 'expo-router';
 
 interface CommentsSheetProps {
   reelId: string;
   isOpen: boolean;
   onClose: () => void;
+  highlightedCommentId?: string;
 }
 
-export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) => {
+export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }: CommentsSheetProps) => {
   const [newCommentText, setNewCommentText] = useState('');
   const [localComments, setLocalComments] = useState<Comment[]>([]);
   const [replyingTo, setReplyingTo] = useState<{id: string, username: string} | null>(null);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+
   const { addComment, toggleCommentLike } = useFeedStore();
   const { userProfile } = useAuthStore();
 
   React.useEffect(() => {
     if (isOpen && reelId) {
+      setTimeout(() => {
+        setNewCommentText('');
+        setReplyingTo(null);
+        setMentionQuery(null);
+        setSuggestions([]);
+      }, 0);
       apiClient.get(`/reels/${reelId}/comments`)
         .then(res => {
           const mapComment = (c: any): Comment => ({
@@ -45,6 +59,44 @@ export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) =
 
   const reelComments = localComments;
 
+  const handleTextChange = (text: string) => {
+    setNewCommentText(text);
+
+    // Regex to match the last word if it starts with @
+    const match = text.match(/@([\w.-]*)$/);
+    if (match) {
+      const query = match[1];
+      setMentionQuery(query);
+      
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+
+      timeoutRef.current = setTimeout(() => {
+        abortControllerRef.current = new AbortController();
+        apiClient.get(`/users/search?q=${query}`, { signal: abortControllerRef.current.signal })
+          .then(res => {
+            setSuggestions(Array.isArray(res.data) ? res.data : res.data.users || []);
+          })
+          .catch(err => {
+            if (err.name !== 'CanceledError') console.error('Mention search error:', err);
+          });
+      }, 300); // 300ms debounce
+    } else {
+      setMentionQuery(null);
+      setSuggestions([]);
+    }
+  };
+
+  const handleSelectSuggestion = (username: string) => {
+    if (mentionQuery !== null) {
+      // Replace the last @mentionQuery with @username 
+      const newText = newCommentText.replace(new RegExp(`@${mentionQuery}$`), `@${username} `);
+      setNewCommentText(newText);
+      setMentionQuery(null);
+      setSuggestions([]);
+    }
+  };
+
   const handlePostComment = async () => {
     if (!newCommentText.trim()) return;
     
@@ -53,6 +105,8 @@ export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) =
     
     setNewCommentText('');
     setReplyingTo(null);
+    setMentionQuery(null);
+    setSuggestions([]);
 
     // Optimistic backend-connected store update
     addComment({
@@ -102,6 +156,8 @@ export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) =
   };
 
   const handleLike = (commentId: string) => {
+    if (commentId.startsWith('temp-')) return; // Cannot like a temporary comment
+    
     toggleCommentLike(commentId);
     
     // Optimistic local update
@@ -120,31 +176,46 @@ export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) =
     setLocalComments(prev => toggleInList(prev));
   };
 
+  const router = useRouter();
+
   const renderCommentText = (text: string) => {
     const parts = text.split(/(@[\w.-]+)/g);
     return (
       <Text className="text-white text-xs leading-5 pr-4 font-normal">
-        {parts.map((part, i) => 
-          part.startsWith('@') ? (
-            <Text key={i} className="text-[#D946EF] font-bold">{part}</Text>
-          ) : (
-            <Text key={i}>{part}</Text>
-          )
-        )}
+        {parts.map((part, i) => {
+          if (part.startsWith('@')) {
+            const username = part.substring(1);
+            return (
+              <Text 
+                key={i} 
+                className="text-[#D946EF] font-bold"
+                onPress={() => {
+                  onClose();
+                  router.push(`/user/${username}` as any);
+                }}
+              >
+                {part}
+              </Text>
+            );
+          }
+          return <Text key={i}>{part}</Text>;
+        })}
       </Text>
     );
   };
 
-  const renderCommentRow = (comment: Comment, isReply = false) => (
-    <View key={comment.id} className={`flex-row items-start py-3.5 gap-3 border-b border-white/5 ${isReply ? 'ml-10 border-b-0 py-2' : ''}`}>
-      <Image 
-        source={{ 
-          uri: comment.user?.avatar?.includes('unsplash.com') 
-            ? getDefaultAvatar(comment.user?.username || 'user') 
-            : (comment.user?.avatar || getDefaultAvatar(comment.user?.username || 'user'))
-        }} 
-        className="w-9 h-9 rounded-full" 
-      />
+  const renderCommentRow = (comment: Comment, isReply = false) => {
+    const isHighlighted = comment.id === highlightedCommentId;
+    return (
+      <View key={comment.id} className={`flex-row items-start py-3.5 px-4 gap-3 border-b border-white/5 ${isReply ? 'ml-10 border-b-0 py-2 px-0' : ''} ${isHighlighted ? 'bg-[#D946EF]/20 rounded-lg' : ''}`}>
+        <Image 
+          source={{ 
+            uri: comment.user?.avatar?.includes('unsplash.com') 
+              ? getDefaultAvatar(comment.user?.username || 'user') 
+              : (comment.user?.avatar || getDefaultAvatar(comment.user?.username || 'user'))
+          }} 
+          className="w-9 h-9 rounded-full" 
+        />
       
       <View className="flex-1 gap-1">
         <View className="flex-row items-center flex-wrap gap-1.5">
@@ -155,10 +226,18 @@ export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) =
         {renderCommentText(comment.text)}
         
         <View className="flex-row items-center gap-4 pt-1">
-          <Pressable onPress={() => setReplyingTo({ id: isReply ? comment.parentId! : comment.id, username: comment.user?.username || 'user' })}>
+          <Pressable 
+            onPress={() => setReplyingTo({ id: isReply ? comment.parentId! : comment.id, username: comment.user?.username || 'user' })}
+            hitSlop={{ top: 15, bottom: 15, left: 10, right: 10 }}
+            className="py-1"
+          >
             <Text className="text-neutral-grey text-[10px] font-semibold">Reply</Text>
           </Pressable>
-          <Pressable onPress={() => handleLike(comment.id)} className="flex-row items-center gap-1 p-1">
+          <Pressable 
+            onPress={() => handleLike(comment.id)} 
+            hitSlop={{ top: 15, bottom: 15, left: 10, right: 10 }}
+            className="flex-row items-center gap-1 py-1"
+          >
             <Heart size={12} color={comment.isLiked ? "#D946EF" : "#9CA3AF"} fill={comment.isLiked ? "#D946EF" : "transparent"} />
             <Text className="text-neutral-grey text-[10px]">
               {comment.likesCount > 0 ? formatSocialCount(comment.likesCount) : 'Like'}
@@ -174,14 +253,15 @@ export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) =
         )}
       </View>
     </View>
-  );
+    );
+  };
 
   if (!isOpen) return null;
 
   return (
     <Modal visible={isOpen} transparent animationType="none" onRequestClose={onClose}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        behavior="padding" 
         style={{ flex: 1 }}
       >
         <View className="flex-1 justify-end">
@@ -229,6 +309,32 @@ export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) =
 
       {/* Footer Input */}
       <View className="bg-background-dark/90 border-t border-white/10">
+        
+        {/* Mention Suggestions */}
+        {suggestions.length > 0 && (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="always"
+            className="px-4 py-2 border-b border-white/5"
+            style={{ maxHeight: 50 }}
+          >
+            {suggestions.map((u) => (
+              <Pressable 
+                key={u.id} 
+                onPress={() => handleSelectSuggestion(u.username)}
+                className="mr-3 flex-row items-center bg-[#1D1037] border border-white/10 rounded-full pr-3 pl-1 py-1"
+              >
+                <Image 
+                  source={{ uri: u.avatar || getDefaultAvatar(u.username) }} 
+                  className="w-6 h-6 rounded-full bg-neutral-grey mr-2" 
+                />
+                <Text className="text-white text-xs font-semibold">@{u.username}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
+
         {replyingTo && (
           <View className="flex-row items-center justify-between px-4 pt-3 pb-1">
             <Text className="text-white/60 text-xs font-semibold">
@@ -252,7 +358,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose }: CommentsSheetProps) =
           <View className="flex-1 flex-row items-center bg-[#1D1037] rounded-full px-4 py-2.5 border border-white/5">
             <TextInput
               value={newCommentText}
-              onChangeText={setNewCommentText}
+              onChangeText={handleTextChange}
               placeholder="Add a comment..."
               placeholderTextColor="rgba(255, 255, 255, 0.4)"
               className="flex-1 text-white text-sm py-1 font-normal"

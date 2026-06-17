@@ -98,7 +98,7 @@ export default function MusicPickerScreen() {
         <Pressable onPress={() => { player?.pause(); router.back(); }} className="w-10 h-10 items-center justify-center -ml-2">
           <ChevronLeft size={28} color="#FFFFFF" />
         </Pressable>
-        <Text className="flex-1 text-center text-white text-lg font-bold pr-8">AppyHigh Royalty-Free Library</Text>
+        <Text className="flex-1 text-center text-white text-lg font-bold pr-8">Popli Music Library</Text>
       </View>
 
       {/* Search */}

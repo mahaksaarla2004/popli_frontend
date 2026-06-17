@@ -74,7 +74,7 @@ export default function ChatScreen() {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
 
   const { userProfile, toggleBlock } = useAuthStore();
-  const { chats, messages: storeMessages, fetchMessages, fetchChats, sendMessage, deleteMessage, isTyping, toggleMuteChat, mutedChats } = useChatStore();
+  const { chats, messages: storeMessages, fetchMessages, fetchChats, sendMessage, deleteMessage, isTyping, toggleMuteChat, mutedChats, markChatRead } = useChatStore();
   const { stories } = useStoryStore();
   
   const chat = chats.find(c => c.id === id);
@@ -89,6 +89,7 @@ export default function ChatScreen() {
   useEffect(() => {
     if (id) {
       fetchMessages(id as string);
+      markChatRead(id as string);
       if (!chat) fetchChats();
     }
   }, [id]);
@@ -133,7 +134,13 @@ export default function ChatScreen() {
     let reelId: string | null = null;
     let isReel = false;
 
-    if (text?.startsWith('[STORY:')) {
+    if (m.type === 'STORY_MENTION') {
+      storyId = m.storyId || null;
+      text = "Mentioned you in a story";
+      const story = stories.find(s => s.id === storyId);
+      isStoryAvailable = !!story;
+      storyCreator = story ? story.creatorId : (m.senderId === userProfile?.id ? userProfile?.username : displayUsername);
+    } else if (text?.startsWith('[STORY:')) {
       const match = text.match(/\[STORY:(.*?)\]\s*(.*)/);
       if (match) {
         storyId = match[1];
@@ -160,6 +167,7 @@ export default function ChatScreen() {
       storyId,
       isStoryAvailable,
       storyCreator,
+      isStoryMention: m.type === 'STORY_MENTION',
       reelId,
       isReel,
       time: m.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -181,7 +189,8 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView 
       style={{ flex: 1, backgroundColor: '#12081E' }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       {/* HEADER */}
       <View className="flex-row items-center justify-between px-4 pt-14 pb-3 border-b border-white/5 bg-[#12081E] z-10">
@@ -242,10 +251,25 @@ export default function ChatScreen() {
                   <View className="flex-row items-end gap-3">
                     <Image source={{ uri: msg.senderAvatar }} className="w-8 h-8 rounded-full bg-[#F59E0B]/20" />
                     <View>
-                      {msg.text ? (
+                      {msg.text && !msg.isStoryMention ? (
                         <View className="bg-[#2D1B4E] px-4 py-3 rounded-2xl rounded-bl-sm max-w-[75%]">
                           <Text className="text-white/90 text-[15px] leading-6">{msg.text}</Text>
                         </View>
+                      ) : null}
+
+                      {msg.isStoryMention && msg.storyId ? (
+                        <Pressable 
+                          className="bg-gradient-to-br from-[#D946EF]/20 to-[#A855F7]/20 p-4 rounded-2xl rounded-bl-sm mt-1 border border-[#D946EF]/30 w-[240px]"
+                          onPress={() => router.push(`/story-viewer/${msg.storyCreator || 'unknown'}?storyId=${msg.storyId}`)}
+                        >
+                          <View className="flex-row items-center gap-2 mb-3">
+                            <Image source={{ uri: displayAvatar }} className="w-6 h-6 rounded-full" />
+                            <Text className="text-white font-medium text-sm flex-1" numberOfLines={2}>{displayName} mentioned you in a story</Text>
+                          </View>
+                          <View className="bg-[#D946EF] py-2 rounded-xl items-center justify-center">
+                            <Text className="text-white font-bold text-[13px]">View Story</Text>
+                          </View>
+                        </Pressable>
                       ) : null}
                       
                       {msg.isReel && msg.reelId ? (
@@ -256,12 +280,12 @@ export default function ChatScreen() {
                         >
                           <ReelPreviewCard reelId={msg.reelId} />
                         </Pressable>
-                      ) : msg.storyId && !msg.isStoryAvailable ? (
+                      ) : msg.storyId && !msg.isStoryAvailable && !msg.isStoryMention ? (
                         <View className="bg-[#2D1B4E] p-4 rounded-2xl rounded-bl-sm max-w-[75%] mt-1 opacity-70 items-center justify-center border border-white/10">
                           <Text className="text-white font-medium">Story Unavailable</Text>
                           <Text className="text-white/50 text-xs mt-1">This story was deleted or expired.</Text>
                         </View>
-                      ) : msg.attachment ? (
+                      ) : msg.attachment && !msg.isStoryMention ? (
                         <Pressable 
                           className="bg-[#2D1B4E] p-1 rounded-2xl rounded-bl-sm max-w-[65%] mt-1"
                           onPress={() => {
@@ -294,12 +318,28 @@ export default function ChatScreen() {
                   className="items-end mb-1"
                   onLongPress={() => handleLongPressMessage(msg.id)}
                 >
-                  {msg.text ? (
+                  {msg.text && !msg.isStoryMention ? (
                     <View className="rounded-2xl rounded-br-sm px-4 py-3 max-w-[75%] shadow-sm" style={{ backgroundColor: '#A855F7' }}>
                       {/* Fake gradient background using view absolute */}
                       <View className="absolute top-0 bottom-0 left-0 right-0 bg-gradient-to-r from-[#D946EF] to-[#A855F7] rounded-2xl rounded-br-sm opacity-90 overflow-hidden" />
                       <Text className="text-white text-[15px] leading-6 z-10">{msg.text}</Text>
                     </View>
+                  ) : null}
+
+                  {msg.isStoryMention && msg.storyId ? (
+                    <Pressable 
+                      className="p-4 rounded-2xl rounded-br-sm mt-1 w-[240px] shadow-sm relative overflow-hidden"
+                      style={{ backgroundColor: '#A855F7' }}
+                      onPress={() => router.push(`/story-viewer/${msg.storyCreator || 'unknown'}?storyId=${msg.storyId}`)}
+                    >
+                      <View className="absolute top-0 bottom-0 left-0 right-0 bg-[#D946EF] opacity-40" />
+                      <View className="flex-row items-center gap-2 mb-3 z-10">
+                        <Text className="text-white font-medium text-sm flex-1" numberOfLines={2}>You mentioned {displayName} in a story</Text>
+                      </View>
+                      <View className="bg-white py-2 rounded-xl items-center justify-center z-10">
+                        <Text className="text-[#A855F7] font-bold text-[13px]">View Story</Text>
+                      </View>
+                    </Pressable>
                   ) : null}
 
                   {msg.isReel && msg.reelId ? (
@@ -310,12 +350,12 @@ export default function ChatScreen() {
                     >
                       <ReelPreviewCard reelId={msg.reelId} />
                     </Pressable>
-                  ) : msg.storyId && !msg.isStoryAvailable ? (
+                  ) : msg.storyId && !msg.isStoryAvailable && !msg.isStoryMention ? (
                     <View className="bg-[#2D1B4E] p-4 rounded-2xl rounded-br-sm max-w-[75%] mt-1 opacity-70 items-center justify-center border border-white/10 shadow-sm" style={{ backgroundColor: '#A855F7' }}>
                       <Text className="text-white font-medium">Story Unavailable</Text>
                       <Text className="text-white/70 text-xs mt-1">This story was deleted.</Text>
                     </View>
-                  ) : msg.attachment ? (
+                  ) : msg.attachment && !msg.isStoryMention ? (
                     <Pressable 
                       className="bg-[#2D1B4E] p-1 rounded-2xl rounded-br-sm max-w-[65%] mt-1 shadow-sm"
                       style={{ backgroundColor: msg.storyId ? '#A855F7' : '#2D1B4E' }}
@@ -352,7 +392,7 @@ export default function ChatScreen() {
       </ScrollView>
 
       {/* BOTTOM INPUT BAR */}
-      <View className="flex-row items-center px-4 py-3 bg-[#12081E] border-t border-white/5 gap-3 pb-8">
+      <View className="flex-row items-center px-4 py-3 bg-[#12081E] border-t border-white/5 gap-3">
         {/* Plus Button */}
         <Pressable className="w-10 h-10 rounded-full bg-[#1A0E2C] items-center justify-center border border-white/5">
           <Plus size={20} color="#9CA3AF" />
@@ -443,7 +483,7 @@ export default function ChatScreen() {
                 <Ban size={20} color="#EF4444" />
                 <View className="ml-3">
                   <Text className="text-[#EF4444] font-semibold text-base">Block User</Text>
-                  <Text className="text-neutral-grey text-xs mt-0.5">They won't be able to message you</Text>
+                  <Text className="text-neutral-grey text-xs mt-0.5">They won&apos;t be able to message you</Text>
                 </View>
               </Pressable>
             </View>

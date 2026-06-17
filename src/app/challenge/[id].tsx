@@ -1,79 +1,122 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Image, StyleSheet, Dimensions, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, Image, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Trophy, Users, Clock, Info, ChevronDown, ChevronUp, Play, UploadCloud, CheckCircle } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MotiView } from 'moti';
 import ChallengeSubmissionSheet from '../../components/ChallengeSubmissionSheet';
-import { useFeedStore, useAuthStore } from '../../store';
+import { useAuthStore } from '../../store';
+import { useChallengeStore, Challenge } from '../../store/challengeStore';
+import { apiClient, BASE_URL } from '../../api/client';
+import io from 'socket.io-client';
 
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 48) / 2; // 2 columns with padding
 
-const CHALLENGES_DB: Record<string, any> = {
-  'fitness': {
-    tag: '#FitnessGoals',
-    title: '30-Day Transformation',
-    status: 'LIVE',
-    prizePool: '₹2,500',
-    participants: 441,
-    state: 'Active'
-  },
-  'comedy': {
-    tag: '#ComedySkit',
-    title: 'Make India Laugh Challenge',
-    status: 'ENDS IN 3 DAYS',
-    prizePool: '₹5,000',
-    participants: 864,
-    state: 'Active'
-  },
-  'dance': {
-    tag: '#DanceChallenge',
-    title: 'Popli Dance Showdown 2026',
-    status: 'LIVE NOW',
-    prizePool: '₹10,000',
-    participants: 1249,
-    state: 'Active'
-  }
-};
-
 export default function ChallengeDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const challengeId = typeof id === 'string' ? id : 'comedy';
-  const challengeData = CHALLENGES_DB[challengeId] || CHALLENGES_DB['comedy'];
-
+  const challengeId = typeof id === 'string' ? id : '';
+  
+  const [challengeData, setChallengeData] = useState<Challenge | null>(null);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const [rulesExpanded, setRulesExpanded] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
 
-  const { reels, fetchReels } = useFeedStore();
   const { userProfile } = useAuthStore();
+  const { joinChallenge } = useChallengeStore();
 
-  React.useEffect(() => {
-    if (reels.length === 0) fetchReels();
-  }, []);
+  useEffect(() => {
+    if (!challengeId) return;
+    
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [challengeRes, reelsRes] = await Promise.all([
+          apiClient.get(`/challenges/${challengeId}`),
+          apiClient.get(`/challenges/${challengeId}/reels?sort=top`)
+        ]);
+        
+        setChallengeData(challengeRes.data);
+        
+        const mappedSubmissions = reelsRes.data.map((reel: any, index: number) => ({
+          id: reel.id,
+          rank: index + 1,
+          type: reel.videoUrl ? 'video' : 'photo',
+          username: reel.creator?.username || 'user',
+          location: reel.location?.city || 'India',
+          views: reel.viewsCount || 0,
+          thumbnail: reel.thumbnailUrl || reel.creator?.avatar || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop',
+          isYou: userProfile?.id === reel.creatorId
+        }));
+        setSubmissions(mappedSubmissions);
+      } catch (error) {
+        console.error('Error fetching challenge', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
 
-  // Map real reels to submissions sorted by views
-  const sortedReels = [...reels].sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
-  
-  const submissions = sortedReels.length > 0 ? sortedReels.slice(0, 10).map((reel, index) => ({
-    id: reel.id,
-    rank: index + 1,
-    type: reel.videoUrl ? 'video' : 'photo',
-    username: reel.creatorUsername,
-    location: reel.location?.city || 'India',
-    views: reel.viewsCount || Math.floor(Math.random() * 500) + 10,
-    thumbnail: reel.thumbnailUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop',
-    isYou: userProfile?.username === reel.creatorUsername
-  })) : [
-    { id: '1', rank: 1, type: 'video', username: 'kanha Meena', location: 'Indore', views: 174, thumbnail: 'https://images.unsplash.com/photo-1516280440502-6c175373a84b?w=400&auto=format&fit=crop', isYou: true }
-  ];
+    // Socket.IO Integration
+    const socket = io(`${BASE_URL}/challenges`);
+    
+    socket.on('connect', () => {
+      socket.emit('joinChallengeRoom', challengeId);
+    });
 
-  const handleSubmit = () => {
+    socket.on('participant_joined', (data) => {
+      setChallengeData(prev => prev ? { ...prev, participantCount: data.count } : prev);
+    });
+
+    socket.on('leaderboard_updated', () => {
+      // Refresh the leaderboard quietly in the background
+      apiClient.get(`/challenges/${challengeId}/reels?sort=top`).then((reelsRes) => {
+        const mappedSubmissions = reelsRes.data.map((reel: any, index: number) => ({
+          id: reel.id,
+          rank: index + 1,
+          type: reel.videoUrl ? 'video' : 'photo',
+          username: reel.creator?.username || 'user',
+          location: reel.location?.city || 'India',
+          views: reel.viewsCount || 0,
+          thumbnail: reel.thumbnailUrl || reel.creator?.avatar || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop',
+          isYou: userProfile?.id === reel.creatorId
+        }));
+        setSubmissions(mappedSubmissions);
+      }).catch(console.error);
+    });
+
+    socket.on('status_changed', (data) => {
+      setChallengeData(prev => prev ? { ...prev, status: data.status } : prev);
+    });
+
+    return () => {
+      socket.emit('leaveChallengeRoom', challengeId);
+      socket.disconnect();
+    };
+  }, [challengeId, userProfile?.id]);
+
+  const handleSubmit = async () => {
     setSheetVisible(false);
+    // Join the challenge automatically
+    await joinChallenge(challengeId);
+    
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 4000);
+    // You would normally trigger a refetch here
   };
+
+  if (isLoading || !challengeData) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#0D0518] items-center justify-center">
+        <ActivityIndicator size="large" color="#A855F7" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-[#0D0518]">
@@ -84,7 +127,7 @@ export default function ChallengeDetailScreen() {
             <ChevronLeft color="white" size={28} />
           </Pressable>
           <View>
-            <Text className="text-[#A855F7] font-bold text-xs">{challengeData.tag}</Text>
+            <Text className="text-[#A855F7] font-bold text-xs">{challengeData.hashtagName}</Text>
             <Text className="text-white font-bold text-xl">{challengeData.title}</Text>
           </View>
         </View>
@@ -99,22 +142,39 @@ export default function ChallengeDetailScreen() {
         <View className="bg-[#1D1037]/60 rounded-2xl mx-4 mt-4 p-5 flex-row justify-between border border-[#3E2B5C]/50">
           <View className="items-center flex-1">
             <Trophy size={24} color="#FCD34D" className="mb-2" />
-            <Text className="text-[#FCD34D] font-bold text-lg">{challengeData.prizePool}</Text>
+            <Text className="text-[#FCD34D] font-bold text-lg">₹{challengeData.rewardPool}</Text>
             <Text className="text-white/50 text-xs mt-1">Prize Pool</Text>
           </View>
           <View className="w-[1px] h-full bg-[#3E2B5C]/50" />
           <View className="items-center flex-1">
             <Users size={24} color="#A855F7" className="mb-2" />
-            <Text className="text-white font-bold text-lg">{challengeData.participants}</Text>
+            <Text className="text-white font-bold text-lg">{challengeData.participantCount}</Text>
             <Text className="text-white/50 text-xs mt-1">Participants</Text>
           </View>
           <View className="w-[1px] h-full bg-[#3E2B5C]/50" />
           <View className="items-center flex-1">
             <Clock size={24} color="#EF4444" className="mb-2" />
-            <Text className="text-white font-bold text-lg">{challengeData.state}</Text>
+            <Text className="text-white font-bold text-lg text-center" numberOfLines={1}>{challengeData.status}</Text>
             <Text className="text-white/50 text-xs mt-1">Status</Text>
           </View>
         </View>
+
+        {/* Sponsor Section (if sponsored) */}
+        {(challengeData as any).isSponsored && (
+          <View className="bg-gradient-to-r from-[#A855F7]/20 to-[#3B82F6]/20 mx-4 mt-4 p-4 rounded-2xl border border-[#A855F7]/30 flex-row items-center">
+            {!!(challengeData as any).sponsorLogoUrl && (
+              <Image 
+                source={{ uri: (challengeData as any).sponsorLogoUrl }} 
+                className="w-12 h-12 rounded-full mr-3 bg-white"
+                resizeMode="contain"
+              />
+            )}
+            <View className="flex-1">
+              <Text className="text-white/70 text-xs font-bold uppercase tracking-wider mb-0.5">Sponsored By</Text>
+              <Text className="text-white font-bold text-lg">{(challengeData as any).sponsorName || 'Premium Sponsor'}</Text>
+            </View>
+          </View>
+        )}
 
         {/* Rules Accordion */}
         <View className="mx-4 mt-6">
@@ -131,31 +191,29 @@ export default function ChallengeDetailScreen() {
           
           {rulesExpanded && (
             <View className="bg-[#1D1037] border border-[#3E2B5C] border-t-0 rounded-b-2xl p-4 pt-2 gap-4">
-              <View className="flex-row gap-3"><Text>📹</Text><Text className="text-white/70 text-sm flex-1">Post a video that fits the challenge theme.</Text></View>
-              <View className="flex-row gap-3"><Text>🔗</Text><Text className="text-white/70 text-sm flex-1">Submit your entry using the Submit Entry button below.</Text></View>
-              <View className="flex-row gap-3"><Text>👁</Text><Text className="text-white/70 text-sm flex-1">Rankings are based on total views — the more views, the higher you rank.</Text></View>
-              <View className="flex-row gap-3"><Text>🏆</Text><Text className="text-white/70 text-sm flex-1">Top 3 creators split the prize pool at the end of the challenge.</Text></View>
-              <View className="flex-row gap-3"><Text>⏰</Text><Text className="text-white/70 text-sm flex-1">Entries must be submitted before the countdown ends.</Text></View>
-              <View className="flex-row gap-3"><Text>✅</Text><Text className="text-white/70 text-sm flex-1">Only one entry per creator — re-submitting swaps your video.</Text></View>
-              <View className="flex-row gap-3"><Text>🚫</Text><Text className="text-white/70 text-sm flex-1">Content must be original and follow Popli community guidelines.</Text></View>
+              <Text className="text-white/80 text-sm leading-6">
+                {challengeData.rules || "Participate by submitting your best reel using the Submit Entry button! Ranking is based on engagement (views, likes, comments). Top creators win the reward pool."}
+              </Text>
             </View>
           )}
         </View>
 
         {/* Current Leader */}
-        <View className="mx-4 mt-6 bg-gradient-to-r from-[#F59E0B]/20 to-[#A855F7]/20 border border-[#FCD34D]/50 rounded-2xl p-4 flex-row items-center gap-4">
-          <View className="relative">
-            <Image source={{ uri: submissions[0].thumbnail }} className="w-14 h-14 rounded-full border-2 border-[#FCD34D]" />
-            <View className="absolute -bottom-2 -right-2 bg-[#FCD34D] w-6 h-6 rounded-full items-center justify-center border-2 border-[#0D0518]">
-              <Trophy size={12} color="black" />
+        {submissions.length > 0 && (
+          <View className="mx-4 mt-6 bg-gradient-to-r from-[#F59E0B]/20 to-[#A855F7]/20 border border-[#FCD34D]/50 rounded-2xl p-4 flex-row items-center gap-4">
+            <View className="relative">
+              <Image source={{ uri: submissions[0].thumbnail }} className="w-14 h-14 rounded-full border-2 border-[#FCD34D]" />
+              <View className="absolute -bottom-2 -right-2 bg-[#FCD34D] w-6 h-6 rounded-full items-center justify-center border-2 border-[#0D0518]">
+                <Trophy size={12} color="black" />
+              </View>
+            </View>
+            <View className="flex-1">
+              <Text className="text-[#FCD34D] font-bold text-xs uppercase tracking-widest mb-1">Current Leader</Text>
+              <Text className="text-white font-bold text-lg">{submissions[0].username}</Text>
+              <Text className="text-white/80 text-xs mt-0.5 font-medium">{submissions[0].views} views</Text>
             </View>
           </View>
-          <View className="flex-1">
-            <Text className="text-[#FCD34D] font-bold text-xs uppercase tracking-widest mb-1">Current Leader</Text>
-            <Text className="text-white font-bold text-lg">{submissions[0].username}</Text>
-            <Text className="text-white/80 text-xs mt-0.5 font-medium">{submissions[0].views} views</Text>
-          </View>
-        </View>
+        )}
 
         {/* Submissions Section */}
         <View className="px-4 mt-6">
@@ -164,8 +222,9 @@ export default function ChallengeDetailScreen() {
 
           <View className="flex-row flex-wrap justify-between gap-y-4">
             {submissions.map((sub) => (
-              <View 
+              <Pressable 
                 key={sub.id} 
+                onPress={() => router.push(`/reel/${sub.id}`)}
                 className={`rounded-2xl border ${sub.isYou ? 'border-[#A855F7]' : 'border-white/5'} overflow-hidden bg-[#1D1037] relative`}
                 style={{ width: ITEM_WIDTH, height: 280 }}
               >
@@ -201,7 +260,7 @@ export default function ChallengeDetailScreen() {
                   <Text className="text-white/60 text-xs mt-0.5">{sub.views} views</Text>
                   <Text className="text-[#A855F7] text-xs mt-2">{sub.location}</Text>
                 </View>
-              </View>
+              </Pressable>
             ))}
           </View>
         </View>
@@ -247,11 +306,12 @@ export default function ChallengeDetailScreen() {
         </Pressable>
       </View>
 
-      {/* Bottom Sheet */}
+      {/* Submission Sheet */}
       <ChallengeSubmissionSheet 
         visible={sheetVisible} 
         onClose={() => setSheetVisible(false)} 
         onSubmit={handleSubmit}
+        challengeId={challengeId}
       />
     </SafeAreaView>
   );

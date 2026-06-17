@@ -4,25 +4,27 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 // Cloudflare fallback for remote testing if all else fails
-const CLOUDFLARE_FALLBACK = 'https://lamp-rides-compiled-belkin.trycloudflare.com';
+const CLOUDFLARE_FALLBACK = 'https://organize-equality-revenue-years.trycloudflare.com';
 
 const resolveBaseUrl = () => {
   // 1. Primary: Use exactly what is configured in .env
   if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+    return process.env.EXPO_PUBLIC_API_URL.trim();
   }
 
   // 2. Optional Development Convenience: Extract from Expo Host URI
   if (__DEV__) {
-    const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost;
-    if (hostUri) {
-      const lanIp = hostUri.split(':')[0]; // e.g. "192.168.1.28"
-      return `http://${lanIp}:3000`;
+    // @ts-ignore
+    const hostUri = Constants.expoConfig?.hostUri || (Constants.manifest as any)?.hostUri || (Constants.manifest2 as any)?.extra?.expoGo?.debuggerHost;
+    // Do NOT use hostUri if it's an ngrok/exp.direct tunnel, because it won't route port 3000 to the backend.
+    if (hostUri && !hostUri.includes('exp.direct') && !hostUri.includes('ngrok.io')) {
+      const lanIp = hostUri.split(':')[0].trim(); // e.g. "192.168.1.28"
+      return `http://${lanIp}:3001`;
     }
   }
 
   // 3. Ultimate Fallback
-  return CLOUDFLARE_FALLBACK;
+  return CLOUDFLARE_FALLBACK.trim();
 };
 
 export const BASE_URL = resolveBaseUrl();
@@ -62,6 +64,12 @@ apiClient.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    
+    if (axios.isCancel(error)) {
+      console.log(`[API REQUEST CANCELED] ${originalRequest?.url}`);
+      return Promise.reject(error);
+    }
+    
     console.error(`[API ERROR] ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} - Status: ${error.response?.status || 'NETWORK_ERROR'}`);
     
     if (error.response?.status === 401 && !originalRequest._retry) {

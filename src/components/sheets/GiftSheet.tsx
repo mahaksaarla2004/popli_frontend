@@ -120,8 +120,9 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
                 <Text style={{ fontSize: 26 }} className="mb-0.5">{gift.icon}</Text>
                 
                 {/* Cost Tag */}
-                <View className="absolute bottom-1 bg-black/40 px-1 rounded">
+                <View className="absolute bottom-1 bg-black/40 px-1 rounded flex-col items-center">
                   <Text className="text-yellow-400 text-[8px] font-bold">{gift.cost}</Text>
+                  <Text className="text-white/60 text-[6px] font-semibold">₹{(gift.cost * 0.5).toFixed(2)}</Text>
                 </View>
               </View>
               <Text className="text-white/80 text-[10px] font-medium mt-1" numberOfLines={1}>{gift.name}</Text>
@@ -169,14 +170,14 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
             </>
           ) : (
             <Text className="text-white text-sm font-bold uppercase tracking-wider">
-              Send {selectedGift.name} ({selectedGift.cost})
+              Send {selectedGift.name} ({selectedGift.cost} 🪙)
             </Text>
           )}
         </TouchableOpacity>
         
         {/* Notice text below the button */}
         <Text className="text-white/30 text-[8px] text-center mt-2.5 leading-3">
-          By sending a gift, you agree to our Terms of Service and virtual goods policy.
+          Creator receives ₹{(selectedGift.cost * 0.5).toFixed(2)}. By sending a gift, you agree to our Terms of Service and virtual goods policy.
         </Text>
       </View>
 

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, Image , ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { ChevronLeft, Camera, Sparkles, Globe, ChevronRight } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import * as ImagePicker from 'expo-image-picker';
 import { apiClient } from '../../api/client';
-import { ActivityIndicator } from 'react-native';
 import axios from 'axios';
 
 const AVATAR_PRESETS = [

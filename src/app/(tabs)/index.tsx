@@ -10,12 +10,13 @@ import { useFeedStore, useAuthStore, useStoryStore, useChatStore } from '../../s
 import { requestGPSLocation, getClosestMockCity } from '../../services/geoService';
 import { Reel } from '../../types';
 import { MotiView } from 'moti';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 type TopTabType = 'for_you' | 'following' | 'nearby' | 'trending';
 
 export default function HomeFeedScreen() {
   const router = useRouter();
+  const { targetUsername } = useLocalSearchParams<{ targetUsername?: string }>();
   const { height, width } = useWindowDimensions();
   const { reels, setGPS } = useFeedStore();
   const { userProfile, followingIds } = useAuthStore();
@@ -70,27 +71,37 @@ export default function HomeFeedScreen() {
     initLocation();
     
     // Fetch real reels on mount
-    const { fetchReels } = useFeedStore.getState();
+    const { fetchExploreReels } = useFeedStore.getState();
     const { fetchStories } = useStoryStore.getState();
-    fetchReels(1, 10, 'all').then(() => {
+    const { fetchNotifications, fetchChats } = useChatStore.getState();
+    
+    fetchExploreReels(1, 10, 'all').then(() => {
       // If we got less than 10, there might not be more
       const currentReels = useFeedStore.getState().reels;
       if (currentReels.length < 10) setHasMoreReels(false);
     });
     fetchStories();
+    fetchNotifications();
+    fetchChats();
   }, []);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    const { fetchReels } = useFeedStore.getState();
+    const { fetchExploreReels, fetchFollowingReels } = useFeedStore.getState();
     const { fetchStories } = useStoryStore.getState();
     
     // Fetch stories and page 1 of reels to reset the feed
     fetchStories();
-    await fetchReels(1, 10, 'all');
-    setPage(1);
+
+    if (activeTab === 'following') {
+      await fetchFollowingReels(1, 10);
+    } else {
+      await fetchExploreReels(1, 10, 'all');
+    }
+    
     setHasMoreReels(true);
+    setPage(1);
     
     // Reset active reel and scroll to top
     const newReels = useFeedStore.getState().reels;
@@ -100,16 +111,22 @@ export default function HomeFeedScreen() {
     }
     
     setRefreshing(false);
-  }, []);
+  }, [activeTab]);
 
   const loadMoreReels = useCallback(async () => {
-    if (isLoadingMore || !hasMoreReels || refreshing || activeTab !== 'for_you') return;
-    setIsLoadingMore(true);
-    const nextPage = page + 1;
-    const { fetchReels } = useFeedStore.getState();
-    const beforeCount = useFeedStore.getState().reels.length;
+    if (isLoadingMore || !hasMoreReels || refreshing) return;
+    const { fetchExploreReels, fetchFollowingReels } = useFeedStore.getState();
     
-    await fetchReels(nextPage, 10, 'all');
+    setIsLoadingMore(true);
+    const beforeCount = useFeedStore.getState().reels.length;
+    const nextPage = page + 1;
+    
+    if (activeTab === 'following') {
+      await fetchFollowingReels(nextPage, 10);
+    } else {
+      await fetchExploreReels(nextPage, 10, 'all');
+    }
+    
     const afterCount = useFeedStore.getState().reels.length;
     
     if (afterCount === beforeCount) {
@@ -118,7 +135,7 @@ export default function HomeFeedScreen() {
       setPage(nextPage);
     }
     setIsLoadingMore(false);
-  }, [isLoadingMore, hasMoreReels, refreshing, page, activeTab]);
+  }, [isLoadingMore, hasMoreReels, refreshing, activeTab, page]);
 
   useEffect(() => {
     if (userProfile?.id) {
@@ -147,30 +164,31 @@ export default function HomeFeedScreen() {
 
   useEffect(() => {
     if (filteredReels.length > 0 && !activeReelId) {
-      setActiveReelId(filteredReels[0].id);
+      setTimeout(() => setActiveReelId(filteredReels[0].id), 0);
     }
   }, [filteredReels]);
 
+  // Handle Initial Target User Navigation
   useEffect(() => {
-    if (reels.length > 0) {
+    if (targetUsername && reels.length > 0 && userProfile) {
       const firstReel = reels[0];
       if (firstReel.creatorUsername === userProfile.username && activeReelId !== firstReel.id) {
-        setActiveReelId(firstReel.id);
+        setTimeout(() => setActiveReelId(firstReel.id), 0);
         flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
       }
     }
   }, [reels.length]);
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].isViewable) {
       setActiveReelId(viewableItems[0].item.id);
     }
-  }).current;
+  }, []);
 
-  const viewabilityConfig = useRef({ 
+  const [viewabilityConfig] = useState(() => ({ 
     itemVisiblePercentThreshold: 50,
     minimumViewTime: 50
-  }).current;
+  }));
 
   const handleOpenComments = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsCommentsOpen(true); }, []);
   const handleOpenSend = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsSendOpen(true); }, []);
@@ -184,8 +202,9 @@ export default function HomeFeedScreen() {
 
   const renderItem = useCallback(({ item, index }: { item: Reel; index: number }) => {
     const activeIndex = filteredReels.findIndex(r => r.id === activeReelId);
-    // Keep 1 previous video, the current video, and preload the next 2 videos for smooth vertical scrolling
-    const isAdjacent = index >= activeIndex - 1 && index <= activeIndex + 2;
+    // CRITICAL FIX: Android hardware decoder limit. Keep ONLY current and next video loaded to prevent black screens.
+    // ADDED isFocused check: Unmount ALL videos when user goes to Profile/Create tab to completely prevent OutOfMemoryError crashes!
+    const isAdjacent = isFocused && (index === activeIndex || index === activeIndex + 1);
 
     return (
       <ReelItem
@@ -222,7 +241,7 @@ export default function HomeFeedScreen() {
       <View className="absolute top-12 left-0 right-0 z-20 flex-row justify-between items-center px-4">
         <View className="w-[84px] h-10" />
 
-        <View className="flex-row bg-black/40 rounded-full p-1">
+        <View className="flex-row bg-black/40 rounded-full p-1 items-center">
           {(['for_you', 'following'] as const).map((tab) => {
             const isCurrent = activeTab === tab;
             const label = tab === 'for_you' ? 'For you' : 'Following';
@@ -230,9 +249,14 @@ export default function HomeFeedScreen() {
               <Pressable 
                 key={tab} 
                 onPress={() => setActiveTab(tab)} 
-                className={`items-center px-4 py-1.5 rounded-full ${isCurrent ? 'bg-white/20' : 'bg-transparent'}`}
+                className={`items-center justify-center px-6 h-[38px] rounded-full ${isCurrent ? 'bg-white/30' : 'bg-transparent'}`}
               >
-                <Text className={`text-[15px] ${isCurrent ? 'text-white font-bold' : 'text-white/80 font-semibold'}`}>{label}</Text>
+                <Text 
+                  className={`text-[15px] ${isCurrent ? 'text-white font-bold' : 'text-white/70 font-semibold'}`}
+                  style={{ includeFontPadding: false, textAlignVertical: 'center' }}
+                >
+                  {label}
+                </Text>
               </Pressable>
             );
           })}

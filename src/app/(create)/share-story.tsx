@@ -9,11 +9,32 @@ import * as FileSystem from 'expo-file-system';
 
 export default function ShareStoryScreen() {
   const router = useRouter();
-  const { uri, type, target, text, mode, isStory, speed, effect, musicId, musicName, city, taggedUserIds, targetUserIds, isMonetized } = useLocalSearchParams<{ 
-    uri: string, type: 'photo'|'video', target: string, text: string, mode: string, isStory: string, speed?: string, effect?: string, musicId?: string, musicName?: string, city?: string, taggedUserIds?: string, targetUserIds?: string, isMonetized?: string 
+  const { uri, type, text, target, mode, speed, effect, musicId, musicTitle, musicArtist, musicUrl, targetUserIds, originalStoryId, originalOwnerId, originalOwnerUsername, isStory, city, taggedUserIds, isMonetized, returnTo, challengeId, isVideoMuted } = useLocalSearchParams<{ 
+    uri: string; 
+    type: 'photo' | 'video'; 
+    text?: string; 
+    target?: string;
+    mode?: string;
+    speed?: string;
+    effect?: string;
+    musicId?: string;
+    musicTitle?: string;
+    musicArtist?: string;
+    musicUrl?: string;
+    targetUserIds?: string;
+    originalStoryId?: string;
+    originalOwnerId?: string;
+    originalOwnerUsername?: string;
+    isStory?: string;
+    city?: string;
+    taggedUserIds?: string;
+    isMonetized?: string;
+    returnTo?: string;
+    challengeId?: string;
+    isVideoMuted?: string;
   }>();
   const { addStory } = useStoryStore();
-  const { fetchReels } = useFeedStore();
+  const { fetchReels, addLocalReel } = useFeedStore();
   const { userProfile } = useAuthStore();
   const { layers, timelineData, musicData } = useEditorStore();
   const { sendDirectMessage } = useChatStore();
@@ -23,27 +44,32 @@ export default function ShareStoryScreen() {
   useEffect(() => {
     const uploadMedia = async () => {
       try {
-        if (!uri) throw new Error('No media URI provided');
+        if (!uri && mode !== 'text' && !originalStoryId) throw new Error('No media URI provided');
         
-        // Normalize URI: decode it and ensure it has file:// prefix for Android if it's a local file path
-        let decodedUri = decodeURIComponent(uri);
-        if (Platform.OS === 'android' && !decodedUri.startsWith('file://') && !decodedUri.startsWith('content://') && !decodedUri.startsWith('http')) {
-          decodedUri = 'file://' + decodedUri;
-        }
+        let decodedUri = uri ? decodeURIComponent(uri) : '';
+        let mimeType = 'image/jpg';
+        let fileType = 'jpg';
 
-        // Check File Size before upload (Cloudinary Free Tier limit is 10MB = 10485760 bytes)
-        try {
-          const fileInfo = await FileSystem.getInfoAsync(decodedUri);
-          if (fileInfo.exists && fileInfo.size && fileInfo.size > 10485760) {
-            throw new Error(`File size is too large (${(fileInfo.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 10MB. Please select a smaller video.`);
+        if (decodedUri) {
+          // Normalize URI: decode it and ensure it has file:// prefix for Android if it's a local file path
+          if (Platform.OS === 'android' && !decodedUri.startsWith('file://') && !decodedUri.startsWith('content://') && !decodedUri.startsWith('http')) {
+            decodedUri = 'file://' + decodedUri;
           }
-        } catch (e: any) {
-          if (e.message.includes('too large')) throw e; // rethrow size error
-          console.warn("Failed to read file size", e);
-        }
 
-        const fileType = decodedUri.split('.').pop() || (type === 'video' ? 'mp4' : 'jpg');
-        const mimeType = type === 'video' ? `video/${fileType}` : `image/${fileType}`;
+          // Check File Size before upload (Cloudinary Free Tier limit is 10MB = 10485760 bytes)
+          try {
+            const fileInfo = await FileSystem.getInfoAsync(decodedUri);
+            if (fileInfo.exists && fileInfo.size && fileInfo.size > 10485760) {
+              throw new Error(`File size is too large (${(fileInfo.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 10MB. Please select a smaller video.`);
+            }
+          } catch (e: any) {
+            if (e.message.includes('too large')) throw e; // rethrow size error
+            console.warn("Failed to read file size", e);
+          }
+
+          fileType = decodedUri.split('.').pop() || (type === 'video' ? 'mp4' : 'jpg');
+          mimeType = type === 'video' ? `video/${fileType}` : `image/${fileType}`;
+        }
 
         if (mode === 'REEL' && isStory !== 'true') {
           // Cloudinary Upload
@@ -87,6 +113,7 @@ export default function ShareStoryScreen() {
           if (effect === 'Neon') transformations.push('e_tint:100:blue:purple');
           if (effect === 'B&W') transformations.push('e_grayscale');
           if (effect === 'Blur') transformations.push('e_blur:300');
+          if (isVideoMuted === 'true') transformations.push('e_volume:mute');
 
           if (transformations.length > 0) {
             finalUrl = finalUrl.replace('/upload/', `/upload/${transformations.join(',')}/`);
@@ -100,67 +127,111 @@ export default function ShareStoryScreen() {
           };
 
           // Save to backend DB
-          await apiClient.post('/reels', {
+          const res = await apiClient.post('/reels', {
             mediaUrl: finalUrl,
             thumbnailUrl: finalUrl.replace(/\.[^/.]+$/, ".jpg"), // auto-generate thumbnail from video via cloudinary
             mediaType: type === 'video' ? 'VIDEO' : 'PHOTO',
             description: text || 'New post!',
             category: 'comedy', // default for now
-            musicName: musicName || (musicId ? `Track ${musicId}` : undefined),
+            musicName: musicTitle || (musicId ? `Track ${musicId}` : undefined),
             city,
+            challengeId,
             isMonetized: isMonetized === 'true',
             taggedUserIds: taggedUserIds ? JSON.parse(taggedUserIds) : undefined,
             layersData: JSON.stringify(metadata)
           });
           
-          // Refresh feed
-          fetchReels(1, 10, 'all');
+          const backendReel = res.data;
+          
+          // Format into frontend Reel model
+          const formattedReel = {
+            id: backendReel.id,
+            creatorId: userProfile.id,
+            creatorName: userProfile.name || 'User',
+            creatorUsername: userProfile.username || 'user',
+            creatorAvatar: userProfile.avatar || 'https://i.pravatar.cc/150',
+            creatorIsVerified: userProfile.isVerified || false,
+            videoUrl: backendReel.mediaUrl, // Android .mov handling is done in feed fetch, but here it's freshly uploaded mp4/mov
+            thumbnailUrl: backendReel.thumbnailUrl || backendReel.mediaUrl,
+            description: backendReel.description || '',
+            musicName: backendReel.musicName || 'Original Audio',
+            likesCount: 0,
+            commentsCount: 0,
+            savesCount: 0,
+            sharesCount: 0,
+            viewsCount: 0,
+            isLiked: false,
+            isSaved: false,
+            isFollowed: false, // You cannot follow yourself, but it satisfies the Reel type
+            category: backendReel.category || 'comedy',
+            isMonetized: backendReel.isMonetized !== undefined ? backendReel.isMonetized : true,
+            location: { city: 'Bengaluru', latitude: backendReel.latitude || 12.9716, longitude: backendReel.longitude || 77.5946 }
+          };
+
+          console.log(`[SHARE STORY] Reel Uploaded successfully. ID: ${formattedReel.id}`);
+          console.log(`[SHARE STORY] Uploaded reel user_id: ${formattedReel.creatorId}`);
+          console.log(`[SHARE STORY] Authenticated user id: ${userProfile.id}`);
+
+          console.log(`[SHARE STORY] Injecting Reel ID: ${formattedReel.id} directly into feedStore using addLocalReel()`);
+
+          // Optimistically add to local feed and profile immediately
+          addLocalReel(formattedReel);
+
+          // Do NOT call fetchReels(1, 10, 'all') here!
+          // Calling fetchReels replaces the state with an algorithmic shuffle from the backend, 
+          // which will likely overwrite and hide the user's newly uploaded reel (due to 100 take + shuffle).
+          // addLocalReel is sufficient to make it appear instantly in both feeds.
 
         } else {
-          // It's a Story! Upload to Cloudinary first
-          const sigResponse = await apiClient.get('/upload/signature?folder=stories');
-          const { timestamp, signature, cloudName, apiKey, folder } = sigResponse.data;
+          let finalUrl = decodedUri;
 
-          const formData = new FormData();
-          formData.append('file', {
-            uri: decodedUri,
-            type: mimeType,
-            name: `story-${Date.now()}.${fileType}`
-          } as any);
-          formData.append('api_key', String(apiKey || ''));
-          formData.append('timestamp', String(timestamp || ''));
-          formData.append('signature', String(signature || ''));
-          formData.append('folder', String(folder || ''));
+          if (!originalStoryId && decodedUri) {
+            // It's a new Story! Upload to Cloudinary first
+            const sigResponse = await apiClient.get('/upload/signature?folder=stories');
+            const { timestamp, signature, cloudName, apiKey, folder } = sigResponse.data;
 
-          // Use axios instead of fetch to avoid Expo SDK 56 WinterCG FormDataPart issues
-          const axios = require('axios').default;
+            const formData = new FormData();
+            formData.append('file', {
+              uri: decodedUri,
+              type: mimeType,
+              name: `story-${Date.now()}.${fileType}`
+            } as any);
+            formData.append('api_key', String(apiKey || ''));
+            formData.append('timestamp', String(timestamp || ''));
+            formData.append('signature', String(signature || ''));
+            formData.append('folder', String(folder || ''));
 
-          const uploadRes = await axios.post(`https://api.cloudinary.com/v1_1/${cloudName}/${type === 'video' ? 'video' : 'image'}/upload`, formData, {
-            onUploadProgress: (progressEvent: any) => {
-              if (progressEvent.total) {
-                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                setUploadProgress(percentCompleted);
+            // Use axios instead of fetch to avoid Expo SDK 56 WinterCG FormDataPart issues
+            const axios = require('axios').default;
+
+            const uploadRes = await axios.post(`https://api.cloudinary.com/v1_1/${cloudName}/${type === 'video' ? 'video' : 'image'}/upload`, formData, {
+              onUploadProgress: (progressEvent: any) => {
+                if (progressEvent.total) {
+                  const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                  setUploadProgress(percentCompleted);
+                }
               }
+            });
+            
+            const uploadData = uploadRes.data;
+            if (!uploadData.secure_url) throw new Error('Cloudinary upload failed');
+
+            finalUrl = uploadData.secure_url;
+            const transformations = [];
+            if (type === 'video') {
+              if (speed === '2') transformations.push('e_accelerate:100');
+              if (speed === '3') transformations.push('e_accelerate:200');
             }
-          });
-          
-          const uploadData = uploadRes.data;
-          if (!uploadData.secure_url) throw new Error('Cloudinary upload failed');
+            if (effect === 'Paris') transformations.push('e_art:zorro');
+            if (effect === 'Vintage') transformations.push('e_sepia');
+            if (effect === 'Neon') transformations.push('e_tint:100:blue:purple');
+            if (effect === 'B&W') transformations.push('e_grayscale');
+            if (effect === 'Blur') transformations.push('e_blur:300');
+            if (isVideoMuted === 'true') transformations.push('e_volume:mute');
 
-          let finalUrl = uploadData.secure_url;
-          const transformations = [];
-          if (type === 'video') {
-            if (speed === '2') transformations.push('e_accelerate:100');
-            if (speed === '3') transformations.push('e_accelerate:200');
-          }
-          if (effect === 'Paris') transformations.push('e_art:zorro');
-          if (effect === 'Vintage') transformations.push('e_sepia');
-          if (effect === 'Neon') transformations.push('e_tint:100:blue:purple');
-          if (effect === 'B&W') transformations.push('e_grayscale');
-          if (effect === 'Blur') transformations.push('e_blur:300');
-
-          if (transformations.length > 0) {
-            finalUrl = finalUrl.replace('/upload/', `/upload/${transformations.join(',')}/`);
+            if (transformations.length > 0) {
+              finalUrl = finalUrl.replace('/upload/', `/upload/${transformations.join(',')}/`);
+            }
           }
 
           // Prepare metadata JSON
@@ -170,6 +241,16 @@ export default function ShareStoryScreen() {
             music: musicData
           };
 
+          // Extract mentioned usernames from layers
+          const extractedMentions: string[] = [];
+          if (layers && Array.isArray(layers)) {
+            layers.forEach((layer: any) => {
+              if (layer.type === 'interactive' && layer.content?.type === 'mention' && layer.content?.text) {
+                extractedMentions.push(layer.content.text);
+              }
+            });
+          }
+
           // ALWAYS Save to backend DB as public or close friends story
           const isPrivateStory = target === 'close_friends' || target === 'share';
           const res = await apiClient.post('/stories', {
@@ -177,10 +258,18 @@ export default function ShareStoryScreen() {
             mediaType: type === 'video' ? 'VIDEO' : 'PHOTO',
             isCloseFriends: isPrivateStory,
             repliesAllowed: true,
-            layersData: JSON.stringify(metadata)
+            layersData: JSON.stringify(metadata),
+            mentionedUsernames: extractedMentions,
+            originalStoryId,
+            originalOwnerId,
+            originalOwnerUsername,
           });
 
           const storyId = res.data.id;
+
+          if (originalStoryId) {
+            apiClient.post('/analytics/track', { event: 'reshare_published', metadata: { originalStoryId, storyId } }).catch(() => {});
+          }
 
           // Optimistic UI update
           addStory({
@@ -213,9 +302,18 @@ export default function ShareStoryScreen() {
         }
 
         setStatus('success');
+        
+        // Fetch stories immediately so the new story is available in local state
+        const { fetchStories } = useStoryStore.getState();
+        await fetchStories();
+
         setTimeout(() => {
-          router.replace('/');
-        }, 1000);
+          if (returnTo === 'dismiss3') {
+            router.dismiss(3);
+          } else {
+            router.replace('/');
+          }
+        }, 1500);
 
       } catch (err: any) {
         console.error("Upload error details:", err.response?.data || err);

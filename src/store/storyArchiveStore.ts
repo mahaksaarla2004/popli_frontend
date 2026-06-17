@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Creator, Reel, Comment, Chat, Message, NotificationItem, TransactionItem, GiftType } from '../types';

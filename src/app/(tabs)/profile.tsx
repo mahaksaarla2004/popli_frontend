@@ -5,6 +5,7 @@ import { Settings, AlignLeft, LayoutGrid, Heart, Play, Plus } from 'lucide-react
 import { useAuthStore, useFeedStore, useStoryHighlightStore } from '../../store';
 import { formatSocialCount, getDefaultAvatar } from '../../utils';
 import StoryRing from '../../components/StoryRing';
+import { LinksSheet } from '../../components/sheets/LinksSheet';
 
 const { width } = Dimensions.get('window');
 
@@ -38,11 +39,13 @@ export default function ProfileScreen() {
   // Use the directly fetched userReels to get accurate, up-to-date stats
   const totalLikes = userReels.reduce((acc, reel) => acc + reel.likesCount, 0);
 
+  const [isLinksSheetOpen, setIsLinksSheetOpen] = useState(false);
+
   const displayProfile = {
     username: userProfile.username,
     roles: userProfile.category ? userProfile.category.toUpperCase() + ' CREATOR' : 'CREATOR',
     bio: userProfile.bio || 'Living the life your style with your rules',
-    link: 'www.appyhigh.com/projects',
+    socialLinks: userProfile.socialLinks || [],
     posts: userReels.length, // Real stat
     following: followingIds.length || 0,
     followers: userProfile.followersCount || 0,
@@ -50,13 +53,23 @@ export default function ProfileScreen() {
     avatar: userProfile.avatar?.includes('unsplash.com') ? getDefaultAvatar(userProfile.username) : (userProfile.avatar || getDefaultAvatar(userProfile.username))
   };
 
-  const monetizedReels = userReels.filter(r => r.isMonetized);
-  const totalMonetizedViews = monetizedReels.reduce((acc, reel) => acc + (reel.viewsCount || 0), 0);
-  const totalEarnings = (totalMonetizedViews * 0.0044).toFixed(3);
+  const totalEarnings = userProfile.coinsEarned || 0;
 
   const displayReels = userReels;
 
   const activeGridData = activeTab === 'reels' ? displayReels : likedReels;
+
+  const handleLinkPress = () => {
+    if (displayProfile.socialLinks.length === 1) {
+      let url = displayProfile.socialLinks[0].url;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      import('react-native').then(rn => rn.Linking.openURL(url));
+    } else if (displayProfile.socialLinks.length > 1) {
+      setIsLinksSheetOpen(true);
+    }
+  };
 
   return (
     <View className="flex-1 bg-[#12081E] pt-12">
@@ -64,7 +77,7 @@ export default function ProfileScreen() {
       <View className="flex-row items-center justify-between px-4 pb-6 border-b border-white/5">
         <View className="w-10" />
         
-        <Text className="text-white font-bold text-lg">Appyhigh live</Text>
+        <Text className="text-white font-bold text-lg">Profile</Text>
         
         <Pressable 
           onPress={() => router.push('/settings')}
@@ -104,8 +117,16 @@ export default function ProfileScreen() {
 
           <Text className="text-white font-bold text-lg mb-1">@{displayProfile.username}</Text>
           <Text className="text-neutral-grey text-[11px] mb-1">{displayProfile.roles}</Text>
-          <Text className="text-white/60 text-[10px] mb-1">{displayProfile.bio}</Text>
-          <Text className="text-[#D946EF] text-[10px] font-medium">{displayProfile.link}</Text>
+          <Text className="text-white/60 text-[10px] mb-1 text-center">{displayProfile.bio}</Text>
+          
+          {displayProfile.socialLinks.length > 0 && (
+            <Pressable onPress={handleLinkPress} className="mt-1">
+              <Text className="text-[#D946EF] text-[10px] font-bold">
+                {displayProfile.socialLinks[0].title || displayProfile.socialLinks[0].url.replace(/^https?:\/\//, '').split('/')[0]}
+                {displayProfile.socialLinks.length > 1 ? ` and ${displayProfile.socialLinks.length - 1} other${displayProfile.socialLinks.length > 2 ? 's' : ''}` : ''}
+              </Text>
+            </Pressable>
+          )}
 
           {/* Social Stats */}
           <View className="flex-row items-center justify-between mt-6 w-[85%]">
@@ -128,28 +149,28 @@ export default function ProfileScreen() {
               <Text className="text-neutral-grey text-[9px] font-bold uppercase mt-1">Followers</Text>
             </Pressable>
             <View className="items-center">
-              <Text className="text-white font-black text-[15px]">{formatSocialCount(displayProfile.likes)}</Text>
-              <Text className="text-neutral-grey text-[9px] font-bold uppercase mt-1">Likes</Text>
+              <Text className="text-white font-black text-[15px]">₹{totalEarnings}</Text>
+              <Text className="text-neutral-grey text-[9px] font-bold uppercase mt-1">Earnings</Text>
             </View>
           </View>
         </View>
 
-        {/* 2.2 EARNINGS HIGHLIGHT BANNER */}
+        {/* 2.2 CREATOR PORTAL BANNER */}
         <Pressable 
-          onPress={() => router.push('/analytics')}
-          className="mx-4 mb-6 bg-[#10B981]/10 border border-[#10B981]/30 p-3 rounded-xl flex-row items-center justify-between active:scale-[0.98]"
+          onPress={() => router.push('/(creator)/portal')}
+          className="mx-4 mb-6 bg-[#D946EF]/10 border border-[#D946EF]/20 p-4 rounded-xl flex-row items-center justify-between active:scale-[0.98]"
         >
-          <View className="flex-row items-center gap-3">
-            <View className="w-10 h-10 bg-[#10B981]/20 rounded-full items-center justify-center">
-              <Text className="text-[#10B981] font-bold text-lg">₹</Text>
-            </View>
-            <View>
-              <Text className="text-[#10B981] font-black text-lg">₹{totalEarnings}</Text>
-              <Text className="text-white/70 text-[10px] font-bold uppercase">Total View Earnings</Text>
-            </View>
+          <View>
+            <Text className="text-white font-bold text-[15px]">Creator Portal</Text>
+            <Text className="text-white/60 text-[11px] mt-0.5">Analytics, earnings & growth tools</Text>
           </View>
-          <View className="bg-[#10B981] px-3 py-1.5 rounded-full">
-            <Text className="text-black font-bold text-[10px] uppercase">Analytics</Text>
+          
+          <View className="flex-row items-center gap-2">
+            <View className="items-end">
+              <Text className="text-[#10B981] font-black text-[15px]">₹{totalEarnings}</Text>
+              <Text className="text-white/50 text-[9px]">earned</Text>
+            </View>
+            <Text className="text-[#D946EF] font-bold text-lg ml-1">›</Text>
           </View>
         </Pressable>
 
@@ -229,6 +250,12 @@ export default function ProfileScreen() {
           </View>
         )}
       </ScrollView>
+
+      <LinksSheet 
+        isVisible={isLinksSheetOpen} 
+        onClose={() => setIsLinksSheetOpen(false)} 
+        links={displayProfile.socialLinks} 
+      />
     </View>
   );
 }

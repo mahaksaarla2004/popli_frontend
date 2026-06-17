@@ -31,17 +31,6 @@ export default function PostEditorScreen() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  useEffect(() => {
-    if (searchQuery.length > 1) {
-      const delayDebounceFn = setTimeout(() => {
-        searchUsers(searchQuery);
-      }, 500);
-      return () => clearTimeout(delayDebounceFn);
-    } else {
-      setSearchResults([]);
-    }
-  }, [searchQuery]);
-
   const searchUsers = async (q: string) => {
     setIsSearching(true);
     try {
@@ -53,6 +42,17 @@ export default function PostEditorScreen() {
       setIsSearching(false);
     }
   };
+
+  useEffect(() => {
+    if (searchQuery.length > 1) {
+      const delayDebounceFn = setTimeout(() => {
+        searchUsers(searchQuery);
+      }, 500);
+      return () => clearTimeout(delayDebounceFn);
+    } else {
+      setTimeout(() => setSearchResults([]), 0);
+    }
+  }, [searchQuery]);
 
   const toggleTagUser = (user: any) => {
     if (taggedUsers.find(u => u.id === user.id)) {
@@ -152,7 +152,7 @@ export default function PostEditorScreen() {
             </View>
             <View className="flex-1 pr-4">
               <Text className="text-white text-base font-medium">View-based Earning</Text>
-              <Text className="text-neutral-grey text-xs mt-0.5 leading-4">Earn ₹0.0044 per view instantly on this video.</Text>
+              <Text className="text-[#22C55E] text-xs mt-0.5 leading-4">Earn ₹5 per 1000 views instantly on this video.</Text>
             </View>
           </View>
           <Switch

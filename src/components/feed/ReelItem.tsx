@@ -11,6 +11,62 @@ import { formatSocialCount, formatRelativeTime, getDefaultAvatar } from '../../u
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import Svg, { Path, G } from 'react-native-svg';
+import AnimatedReanimated, { useSharedValue, useAnimatedStyle, withSequence, withTiming, withSpring, withDelay } from 'react-native-reanimated';
+
+const DoubleTapHeart = React.memo(({ x, y }: { x: number, y: number }) => {
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withSequence(
+      withSpring(1.3, { damping: 12, stiffness: 200 }),
+      withSpring(1, { damping: 12, stiffness: 200 })
+    );
+    opacity.value = withSequence(
+      withTiming(1, { duration: 100 }),
+      withDelay(500, withTiming(0, { duration: 300 }))
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <AnimatedReanimated.View style={[{ position: 'absolute', left: x, top: y, zIndex: 99 }, animatedStyle]} pointerEvents="none">
+      <Heart size={80} color="#EC4899" fill="#EC4899" />
+    </AnimatedReanimated.View>
+  );
+});
+
+const MemoizedLikeButton = React.memo(({ 
+  isLiked, 
+  likesCount, 
+  onToggle 
+}: { 
+  isLiked: boolean; 
+  likesCount: number; 
+  onToggle: () => void; 
+}) => {
+  return (
+    <Pressable onPress={onToggle} className="items-center mb-6">
+      <MotiView
+        animate={{ scale: isLiked ? [1, 1.3, 1] : 1 }}
+        transition={{ type: 'spring', duration: 300 }}
+      >
+        <Heart 
+          size={28} 
+          color={isLiked ? '#EC4899' : '#FFFFFF'} 
+          fill={isLiked ? '#EC4899' : 'transparent'} 
+        />
+      </MotiView>
+      <Text className="text-white text-xs font-semibold mt-1">
+        {formatSocialCount(likesCount)}
+      </Text>
+    </Pressable>
+  );
+});
 
 interface ReelItemProps {
   item: Reel;
@@ -49,6 +105,7 @@ const ActiveVideoPlayer = ({ url, isMuted, isActive, isHeldPaused, width, height
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     player.muted = isMuted;
   }, [isMuted, player]);
 
@@ -75,7 +132,9 @@ const ActiveAudioPlayer = ({ url, isMuted, isActive, isHeldPaused }: { url: stri
   
   useEffect(() => {
     if (audioPlayer && url) {
+      // eslint-disable-next-line react-hooks/immutability
       audioPlayer.loop = true;
+      // eslint-disable-next-line react-hooks/immutability
       audioPlayer.muted = isMuted;
       if (isActive && !isHeldPaused) {
         audioPlayer.play();
@@ -123,6 +182,16 @@ export const ReelItem = React.memo(({
   // View tracking
   const [hasRegisteredView, setHasRegisteredView] = useState(false);
 
+  // Reset view tracking when item changes
+  useEffect(() => {
+    setTimeout(() => {
+      setHasRegisteredView(false);
+      setIsHeldPaused(false);
+    }, 0);
+    // Note: Do NOT reset isLoaded here, expo-video handles URL swaps better without it 
+    // or else it gets stuck showing a black screen if onLoad misses the event.
+  }, [item.id]);
+
   // Layers Metadata
   const parsedLayersData = React.useMemo(() => {
     if (!item.layersData) return null;
@@ -135,7 +204,6 @@ export const ReelItem = React.memo(({
 
   // Heart Burst Double-Tap Animation States
   const [doubleTapHearts, setDoubleTapHearts] = useState<{ id: number; x: number; y: number }[]>([]);
-  const lastTapRef = useRef<number | null>(null);
 
   const isOwnReel = item.creatorId === userProfile?.id;
   const safeCreatorUsername = isOwnReel ? userProfile?.username : (item.creator?.username || item.creatorUsername || '');
@@ -163,18 +231,26 @@ export const ReelItem = React.memo(({
     };
   }, [isActive, hasRegisteredView, item.id, safeCreatorUsername, registerValidView, userProfile.username]);
 
+  const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleDoubleTap = useCallback((e: any) => {
-    const now = Date.now();
     const DOUBLE_PRESS_DELAY = 300;
     
-    if (lastTapRef.current && now - lastTapRef.current < DOUBLE_PRESS_DELAY) {
+    // Extract coordinates safely
+    const locationX = e.nativeEvent?.locationX || width / 2;
+    const locationY = e.nativeEvent?.locationY || height / 2;
+
+    if (tapTimeoutRef.current) {
+      // It's a double tap!
+      clearTimeout(tapTimeoutRef.current);
+      tapTimeoutRef.current = null;
+
       // Trigger like state
       if (!item.isLiked) {
         toggleLikeReel(item.id);
       }
       
       // Heart burst positions from touch coordinate
-      const { locationX, locationY } = e.nativeEvent;
       const newHeart = {
         id: Date.now(),
         x: locationX - 40, // offset half size
@@ -188,18 +264,23 @@ export const ReelItem = React.memo(({
         setDoubleTapHearts((prev) => prev.filter((h) => h.id !== newHeart.id));
       }, 800);
     } else {
-      // Toggle play/pause or mute on single tap
-      toggleGlobalMute();
-      const newMutedState = !isGlobalMuted;
-      
-      // Show mute indicator briefly
-      setMuteIndicator(newMutedState ? 'muted' : 'unmuted');
-      setTimeout(() => {
-        setMuteIndicator(null);
-      }, 1000);
+      // It's the first tap
+      tapTimeoutRef.current = setTimeout(() => {
+        // Single tap confirmed
+        tapTimeoutRef.current = null;
+        
+        // Toggle mute on single tap
+        toggleGlobalMute();
+        const newMutedState = !isGlobalMuted;
+        
+        // Show mute indicator briefly
+        setMuteIndicator(newMutedState ? 'muted' : 'unmuted');
+        setTimeout(() => {
+          setMuteIndicator(null);
+        }, 1000);
+      }, DOUBLE_PRESS_DELAY);
     }
-    lastTapRef.current = now;
-  }, [item.isLiked, toggleLikeReel, isGlobalMuted, toggleGlobalMute]);
+  }, [item.isLiked, item.id, toggleLikeReel, isGlobalMuted, toggleGlobalMute, width, height]);
 
   const isFollowing = followingIds.includes(item.creatorId);
   
@@ -217,19 +298,41 @@ export const ReelItem = React.memo(({
     }
   };
 
+  const renderDescription = (text: string | undefined | null) => {
+    if (!text) return null;
+    const parts = text.split(/(#[a-zA-Z0-9_]+)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('#')) {
+        return (
+          <Text 
+            key={index} 
+            className="text-[#D946EF] font-bold"
+            onPress={() => router.push(`/hashtag/${part.substring(1)}`)}
+          >
+            {part}
+          </Text>
+        );
+      }
+      // Also highlight @mentions
+      if (part.startsWith('@')) {
+        return (
+          <Text 
+            key={index} 
+            className="text-[#D946EF] font-bold"
+            onPress={() => onOpenProfile(part.substring(1))}
+          >
+            {part}
+          </Text>
+        );
+      }
+      return <Text key={index}>{part}</Text>;
+    });
+  };
+
   return (
     <View style={{ width, height, backgroundColor: '#000000' }} className="relative">
       
-      {/* 0. TOP FLOATING ACTIONS (Figma-level: Direct Inbox Plane) */}
-      <View className="absolute top-12 left-4 right-4 flex-row justify-end items-center z-20">
-        {/* Paper Plane Button on Right */}
-        <Pressable 
-          onPress={() => router.push('/notifications')}
-          className="w-10 h-10 bg-black/35 border border-white/10 rounded-full items-center justify-center active:scale-95 pl-0.5"
-        >
-          <Send size={16} color="#FFFFFF" />
-        </Pressable>
-      </View>
+
 
       {/* 1. EXPO AV VIDEO PLAYER CELL OR IMAGE CELL */}
       <Pressable 
@@ -250,6 +353,7 @@ export const ReelItem = React.memo(({
           <>
             {isAdjacent ? (
               <ActiveVideoPlayer 
+
                 url={safeVideoUrl} 
                 isMuted={isGlobalMuted} 
                 isActive={isActive} 
@@ -393,21 +497,7 @@ export const ReelItem = React.memo(({
 
       {/* 2. REANIMATED DOUBLE TAP HEART BURST */}
       {doubleTapHearts.map((heart) => (
-        <MotiView
-          key={heart.id}
-          from={{ opacity: 0, scale: 0.3, translateY: 0 }}
-          animate={{ opacity: 1, scale: 1.4, translateY: -40 }}
-          exit={{ opacity: 0, scale: 0.5 }}
-          transition={{ type: 'spring', damping: 10, stiffness: 150 }}
-          style={{
-            position: 'absolute',
-            left: heart.x,
-            top: heart.y,
-            zIndex: 99,
-          }}
-        >
-          <Heart size={80} color="#EC4899" fill="#EC4899" />
-        </MotiView>
+        <DoubleTapHeart key={heart.id} x={heart.x} y={heart.y} />
       ))}
 
       {/* 3. FIGMA FIGURATIVE INTERACTION OVERLAYS (Right Sidebar) */}
@@ -447,24 +537,11 @@ export const ReelItem = React.memo(({
         </View>
 
         {/* Like Button */}
-        <Pressable 
-          onPress={() => toggleLikeReel(item.id)} 
-          className="items-center mb-6"
-        >
-          <MotiView
-            animate={{ scale: item.isLiked ? [1, 1.3, 1] : 1 }}
-            transition={{ duration: 300 }}
-          >
-            <Heart 
-              size={28} 
-              color={item.isLiked ? '#EC4899' : '#FFFFFF'} 
-              fill={item.isLiked ? '#EC4899' : 'transparent'} 
-            />
-          </MotiView>
-          <Text className="text-white text-xs font-semibold mt-1">
-            {formatSocialCount(item.likesCount)}
-          </Text>
-        </Pressable>
+        <MemoizedLikeButton 
+          isLiked={item.isLiked} 
+          likesCount={item.likesCount} 
+          onToggle={() => toggleLikeReel(item.id)} 
+        />
 
         {/* Comment Button */}
         <Pressable onPress={() => onOpenComments(item.id)} className="items-center mb-6">
@@ -546,7 +623,7 @@ export const ReelItem = React.memo(({
         </View>
 
         <Text className="text-neutral-silver text-sm leading-5 font-normal" numberOfLines={3}>
-          {item.description}
+          {renderDescription(item.description)}
         </Text>
 
         {/* Music Ticker */}

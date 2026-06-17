@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, AtSign, Link as LinkIcon, UserPlus, Check } from 'lucide-react-native';
 import { useAuthStore, useFeedStore } from '../store';
 import * as ImagePicker from 'expo-image-picker';
+import { getDefaultAvatar } from '../utils';
 
 const InputField = ({ 
   label, 
@@ -51,7 +52,7 @@ export default function EditProfileScreen() {
   const [email, setEmail] = useState(''); // not in store currently
   const [phone, setPhone] = useState(''); // not in store currently
   const [bio, setBio] = useState(userProfile.bio || '');
-  const [website, setWebsite] = useState(''); // not in store currently
+  const [socialLinks, setSocialLinks] = useState<{title: string, url: string}[]>(userProfile.socialLinks || []);
   const [avatarUri, setAvatarUri] = useState(userProfile.avatar || '');
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -95,12 +96,13 @@ export default function EditProfileScreen() {
       // email and phone can be sent to backend if supported
       email: email || undefined,
       phone: phone || undefined,
+      socialLinks: socialLinks,
     });
     setIsSaving(false);
     
     if (result.success) {
       // Refresh feed stores to instantly reflect new profile data
-      fetchReels(1);
+      fetchReels(null);
       fetchUserReels(userProfile.id);
 
       setShowSuccessModal(true);
@@ -129,10 +131,10 @@ export default function EditProfileScreen() {
             onPress={handlePickImage}
             className="w-24 h-24 rounded-full bg-[#F59E0B]/20 items-center justify-center border-4 border-[#F59E0B]/50 mb-3 overflow-hidden"
           >
-             {avatarUri ? (
+             {avatarUri && !avatarUri.includes('unsplash.com') ? (
                <Image source={{ uri: avatarUri }} className="w-full h-full" resizeMode="cover" />
              ) : (
-               <UserPlus size={40} color="#F59E0B" />
+               <Image source={{ uri: getDefaultAvatar(userProfile?.username || 'user') }} className="w-full h-full" resizeMode="cover" />
              )}
           </Pressable>
           <View className="bg-[#FACC15] px-3 py-1 rounded-full -mt-6 z-10 shadow-sm shadow-[#FACC15]/40">
@@ -164,7 +166,56 @@ export default function EditProfileScreen() {
             maxLength={15}
           />
         <InputField label="BIO" value={bio} onChange={setBio} multiline />
-        <InputField label="WEBSITE OR CONTACT LINK" value={website} onChange={setWebsite} rightIcon={LinkIcon} />
+
+        {/* Social Links Section */}
+        <View className="mb-4 mt-2">
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-white/60 text-[9px] font-bold uppercase tracking-widest pl-1">Social Links (Max 3)</Text>
+            {socialLinks.length < 3 && (
+              <Pressable onPress={() => setSocialLinks([...socialLinks, { title: '', url: '' }])} className="px-2 py-1 bg-white/10 rounded">
+                <Text className="text-white text-[10px] font-bold">+ ADD LINK</Text>
+              </Pressable>
+            )}
+          </View>
+          
+          {socialLinks.map((link, index) => (
+            <View key={index} className="bg-[#1A0E2C] border border-white/5 rounded-2xl p-3 mb-2">
+              <View className="flex-row justify-between mb-2">
+                <Text className="text-white text-xs font-bold">Link {index + 1}</Text>
+                <Pressable onPress={() => {
+                  const newLinks = [...socialLinks];
+                  newLinks.splice(index, 1);
+                  setSocialLinks(newLinks);
+                }}>
+                  <Text className="text-red-400 text-xs font-bold">Remove</Text>
+                </Pressable>
+              </View>
+              <TextInput
+                value={link.title}
+                onChangeText={(text) => {
+                  const newLinks = [...socialLinks];
+                  newLinks[index].title = text;
+                  setSocialLinks(newLinks);
+                }}
+                placeholder="Title (e.g. YouTube)"
+                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                className="text-white font-medium text-sm border-b border-white/10 pb-2 mb-2"
+              />
+              <TextInput
+                value={link.url}
+                onChangeText={(text) => {
+                  const newLinks = [...socialLinks];
+                  newLinks[index].url = text;
+                  setSocialLinks(newLinks);
+                }}
+                placeholder="URL (e.g. https://youtube.com/...)"
+                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                className="text-white font-medium text-sm"
+                autoCapitalize="none"
+              />
+            </View>
+          ))}
+        </View>
 
         {/* Change Password Link */}
         <Pressable 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, Dimensions, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, Dimensions, TextInput, ActivityIndicator, Animated, PanResponder, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Building2, Smartphone, Check, ChevronRight, Clock, CheckCircle2, RefreshCw } from 'lucide-react-native';
 import { apiClient } from '../api/client';
@@ -14,6 +14,62 @@ export default function WithdrawScreen() {
   
   const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [withdrawing, setWithdrawing] = useState(false);
+
+  const [pan] = useState(() => new Animated.ValueXY());
+  const maxSwipe = width - 32 - 40 - 16; // container width minus padding and button size
+
+  const availableBalance = (wallet?.viewEarnings ?? 0) + (wallet?.giftEarnings ?? 0) + (wallet?.referralEarnings ?? 0);
+
+  const handleWithdrawSubmit = async () => {
+    if (!upiId || !amount) {
+      Alert.alert('Error', 'Please enter UPI ID and Amount');
+      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+      return;
+    }
+    const amt = parseFloat(amount);
+    if (amt < 500) {
+      Alert.alert('Error', 'Minimum withdrawal is ₹500');
+      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+      return;
+    }
+    if (amt > availableBalance) {
+      Alert.alert('Error', 'Insufficient balance');
+      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+      return;
+    }
+
+    try {
+      setWithdrawing(true);
+      await apiClient.post('/wallet/withdraw', { amount: amt, upiId });
+      Alert.alert('Success', 'Withdrawal requested successfully!');
+      router.back();
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to withdraw');
+      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
+  const panResponder = useState(() =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dx > 0 && gestureState.dx < maxSwipe) {
+          pan.setValue({ x: gestureState.dx, y: 0 });
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > maxSwipe * 0.8) {
+          Animated.spring(pan, { toValue: { x: maxSwipe, y: 0 }, useNativeDriver: false }).start();
+          handleWithdrawSubmit();
+        } else {
+          Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+        }
+      },
+    })
+  )[0];
 
   useEffect(() => {
     const fetchWallet = async () => {
@@ -29,8 +85,6 @@ export default function WithdrawScreen() {
     fetchWallet();
   }, []);
   
-  const availableBalance = wallet?.balance ?? 121.00;
-
   if (loading) {
     return (
       <View className="flex-1 bg-[#0D0518] items-center justify-center">
@@ -52,7 +106,7 @@ export default function WithdrawScreen() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
         <View className="bg-gradient-to-r from-[#A855F7] to-[#8B5CF6] rounded-[24px] p-6 mb-6">
            <Text className="text-white/80 text-sm mb-2">Total Balance</Text>
-           <Text className="text-white font-black text-5xl mb-4">₹121</Text>
+           <Text className="text-white font-black text-5xl mb-4">₹{availableBalance.toFixed(2)}</Text>
            <Text className="text-white/70 text-xs">Gifts & Tips + View Earnings · minimum ₹500</Text>
         </View>
 
@@ -127,19 +181,22 @@ export default function WithdrawScreen() {
         </View>
 
         {/* Swipe Button */}
-        <Pressable 
-          className="bg-[#8B5CF6] h-14 rounded-full flex-row items-center justify-between px-2 mb-10 overflow-hidden relative active:opacity-90"
-          onPress={() => alert('Withdrawal requested!')}
-        >
-          <View className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm">
+        <View className="bg-[#8B5CF6] h-14 rounded-full flex-row items-center px-2 mb-10 overflow-hidden relative">
+          <Text className="text-white font-bold text-lg absolute w-full text-center z-0">
+            {withdrawing ? 'Processing...' : 'Swipe to Withdraw'}
+          </Text>
+          <Animated.View 
+            {...panResponder.panHandlers}
+            style={{ transform: [{ translateX: pan.x }] }}
+            className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm z-10"
+          >
             <ChevronRight size={24} color="#8B5CF6" />
-          </View>
-          <Text className="text-white font-bold text-lg mr-20">Swipe to Withdraw</Text>
+          </Animated.View>
           {/* Faded right side styling */}
-          <View className="absolute right-4 w-6 h-6 items-center justify-center opacity-30">
+          <View className="absolute right-4 w-6 h-6 items-center justify-center opacity-30 z-0">
              <ChevronRight size={24} color="white" />
           </View>
-        </Pressable>
+        </View>
 
         {/* History */}
         <View className="flex-row items-center gap-2 mb-4">

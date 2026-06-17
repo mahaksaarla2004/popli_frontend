@@ -9,20 +9,25 @@ const { width } = Dimensions.get('window');
 export default function ReferralsScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
+  const [configs, setConfigs] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
-        const res = await apiClient.get('/users/me');
-        setProfile(res.data);
+        const [profileRes, configRes] = await Promise.all([
+          apiClient.get('/users/me'),
+          apiClient.get('/system/configs?keys=REFERRAL_CREATOR_REWARD,REFERRAL_STANDARD_REWARD,REFERRAL_SUPER_REWARD')
+        ]);
+        setProfile(profileRes.data);
+        setConfigs(configRes.data);
       } catch (error) {
-        console.error('Failed to fetch profile', error);
+        console.error('Failed to fetch data', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchProfile();
+    fetchData();
   }, []);
 
   const referralCode = profile?.referralCode || 'G7BML8CS';
@@ -117,7 +122,7 @@ export default function ReferralsScreen() {
               <Text className="text-gray-400 text-xs mt-1">Referred friend with 1K+ followers</Text>
             </View>
           </View>
-          <Text className="text-[#34D399] font-bold text-lg">₹50</Text>
+          <Text className="text-[#34D399] font-bold text-lg">₹{configs?.REFERRAL_CREATOR_REWARD ?? 50}</Text>
         </View>
 
         <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row items-center justify-between mb-3">
@@ -130,7 +135,7 @@ export default function ReferralsScreen() {
               <Text className="text-gray-400 text-xs mt-1">New viewer or fan account</Text>
             </View>
           </View>
-          <Text className="text-[#34D399] font-bold text-lg">₹20</Text>
+          <Text className="text-[#34D399] font-bold text-lg">₹{configs?.REFERRAL_STANDARD_REWARD ?? 20}</Text>
         </View>
 
         <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row items-center justify-between mb-6">
@@ -143,7 +148,7 @@ export default function ReferralsScreen() {
               <Text className="text-gray-400 text-xs mt-1">Refer 10+ creators this month</Text>
             </View>
           </View>
-          <Text className="text-[#34D399] font-bold text-lg">₹500</Text>
+          <Text className="text-[#34D399] font-bold text-lg">₹{configs?.REFERRAL_SUPER_REWARD ?? 500}</Text>
         </View>
 
       </ScrollView>

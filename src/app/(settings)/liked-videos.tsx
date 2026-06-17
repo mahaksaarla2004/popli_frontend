@@ -53,6 +53,7 @@ export default function LikedVideosScreen() {
               <Pressable 
                 key={reel.id} 
                 className="w-[48%] aspect-[9/16] bg-[#1A0E2C] rounded-2xl mb-4 overflow-hidden"
+                onPress={() => router.push(`/reel/${reel.id}`)}
               >
                 <Image 
                   source={{ uri: reel.thumbnailUrl || reel.videoUrl }} 

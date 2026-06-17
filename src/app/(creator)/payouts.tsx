@@ -3,22 +3,22 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, CreditCard, Building2, Smartphone, FileText, History } from 'lucide-react-native';
 
+const ActionCard = ({ icon: Icon, title, description }: any) => (
+  <Pressable className="bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 gap-2 mb-4">
+    <View className="flex-row items-center gap-3">
+      <View className="w-10 h-10 rounded-full bg-[#EC4899]/10 items-center justify-center border border-[#EC4899]/20">
+        <Icon size={20} color="#EC4899" />
+      </View>
+      <View className="flex-1">
+        <Text className="text-white font-bold text-sm">{title}</Text>
+        <Text className="text-neutral-grey text-xs mt-1 leading-5">{description}</Text>
+      </View>
+    </View>
+  </Pressable>
+);
+
 export default function PayoutsScreen() {
   const router = useRouter();
-
-  const ActionCard = ({ icon: Icon, title, description }: any) => (
-    <Pressable className="bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 gap-2 mb-4">
-      <View className="flex-row items-center gap-3">
-        <View className="w-10 h-10 rounded-full bg-[#EC4899]/10 items-center justify-center border border-[#EC4899]/20">
-          <Icon size={20} color="#EC4899" />
-        </View>
-        <View className="flex-1">
-          <Text className="text-white font-bold text-sm">{title}</Text>
-          <Text className="text-neutral-grey text-xs mt-1 leading-5">{description}</Text>
-        </View>
-      </View>
-    </Pressable>
-  );
 
   return (
     <View className="flex-1 bg-[#12081E] pt-14">

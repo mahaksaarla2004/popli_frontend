@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Stack, router, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Platform } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
@@ -120,7 +120,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <View style={{ flex: 1, backgroundColor: '#0B001A' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0B001A' }} edges={['top', 'bottom', 'left', 'right']}>
           <StatusBar style="light" />
         <Stack
           screenOptions={{
@@ -142,7 +142,7 @@ export default function RootLayout() {
           <Stack.Screen name="settings" />
           <Stack.Screen name="support" />
         </Stack>
-      </View>
+      </SafeAreaView>
     </SafeAreaProvider>
   </GestureHandlerRootView>
   );

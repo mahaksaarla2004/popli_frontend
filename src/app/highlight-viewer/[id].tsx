@@ -44,7 +44,7 @@ export default function HighlightViewerScreen() {
   const [isPaused, setIsPaused] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [progressAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const fetchStories = async () => {
@@ -59,6 +59,14 @@ export default function HighlightViewerScreen() {
     };
     fetchStories();
   }, [id]);
+
+  const handleNext = () => {
+    if (currentIndex < userStories.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+    } else {
+      router.back();
+    }
+  };
 
   useEffect(() => {
     if (loading || userStories.length === 0) return;
@@ -78,14 +86,6 @@ export default function HighlightViewerScreen() {
 
     return () => progressAnim.stopAnimation();
   }, [currentIndex, isPaused, userStories.length, loading]);
-
-  const handleNext = () => {
-    if (currentIndex < userStories.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      router.back();
-    }
-  };
 
   const handlePrev = () => {
     if (currentIndex > 0) {

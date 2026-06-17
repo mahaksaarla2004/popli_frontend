@@ -1,3 +1,5 @@
+ 
+ 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { TransactionItem } from '../types';
@@ -8,15 +10,40 @@ import { mmkvStoreStorage } from './storage';
 // WALLET & COINS STORE
 // ==========================================
 
+export interface WalletLedgerItem {
+  id: string;
+  source: string;
+  sourceId: string;
+  credit: number;
+  debit: number;
+  balanceAfter: number;
+  description: string;
+  createdAt: string;
+}
+
+export interface WithdrawalRequestItem {
+  id: string;
+  amount: number;
+  status: string;
+  netPayable: number;
+  transactionId: string;
+  createdAt: string;
+}
+
 interface WalletState {
   coinBalance: number;
-  inrEarnings: number;
-  transactions: TransactionItem[];
+  inrEarnings: number; // Legacy
+  pendingBalance: number;
+  approvedBalance: number;
+  withdrawableBalance: number;
+  totalEarnings: number;
+  totalWithdrawn: number;
+  ledgers: WalletLedgerItem[];
+  withdrawalRequests: WithdrawalRequestItem[];
+  transactions: TransactionItem[]; // Legacy
   rechargeCoins: (coins: number) => Promise<boolean>;
   sendGiftCoins: (receiverId: string, giftId: string, cost: number, message?: string) => Promise<boolean>;
-  receiveGiftCoins: (coins: number, desc: string) => void;
   withdrawEarnings: (amount: number, upiId: string) => Promise<boolean>;
-  addTransaction: (tx: Omit<TransactionItem, 'id' | 'timestamp'>) => void;
   fetchWallet: () => Promise<void>;
 }
 
@@ -25,14 +52,18 @@ export const useWalletStore = create<WalletState>()(
     (set, get) => ({
       coinBalance: 0,
       inrEarnings: 0,
+      pendingBalance: 0,
+      approvedBalance: 0,
+      withdrawableBalance: 0,
+      totalEarnings: 0,
+      totalWithdrawn: 0,
+      ledgers: [],
+      withdrawalRequests: [],
       transactions: [],
       rechargeCoins: async (coins) => {
         try {
-          const res = await apiClient.post('/wallet/recharge', { amount: coins, paymentReference: 'MOCK_TXN_' + Date.now() });
-          set({
-            coinBalance: res.data.coinBalance,
-          });
-          get().fetchWallet(); // Fetch updated transactions from backend
+          await apiClient.post('/wallet/recharge', { amount: coins, paymentReference: 'MOCK_TXN_' + Date.now() });
+          get().fetchWallet(); 
           return true;
         } catch (e: any) {
           console.error("Recharge API failed:", e?.message);
@@ -40,8 +71,8 @@ export const useWalletStore = create<WalletState>()(
         }
       },
       sendGiftCoins: async (receiverId, giftId, cost, message) => {
+        // Assume cost in coins for now
         if (get().coinBalance >= cost) {
-          // Optimistic update
           set((state) => ({ coinBalance: state.coinBalance - cost }));
           try {
             await apiClient.post('/gifts/send', {
@@ -50,61 +81,44 @@ export const useWalletStore = create<WalletState>()(
               cost,
               message
             });
-            // Refresh wallet from server to get accurate transaction history
             get().fetchWallet();
             return true;
           } catch (e: any) {
             console.error("Gift API failed:", e?.message);
-            // Revert optimistic update
             set((state) => ({ coinBalance: state.coinBalance + cost }));
             return false;
           }
         }
         return false;
       },
-      receiveGiftCoins: (coins, desc) => {
-        // Maintained for local mock purposes if needed. Real flow comes from fetchWallet()
-        const convertedINR = coins * 0.50;
-        set((state) => ({
-          inrEarnings: state.inrEarnings + convertedINR
-        }));
-      },
       withdrawEarnings: async (amount, upiId) => {
-        if (get().inrEarnings >= amount) {
-          // Optimistic UI update
-          set((state) => ({ inrEarnings: state.inrEarnings - amount }));
+        if (get().withdrawableBalance >= amount) {
+          set((state) => ({ withdrawableBalance: state.withdrawableBalance - amount }));
           try {
             await apiClient.post('/wallet/withdraw', { amount, upiId });
             get().fetchWallet();
             return true;
           } catch (e) {
             console.error("Withdrawal failed:", e);
-            // Revert on fail
-            set((state) => ({ inrEarnings: state.inrEarnings + amount }));
+            set((state) => ({ withdrawableBalance: state.withdrawableBalance + amount }));
             return false;
           }
         }
         return false;
       },
-      addTransaction: (tx) =>
-        set((state) => {
-          const dateStr = new Date()
-            .toISOString()
-            .slice(0, 16)
-            .replace('T', ' ');
-          const newTx: TransactionItem = {
-            id: `tx_${Date.now()}`,
-            timestamp: dateStr,
-            ...tx
-          };
-          return { transactions: [newTx, ...state.transactions] };
-        }),
       fetchWallet: async () => {
         try {
           const res = await apiClient.get('/wallet');
           set({
             coinBalance: res.data.coinBalance || 0,
             inrEarnings: res.data.inrEarnings || 0,
+            pendingBalance: res.data.pendingBalance || 0,
+            approvedBalance: res.data.approvedBalance || 0,
+            withdrawableBalance: res.data.withdrawableBalance || 0,
+            totalEarnings: res.data.totalEarnings || 0,
+            totalWithdrawn: res.data.totalWithdrawn || 0,
+            ledgers: res.data.ledgers || [],
+            withdrawalRequests: res.data.withdrawalRequests || [],
             transactions: res.data.transactions || []
           });
         } catch (e) {

@@ -69,8 +69,8 @@ export default function KYCScreen() {
   }, []);
 
   // Local shake animations using native Animated API
-  const panShake = useRef(new Animated.Value(0)).current;
-  const aadharShake = useRef(new Animated.Value(0)).current;
+  const [panShake] = useState(() => new Animated.Value(0));
+  const [aadharShake] = useState(() => new Animated.Value(0));
 
   // Local validation errors
   const [panError, setPanError] = useState('');

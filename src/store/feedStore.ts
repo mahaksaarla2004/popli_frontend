@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Creator, Reel, Comment, Chat, Message, NotificationItem, TransactionItem, GiftType } from '../types';
@@ -28,7 +30,8 @@ interface FeedState {
   toggleCommentLike: (commentId: string) => void;
   setMoodFilter: (filter: string) => void;
   registerValidView: (reelId: string, creatorUsername: string) => void;
-  fetchReels: (page?: number, limit?: number, category?: string) => Promise<void>;
+  fetchReels: (cursor?: string | null, limit?: number, category?: string) => Promise<void>;
+  fetchExploreReels: (page?: number, limit?: number, category?: string) => Promise<void>;
   fetchCreators: () => Promise<void>;
   likedReels: Reel[];
   watchHistory: Reel[];
@@ -43,7 +46,12 @@ interface FeedState {
   toggleGlobalMute: () => void;
   seenReelIds: string[];
   clearSeenReels: () => void;
+  homeNextCursor: string | null;
+  exploreNextCursor: string | null;
+  isFetchingFeed: boolean;
+  clearCache: () => void;
 }
+const inFlightLikes = new Set<string>();
 
 export const useFeedStore = create<FeedState>()(
   persist(
@@ -55,13 +63,26 @@ export const useFeedStore = create<FeedState>()(
       userReels: [],
       comments: [],
       seenReelIds: [],
+      homeNextCursor: null,
+      exploreNextCursor: null,
       moodFilter: 'all',
       gpsLatitude: null,
       gpsLongitude: null,
       gpsCity: null,
       nearbyEnabled: false,
       isGlobalMuted: false,
+      isFetchingFeed: false,
       clearSeenReels: () => set({ seenReelIds: [] }),
+      clearCache: () => set({
+        reels: [],
+        userReels: [],
+        likedReels: [],
+        watchHistory: [],
+        seenReelIds: [],
+        homeNextCursor: null,
+        exploreNextCursor: null,
+        isFetchingFeed: false
+      }),
       toggleGlobalMute: () => set((state) => ({ isGlobalMuted: !state.isGlobalMuted })),
       setGPS: (lat, lon, city) => {
         set({ gpsLatitude: lat, gpsLongitude: lon, gpsCity: city });
@@ -82,6 +103,11 @@ export const useFeedStore = create<FeedState>()(
       },
       setNearbyEnabled: (enabled) => set({ nearbyEnabled: enabled }),
       toggleLikeReel: async (reelId) => {
+        if (inFlightLikes.has(reelId)) return;
+        inFlightLikes.add(reelId);
+
+        let previousReels = get().reels;
+
         // Optimistic UI update
         set((state) => {
           const updatedReels = state.reels.map((r) => {
@@ -90,7 +116,7 @@ export const useFeedStore = create<FeedState>()(
               return {
                 ...r,
                 isLiked: newLiked,
-                likesCount: r.likesCount + (newLiked ? 1 : -1)
+                likesCount: Math.max(0, r.likesCount + (newLiked ? 1 : -1))
               };
             }
             return r;
@@ -102,7 +128,11 @@ export const useFeedStore = create<FeedState>()(
         try {
           await apiClient.post(`/reels/${reelId}/like`);
         } catch (e) {
-          console.error("Failed to toggle like:", e);
+          console.error("Failed to toggle like, rolling back:", e);
+          // Rollback
+          set({ reels: previousReels });
+        } finally {
+          inFlightLikes.delete(reelId);
         }
       },
       toggleSaveReel: async (reelId) => {
@@ -131,7 +161,8 @@ export const useFeedStore = create<FeedState>()(
       },
       addLocalReel: (reel) =>
         set((state) => ({
-          reels: [reel, ...state.reels]
+          reels: [reel, ...state.reels],
+          userReels: [reel, ...state.userReels]
         })),
       addComment: async (comment) => {
         // Backend sync first to get the actual ID
@@ -200,10 +231,12 @@ export const useFeedStore = create<FeedState>()(
         });
 
         // Backend Sync
-        try {
-          await apiClient.post(`/reels/comments/${commentId}/like`);
-        } catch (e) {
-          console.error("Failed to toggle comment like:", e);
+        if (!commentId.startsWith('temp-')) {
+          try {
+            await apiClient.post(`/reels/comments/${commentId}/like`);
+          } catch (e) {
+            console.error("Failed to toggle comment like:", e);
+          }
         }
       },
       setMoodFilter: (filter) => set({ moodFilter: filter }),
@@ -230,25 +263,91 @@ export const useFeedStore = create<FeedState>()(
           console.error("Failed to register view:", e);
         }
       },
-      fetchReels: async (page = 1, limit = 10, category = 'all') => {
+      fetchReels: async (cursor = null, limit = 10, category = 'all') => {
+        if (get().isFetchingFeed) return;
+        set({ isFetchingFeed: true });
+        
+        try {
+          let cursorParam = cursor ? `&cursor=${cursor}` : '';
+          console.log(`[FEED STORE] fetchReels API Request: cursor=${cursor}`);
+          let res = await apiClient.get(`/reels/feed?limit=${limit}&category=${category}${cursorParam}`);
+          
+          const formatVideoUrl = (url: string) => {
+            if (!url) return '';
+            if (url.includes('res.cloudinary.com') && url.toLowerCase().endsWith('.mov')) {
+              return url.replace(/\.mov$/i, '.mp4');
+            }
+            return url;
+          };
+
+          const fetchedReels = res.data.reels.map((r: any) => ({
+            id: r.id,
+            creatorId: r.creatorId,
+            creatorUsername: r.creator?.username || 'user',
+            creatorAvatar: r.creator?.avatar || getDefaultAvatar(r.creator?.username || 'user'),
+            creatorIsVerified: r.creator?.isVerified || false,
+            videoUrl: formatVideoUrl(r.mediaUrl),
+            thumbnailUrl: r.thumbnailUrl || formatVideoUrl(r.mediaUrl), 
+            description: r.description || '',
+            musicName: r.musicName || 'Original Audio',
+            likesCount: r.likesCount || 0,
+            commentsCount: r.commentsCount || 0,
+            savesCount: r.savesCount || 0,
+            sharesCount: r.sharesCount || 0,
+            viewsCount: r.viewsCount || 0,
+            isLiked: false, 
+            isSaved: false,
+            category: r.category || 'lifestyle',
+            isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
+            location: { city: 'Bengaluru', latitude: r.latitude || 12.9716, longitude: r.longitude || 77.5946 }
+          }));
+
+          set((state) => {
+            const existingIds = new Set(state.reels.map(r => r.id));
+            const newReels = fetchedReels.filter((r: any) => !existingIds.has(r.id));
+            const finalReels = cursor ? [...state.reels, ...newReels] : fetchedReels;
+            
+            console.log(`[FEED STORE] Home State Update: cursor=${cursor}, newCursor=${res.data.nextCursor}`);
+            
+            return {
+              reels: finalReels,
+              homeNextCursor: res.data.nextCursor
+            };
+          });
+        } catch (error) {
+          console.error("Error fetching reels:", error);
+        } finally {
+          set({ isFetchingFeed: false });
+        }
+      },
+      fetchExploreReels: async (page = 1, limit = 10, category = 'all') => {
+        if (get().isFetchingFeed) return;
+        set({ isFetchingFeed: true });
+        
         try {
           const currentReels = get().reels;
           const seenIds = get().seenReelIds;
           
-          // Combine persistent seenIds with current page reels, taking up to 50 max
           let allExcludeIds = page === 1 ? [...seenIds] : [...seenIds, ...currentReels.map(r => r.id)];
-          // Only send the last 50 to avoid huge query strings
           let excludeIdsParam = allExcludeIds.slice(-50).join(',');
           
-          let res = await apiClient.get(`/reels/feed?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIdsParam}`);
+          console.log(`[FEED STORE] fetchExploreReels API Request: page=${page}`);
+          let res = await apiClient.get(`/reels/explore?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIdsParam}`);
           
-          // Fallback: If we exhausted the pool, clear seenReels and retry once!
           if (res.data.length === 0 && seenIds.length > 0) {
-            console.log("Feed exhausted! Clearing seenReelIds and looping.");
             get().clearSeenReels();
             excludeIdsParam = page === 1 ? '' : currentReels.map(r => r.id).join(',');
-            res = await apiClient.get(`/reels/feed?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIdsParam}`);
+            res = await apiClient.get(`/reels/explore?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIdsParam}`);
           }
+
+          const formatVideoUrl = (url: string) => {
+            if (!url) return '';
+            // Android cannot play iOS .mov files natively. Cloudinary can auto-transcode if we change the extension.
+            if (url.includes('res.cloudinary.com') && url.toLowerCase().endsWith('.mov')) {
+              return url.replace(/\.mov$/i, '.mp4');
+            }
+            return url;
+          };
 
           const fetchedReels = res.data.map((r: any) => ({
             id: r.id,
@@ -256,8 +355,8 @@ export const useFeedStore = create<FeedState>()(
             creatorUsername: r.creator?.username || 'user',
             creatorAvatar: r.creator?.avatar || getDefaultAvatar(r.creator?.username || 'user'),
             creatorIsVerified: r.creator?.isVerified || false,
-            videoUrl: r.mediaUrl, // Maps backend mediaUrl to frontend videoUrl
-            thumbnailUrl: r.thumbnailUrl || r.mediaUrl, 
+            videoUrl: formatVideoUrl(r.mediaUrl), // Maps backend mediaUrl to frontend videoUrl and fixes .mov
+            thumbnailUrl: r.thumbnailUrl || formatVideoUrl(r.mediaUrl), 
             description: r.description || '', // Maps backend description to frontend description
             musicName: r.musicName || 'Original Audio',
             likesCount: r.likesCount || 0,
@@ -275,25 +374,41 @@ export const useFeedStore = create<FeedState>()(
           set((state) => {
             const existingIds = new Set(state.reels.map(r => r.id));
             const newReels = fetchedReels.filter((r: any) => !existingIds.has(r.id));
+            const finalReels = page === 1 ? fetchedReels : [...state.reels, ...newReels];
+            
+            console.log(`[FEED STORE] State Update: page=${page}`);
+            console.log(`[FEED STORE] Fetched IDs: ${fetchedReels.map((r: any) => r.id).join(', ')}`);
+            console.log(`[FEED STORE] Final Reels Count: ${finalReels.length}`);
+            
             return {
-              reels: page === 1 ? fetchedReels : [...state.reels, ...newReels]
+              reels: finalReels
             };
           });
         } catch (error) {
           console.error("Error fetching reels:", error);
+        } finally {
+          set({ isFetchingFeed: false });
         }
       },
       fetchFollowingReels: async (page = 1, limit = 10) => {
         try {
           const res = await apiClient.get(`/reels/following?page=${page}&limit=${limit}`);
+          const formatVideoUrl = (url: string) => {
+            if (!url) return '';
+            if (url.includes('res.cloudinary.com') && url.toLowerCase().endsWith('.mov')) {
+              return url.replace(/\.mov$/i, '.mp4');
+            }
+            return url;
+          };
+
           const fetchedReels = res.data.map((r: any) => ({
             id: r.id,
             creatorId: r.creatorId,
             creatorUsername: r.creator?.username || 'user',
             creatorAvatar: r.creator?.avatar || getDefaultAvatar(r.creator?.username || 'user'),
             creatorIsVerified: r.creator?.isVerified || false,
-            videoUrl: r.mediaUrl,
-            thumbnailUrl: r.thumbnailUrl || r.mediaUrl, 
+            videoUrl: formatVideoUrl(r.mediaUrl),
+            thumbnailUrl: r.thumbnailUrl || formatVideoUrl(r.mediaUrl), 
             description: r.description || '',
             musicName: r.musicName || 'Original Audio',
             likesCount: r.likesCount || 0,
@@ -332,6 +447,14 @@ export const useFeedStore = create<FeedState>()(
       fetchLikedReels: async () => {
         try {
           const res = await apiClient.get('/reels/liked');
+          const formatVideoUrl = (url: string) => {
+            if (!url) return '';
+            if (url.includes('res.cloudinary.com') && url.toLowerCase().endsWith('.mov')) {
+              return url.replace(/\.mov$/i, '.mp4');
+            }
+            return url;
+          };
+
           const fetchedReels = res.data.map((r: any) => ({
             id: r.id,
             creatorId: r.creatorId,
@@ -339,8 +462,8 @@ export const useFeedStore = create<FeedState>()(
             creatorUsername: r.creator?.username || 'user',
             creatorAvatar: r.creator?.avatar || getDefaultAvatar(r.creator?.username || 'user'),
             creatorIsVerified: r.creator?.isVerified || false,
-            videoUrl: r.mediaUrl,
-            thumbnailUrl: r.thumbnailUrl || r.mediaUrl, 
+            videoUrl: formatVideoUrl(r.mediaUrl),
+            thumbnailUrl: r.thumbnailUrl || formatVideoUrl(r.mediaUrl), 
             description: r.description || '',
             musicName: r.musicName || 'Original Audio',
             likesCount: r.likesCount || 0,
@@ -362,6 +485,14 @@ export const useFeedStore = create<FeedState>()(
       fetchWatchHistory: async () => {
         try {
           const res = await apiClient.get('/reels/history');
+          const formatVideoUrl = (url: string) => {
+            if (!url) return '';
+            if (url.includes('res.cloudinary.com') && url.toLowerCase().endsWith('.mov')) {
+              return url.replace(/\.mov$/i, '.mp4');
+            }
+            return url;
+          };
+
           const fetchedReels = res.data.map((r: any) => ({
             id: r.id,
             creatorId: r.creatorId,
@@ -369,8 +500,8 @@ export const useFeedStore = create<FeedState>()(
             creatorUsername: r.creator?.username || 'user',
             creatorAvatar: r.creator?.avatar || getDefaultAvatar(r.creator?.username || 'user'),
             creatorIsVerified: r.creator?.isVerified || false,
-            videoUrl: r.mediaUrl,
-            thumbnailUrl: r.thumbnailUrl || r.mediaUrl, 
+            videoUrl: formatVideoUrl(r.mediaUrl),
+            thumbnailUrl: r.thumbnailUrl || formatVideoUrl(r.mediaUrl), 
             description: r.description || '',
             musicName: r.musicName || 'Original Audio',
             likesCount: r.likesCount || 0,
@@ -392,6 +523,15 @@ export const useFeedStore = create<FeedState>()(
       fetchUserReels: async (userId: string) => {
         try {
           const res = await apiClient.get(`/reels/user/${userId}`);
+          console.log(`[FEED STORE] fetchUserReels API Response: Profile query result count for user ${userId} is ${res.data.length}`);
+          const formatVideoUrl = (url: string) => {
+            if (!url) return '';
+            if (url.includes('res.cloudinary.com') && url.toLowerCase().endsWith('.mov')) {
+              return url.replace(/\.mov$/i, '.mp4');
+            }
+            return url;
+          };
+
           const fetchedReels = res.data.map((r: any) => ({
             id: r.id,
             creatorId: r.creatorId,
@@ -399,8 +539,8 @@ export const useFeedStore = create<FeedState>()(
             creatorUsername: r.creator?.username || 'user',
             creatorAvatar: r.creator?.avatar || getDefaultAvatar(r.creator?.username || 'user'),
             creatorIsVerified: r.creator?.isVerified || false,
-            videoUrl: r.mediaUrl,
-            thumbnailUrl: r.thumbnailUrl || r.mediaUrl, 
+            videoUrl: formatVideoUrl(r.mediaUrl),
+            thumbnailUrl: r.thumbnailUrl || formatVideoUrl(r.mediaUrl), 
             description: r.description || '',
             musicName: r.musicName || 'Original Audio',
             likesCount: r.likesCount || 0,
@@ -462,7 +602,10 @@ export const useFeedStore = create<FeedState>()(
     }),
     {
       name: 'popli-feed-store-v2',
-      storage: createJSONStorage(() => mmkvStoreStorage)
+      storage: createJSONStorage(() => mmkvStoreStorage),
+      partialize: (state) => Object.fromEntries(
+        Object.entries(state).filter(([key]) => !['userReels'].includes(key))
+      ) as any
     }
   )
 );

@@ -3,6 +3,7 @@ import { View, Text, TextInput, Image, ScrollView, Pressable, Dimensions, Keyboa
 import { Search, QrCode, TrendingUp, Compass, Award, ShieldAlert, Sparkles, Zap, Users, Trophy, ChevronLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useFeedStore, useAuthStore } from '../../store';
+import { useChallengeStore } from '../../store/challengeStore';
 import { apiClient } from '../../api/client';
 import { formatSocialCount } from '../../utils';
 import { MotiView } from 'moti';
@@ -13,14 +14,16 @@ export default function DiscoverScreen() {
   const router = useRouter();
   const { creators, reels, fetchCreators } = useFeedStore();
   const { followingIds, toggleFollow } = useAuthStore();
+  const { activeChallenges, fetchActiveChallenges } = useChallengeStore();
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchCreators();
-  }, [fetchCreators]);
+    fetchActiveChallenges();
+  }, [fetchCreators, fetchActiveChallenges]);
 
   // Search State
-  const [searchResults, setSearchResults] = useState<{ users: any[], reels: any[] }>({ users: [], reels: [] });
+  const [searchResults, setSearchResults] = useState<{ users: any[], reels: any[], hashtags?: any[] }>({ users: [], reels: [] });
   const [isSearching, setIsSearching] = useState(false);
 
   // Debounced Search
@@ -29,7 +32,7 @@ export default function DiscoverScreen() {
       if (searchQuery.trim().length > 0) {
         setIsSearching(true);
         try {
-          const res = await apiClient.get(`/search?q=${searchQuery.trim()}`);
+          const res = await apiClient.get(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
           setSearchResults(res.data);
         } catch (error) {
           console.error("Search failed:", error);
@@ -129,6 +132,31 @@ export default function DiscoverScreen() {
                   </View>
                 )}
 
+                {/* Hashtags Results */}
+                {searchResults.hashtags && searchResults.hashtags.length > 0 && (
+                  <View className="gap-4">
+                    <Text className="text-white font-bold text-sm">Hashtags</Text>
+                    {searchResults.hashtags.map((tag: any) => (
+                      <Pressable
+                        key={tag.id}
+                        onPress={() => router.push(`/hashtag/${tag.name}`)}
+                        className="flex-row items-center justify-between bg-[#1D1037]/60 p-3 rounded-xl border border-white/5"
+                      >
+                        <View className="flex-row items-center gap-3">
+                          <View className="w-12 h-12 bg-[#8B5CF6]/20 rounded-full items-center justify-center border border-[#8B5CF6]/50">
+                            <Text className="text-[#D946EF] font-bold text-xl">#</Text>
+                          </View>
+                          <View>
+                            <Text className="text-white font-bold text-sm">#{tag.name}</Text>
+                            <Text className="text-white/50 text-xs">{formatSocialCount(tag.usageCount)} posts</Text>
+                          </View>
+                        </View>
+                        <ChevronLeft size={20} color="rgba(255, 255, 255, 0.3)" style={{ transform: [{ rotate: '180deg' }] }} />
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+
                 {/* Reels Results */}
                 {searchResults.reels.length > 0 && (
                   <View className="gap-4">
@@ -137,6 +165,7 @@ export default function DiscoverScreen() {
                       {searchResults.reels.map((reel: any) => (
                         <Pressable
                           key={reel.id}
+                          onPress={() => router.push(`/reel/${reel.id}`)}
                           className="w-[48%] h-60 rounded-2xl border border-white/5 relative overflow-hidden"
                         >
                           <Image
@@ -157,9 +186,9 @@ export default function DiscoverScreen() {
                   </View>
                 )}
 
-                {searchResults.users.length === 0 && searchResults.reels.length === 0 && (
+                {!searchResults.users.length && !searchResults.reels.length && !searchResults.hashtags?.length && (
                   <View className="items-center py-10">
-                    <Text className="text-white/50 text-sm">No results found for "{searchQuery}"</Text>
+                    <Text className="text-white/50 text-sm">No results found for &quot;{searchQuery}&quot;</Text>
                   </View>
                 )}
               </>
@@ -174,7 +203,7 @@ export default function DiscoverScreen() {
             <View className="gap-4">
               <View className="flex-row items-center justify-between px-4">
                 <Text className="text-white font-bold text-sm">Trending</Text>
-                <Pressable onPress={() => alert('View all trending tags')} className="active:opacity-70">
+                <Pressable onPress={() => router.push('/view-all/trending')} className="active:opacity-70">
                   <Text className="text-[#D946EF] text-xs font-bold py-1">View all</Text>
                 </Pressable>
               </View>
@@ -201,7 +230,7 @@ export default function DiscoverScreen() {
             <View className="gap-4">
               <View className="flex-row items-center justify-between px-4">
                 <Text className="text-white font-bold text-sm">Creators Near You</Text>
-                <Pressable onPress={() => alert('See all nearby creators')} className="active:opacity-70">
+                <Pressable onPress={() => router.push('/view-all/creators')} className="active:opacity-70">
                   <Text className="text-[#D946EF] text-xs font-bold py-1">See all</Text>
                 </Pressable>
               </View>
@@ -253,8 +282,8 @@ export default function DiscoverScreen() {
                   const rank = index + 1;
                   const rankColors = ['bg-[#FBBF24]', 'bg-gray-400', 'bg-[#F59E0B]', 'bg-[#C4B5FD]', 'bg-[#4B5563]'];
                   const rankColor = rankColors[index] || 'bg-[#4B5563]';
-                  // Generating a realistic earning based on followers for the presentation
-                  const earnings = creator.followersCount * 130 + (10 - index) * 10;
+                  // Use actual earnings from the backend, default to 0 if not present
+                  const earnings = creator.coinsEarned || 0;
                   
                   return (
                     <Pressable
@@ -297,7 +326,7 @@ export default function DiscoverScreen() {
                 {suggestedReels.map((reel, index) => (
                   <Pressable
                     key={reel.id}
-                    onPress={() => router.push('/')}
+                    onPress={() => router.push(`/reel/${reel.id}`)}
                     className="w-[48%] h-60 rounded-2xl border border-white/5 relative overflow-hidden active:opacity-80 transition-opacity bg-[#1D1037]"
                   >
                     <Image
@@ -320,93 +349,47 @@ export default function DiscoverScreen() {
             </View>
 
 
-            {/* 7. TRENDING CHALLENGES FROM SCREENSHOTS */}
+            {/* 7. DYNAMIC TRENDING CHALLENGES */}
             <View className="px-4 gap-4 mt-8">
               <Text className="text-white font-bold text-[17px]">Trending Challenges</Text>
               
-              {/* Challenge 1: FitnessGoals */}
-              <Pressable 
-                onPress={() => router.push({ pathname: '/challenge/[id]' as any, params: { id: 'fitness' } })}
-                className="bg-[#231545] rounded-2xl p-4 border border-[#3E2B5C] active:scale-[0.98] transition-transform"
-              >
-                <View className="flex-row justify-between items-center mb-1">
-                  <Text className="text-[#A855F7] font-bold text-xs">#FitnessGoals</Text>
-                  <View className="bg-[#B45309]/20 px-2 py-0.5 rounded border border-[#F59E0B]/20">
-                    <Text className="text-[#FCD34D] text-[10px] font-bold">NEW</Text>
-                  </View>
+              {activeChallenges.length === 0 ? (
+                <View className="bg-[#231545] rounded-2xl p-6 border border-[#3E2B5C] items-center">
+                  <Trophy size={32} color="#A855F7" className="mb-2 opacity-50" />
+                  <Text className="text-white/60 text-sm font-medium">No active challenges at the moment</Text>
                 </View>
-                <Text className="text-white font-bold text-xl mb-2">30-Day Transformation</Text>
-                <View className="flex-row items-center gap-1.5 mb-4">
-                  <Users size={14} color="#9CA3AF" />
-                  <Text className="text-gray-400 text-xs">441 participants</Text>
-                </View>
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center gap-1.5 flex-1 pr-2">
-                    <Trophy size={14} color="#FCD34D" />
-                    <Text className="text-[#FCD34D] text-xs font-medium flex-shrink">Win up to ₹2,500 & Platform Feature</Text>
-                  </View>
-                  <View className="bg-[#10B981]/10 px-4 py-2 rounded-xl flex-row items-center gap-1.5 border border-[#10B981]/30">
-                    <View className="w-4 h-4 rounded-full border border-[#10B981] items-center justify-center">
-                      <Text className="text-[#10B981] text-[10px] font-bold">✓</Text>
+              ) : (
+                activeChallenges.map((challenge: any) => (
+                  <Pressable 
+                    key={challenge.id}
+                    onPress={() => router.push({ pathname: '/challenge/[id]' as any, params: { id: challenge.id } })}
+                    className="bg-[#231545] rounded-2xl p-4 border border-[#3E2B5C] active:scale-[0.98] transition-transform"
+                  >
+                    <View className="flex-row justify-between items-center mb-1">
+                      <Text className="text-[#A855F7] font-bold text-xs">{challenge.hashtagName || 'Challenge'}</Text>
+                      <View className="bg-[#B45309]/20 px-2 py-0.5 rounded border border-[#F59E0B]/20">
+                        <Text className="text-[#FCD34D] text-[10px] font-bold">ACTIVE</Text>
+                      </View>
                     </View>
-                    <Text className="text-[#10B981] font-bold text-sm">Entered</Text>
-                  </View>
-                </View>
-              </Pressable>
-
-              {/* Challenge 2: ComedySkit */}
-              <Pressable 
-                onPress={() => router.push({ pathname: '/challenge/[id]' as any, params: { id: 'comedy' } })}
-                className="bg-[#231545] rounded-2xl p-4 border border-[#3E2B5C] active:scale-[0.98] transition-transform"
-              >
-                <View className="flex-row justify-between items-center mb-1">
-                  <Text className="text-[#A855F7] font-bold text-xs">#ComedySkit</Text>
-                  <View className="bg-[#B45309]/20 px-2 py-0.5 rounded border border-[#F59E0B]/20">
-                    <Text className="text-[#FCD34D] text-[10px] font-bold">ENDS IN 3 DAYS</Text>
-                  </View>
-                </View>
-                <Text className="text-white font-bold text-xl mb-2">Make India Laugh Challenge</Text>
-                <View className="flex-row items-center gap-1.5 mb-4">
-                  <Users size={14} color="#9CA3AF" />
-                  <Text className="text-gray-400 text-xs">864 participants</Text>
-                </View>
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center gap-1.5 flex-1 pr-2">
-                    <Trophy size={14} color="#FCD34D" />
-                    <Text className="text-[#FCD34D] text-xs font-medium flex-shrink">Win up to ₹5,000 & Platform Feature</Text>
-                  </View>
-                  <View className="bg-[#8B5CF6] px-6 py-2.5 rounded-xl">
-                    <Text className="text-white font-bold text-sm">Join</Text>
-                  </View>
-                </View>
-              </Pressable>
-
-              {/* Challenge 3: DanceChallenge */}
-              <Pressable 
-                onPress={() => router.push({ pathname: '/challenge/[id]' as any, params: { id: 'dance' } })}
-                className="bg-[#231545] rounded-2xl p-4 border border-[#3E2B5C] active:scale-[0.98] transition-transform"
-              >
-                <View className="flex-row justify-between items-center mb-1">
-                  <Text className="text-[#A855F7] font-bold text-xs">#DanceChallenge</Text>
-                  <View className="bg-[#8B5CF6]/20 px-2 py-0.5 rounded border border-[#8B5CF6]/30">
-                    <Text className="text-[#C4B5FD] text-[10px] font-bold">LIVE NOW</Text>
-                  </View>
-                </View>
-                <Text className="text-white font-bold text-xl mb-2">Popli Dance Showdown 2026</Text>
-                <View className="flex-row items-center gap-1.5 mb-4">
-                  <Users size={14} color="#9CA3AF" />
-                  <Text className="text-gray-400 text-xs">1249 participants</Text>
-                </View>
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center gap-1.5 flex-1 pr-2">
-                    <Trophy size={14} color="#FCD34D" />
-                    <Text className="text-[#FCD34D] text-xs font-medium flex-shrink">Win up to ₹10,000 & Platform Feature</Text>
-                  </View>
-                  <View className="bg-[#8B5CF6] px-6 py-2.5 rounded-xl">
-                    <Text className="text-white font-bold text-sm">Join</Text>
-                  </View>
-                </View>
-              </Pressable>
+                    <Text className="text-white font-bold text-xl mb-2">{challenge.title}</Text>
+                    <View className="flex-row items-center gap-1.5 mb-4">
+                      <Users size={14} color="#9CA3AF" />
+                      <Text className="text-gray-400 text-xs">{challenge.participantCount} participants</Text>
+                    </View>
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-1.5 flex-1 pr-2">
+                        <Trophy size={14} color="#FCD34D" />
+                        <Text className="text-[#FCD34D] text-xs font-medium flex-shrink">
+                          Reward Pool: ₹{challenge.rewardPool}
+                        </Text>
+                      </View>
+                      <View className="bg-[#8B5CF6] px-6 py-2.5 rounded-xl">
+                        <Text className="text-white font-bold text-sm">View</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))
+              )}
             </View>
           </>
         )}

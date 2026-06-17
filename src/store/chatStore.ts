@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Creator, Reel, Comment, Chat, Message, NotificationItem, TransactionItem, GiftType } from '../types';
@@ -29,6 +31,9 @@ interface ChatState {
   fetchChats: () => Promise<void>;
   fetchMessages: (chatId: string) => Promise<void>;
   fetchNotifications: () => Promise<void>;
+  fetchNextNotifications: () => Promise<void>;
+  notificationsCursor?: string;
+  hasMoreNotifications: boolean;
 }
 
 // Keep a reference to the active socket outside the store state 
@@ -41,6 +46,8 @@ export const useChatStore = create<ChatState>()(
       chats: [],
       messages: [],
       notifications: [],
+      notificationsCursor: undefined,
+      hasMoreNotifications: true,
       isTyping: {},
       mutedChats: [],
       toggleMuteChat: (chatId) => {
@@ -53,7 +60,8 @@ export const useChatStore = create<ChatState>()(
       connectSocket: () => {
         if (socket?.connected) return;
         
-        const { useAuthStore } = require('./authStore');
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const { useAuthStore } = require('./authStore');
         const token = useAuthStore.getState().token;
         if (!token) return;
 
@@ -76,6 +84,8 @@ export const useChatStore = create<ChatState>()(
               senderId: message.senderId,
               text: message.text,
               mediaUrl: message.mediaUrl,
+              type: message.type,
+              storyId: message.storyId,
               timestamp: formatRelativeTime(message.createdAt || new Date().toISOString()),
               status: 'seen'
             };
@@ -103,6 +113,14 @@ export const useChatStore = create<ChatState>()(
           set((state) => ({ isTyping: { ...state.isTyping, [data.chatId]: data.isTyping } }));
         });
 
+        socket.on('new_notification', (notification: any) => {
+          set((state) => {
+            const exists = state.notifications.some(n => n.id === notification.id);
+            if (exists) return state;
+            return { notifications: [notification, ...state.notifications] };
+          });
+        });
+
         socket.on('disconnect', () => {
           console.log('Chat socket disconnected');
         });
@@ -124,6 +142,8 @@ export const useChatStore = create<ChatState>()(
             senderId: rawMsg.senderId,
             text: rawMsg.text,
             mediaUrl: rawMsg.mediaUrl,
+            type: rawMsg.type,
+            storyId: rawMsg.storyId,
             timestamp: formatRelativeTime(rawMsg.createdAt || new Date().toISOString()),
             status: 'seen'
           };
@@ -161,7 +181,7 @@ export const useChatStore = create<ChatState>()(
           console.error("Failed to send direct message:", error);
         }
       },
-      markChatRead: (chatId) =>
+      markChatRead: async (chatId) => {
         set((state) => ({
           chats: state.chats.map((c) => {
             if (c.id === chatId) {
@@ -169,7 +189,13 @@ export const useChatStore = create<ChatState>()(
             }
             return c;
           })
-        })),
+        }));
+        try {
+          await apiClient.post(`/chats/${chatId}/read`);
+        } catch (error) {
+          console.error("Failed to mark chat read on backend", error);
+        }
+      },
       deleteChat: async (chatId) => {
         try {
           await apiClient.delete(`/chats/${chatId}`);
@@ -195,7 +221,8 @@ export const useChatStore = create<ChatState>()(
           notifications: state.notifications.map((n) => ({ ...n, isRead: true }))
         }));
         try {
-          await apiClient.post('/notifications/read-all');
+          const { notificationsApi } = require('../api/services');
+          await notificationsApi.markAllRead();
         } catch (e) {
           console.error("Failed to mark notifications read:", e);
         }
@@ -232,6 +259,8 @@ export const useChatStore = create<ChatState>()(
             senderId: m.senderId,
             text: m.text,
             mediaUrl: m.mediaUrl,
+            type: m.type,
+            storyId: m.storyId,
             timestamp: formatRelativeTime(m.createdAt),
             status: 'seen'
           }));
@@ -246,21 +275,58 @@ export const useChatStore = create<ChatState>()(
       },
       fetchNotifications: async () => {
         try {
-          const res = await apiClient.get('/notifications');
-          const formattedNotifs = res.data.map((n: any) => ({
+          const { notificationsApi } = require('../api/services');
+          const res = await notificationsApi.getNotifications();
+          const rawNotifications = res.data.notifications || res.data;
+          
+          const formattedNotifs = rawNotifications.map((n: any) => ({
             id: n.id,
             type: n.type,
             title: n.title,
             body: n.body,
-            senderName: n.sender?.username,
-            senderAvatar: n.sender?.avatar,
-            timestamp: formatRelativeTime(n.createdAt),
+            senderName: n.senderAvatar ? n.user?.name || 'User' : (n.sender?.username || 'User'),
+            senderAvatar: n.senderAvatar || n.sender?.avatar || 'https://i.pravatar.cc/150',
+            timestamp: n.createdAt,
             isRead: n.isRead,
-            coinsCount: n.type === 'gift' ? 100 : undefined // default mock coins for gifts
+            coinsCount: n.type === 'gift' ? 100 : undefined
           }));
-          set({ notifications: formattedNotifs });
+          set({ 
+            notifications: formattedNotifs, 
+            notificationsCursor: res.data.nextCursor,
+            hasMoreNotifications: !!res.data.nextCursor
+          });
         } catch (error) {
           console.error("Failed to fetch notifications:", error);
+        }
+      },
+      fetchNextNotifications: async () => {
+        const state = get();
+        if (!state.hasMoreNotifications || !state.notificationsCursor) return;
+        
+        try {
+          const { notificationsApi } = require('../api/services');
+          const res = await notificationsApi.getNotifications(state.notificationsCursor);
+          const rawNotifications = res.data.notifications || res.data;
+          
+          const formattedNotifs = rawNotifications.map((n: any) => ({
+            id: n.id,
+            type: n.type,
+            title: n.title,
+            body: n.body,
+            senderName: n.senderAvatar ? n.user?.name || 'User' : (n.sender?.username || 'User'),
+            senderAvatar: n.senderAvatar || n.sender?.avatar || 'https://i.pravatar.cc/150',
+            timestamp: n.createdAt,
+            isRead: n.isRead,
+            coinsCount: n.type === 'gift' ? 100 : undefined
+          }));
+          
+          set({ 
+            notifications: [...state.notifications, ...formattedNotifs], 
+            notificationsCursor: res.data.nextCursor,
+            hasMoreNotifications: !!res.data.nextCursor
+          });
+        } catch (error) {
+          console.error("Failed to fetch next notifications:", error);
         }
       }
     }),

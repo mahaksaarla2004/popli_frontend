@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Creator, Reel, Comment, Chat, Message, NotificationItem, TransactionItem, GiftType } from '../types';
@@ -21,21 +23,30 @@ export interface Story {
   reactions: Record<string, string[]>;
   layersData?: any;
   createdAt: string;
+  originalStoryId?: string;
+  originalOwnerId?: string;
+  originalOwnerUsername?: string;
 }
 
 interface StoryState {
   stories: Story[];
+  storyArchive: Story[];
   addStory: (story: Story) => void;
   markStoryViewed: (storyId: string, viewerId: string) => void;
   addReaction: (storyId: string, viewerId: string, emoji: string) => void;
   fetchStories: () => Promise<void>;
   deleteStory: (storyId: string) => Promise<void>;
+  isFetchingStories: boolean;
+  clearCache: () => void;
 }
 
 export const useStoryStore = create<StoryState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       stories: [],
+      storyArchive: [],
+      isFetchingStories: false,
+      clearCache: () => set({ stories: [], storyArchive: [], isFetchingStories: false }),
       addStory: (story) => set((state) => ({ stories: [story, ...state.stories] })),
       markStoryViewed: async (storyId, viewerId) => {
         // Optimistic UI Update
@@ -78,6 +89,7 @@ export const useStoryStore = create<StoryState>()(
         }
       },
       fetchStories: async () => {
+        set({ isFetchingStories: true });
         try {
           const res = await apiClient.get('/stories');
           const formattedStories = res.data.map((s: any) => ({
@@ -91,7 +103,10 @@ export const useStoryStore = create<StoryState>()(
             repliesAllowed: s.repliesAllowed,
             reactions: {}, // Can be populated if backend provides reactions
             layersData: s.layersData,
-            createdAt: s.createdAt || new Date().toISOString()
+            createdAt: s.createdAt || new Date().toISOString(),
+            originalStoryId: s.originalStoryId,
+            originalOwnerId: s.originalOwnerId,
+            originalOwnerUsername: s.originalOwnerUsername
           }));
           set({ stories: formattedStories });
         } catch (error: any) {
@@ -100,6 +115,8 @@ export const useStoryStore = create<StoryState>()(
           } else {
             console.error("Error fetching stories:", error.message);
           }
+        } finally {
+          set({ isFetchingStories: false });
         }
       },
       deleteStory: async (storyId) => {
@@ -115,7 +132,11 @@ export const useStoryStore = create<StoryState>()(
     }),
     {
       name: 'popli-story-store',
-      storage: createJSONStorage(() => mmkvStoreStorage)
+      storage: createJSONStorage(() => mmkvStoreStorage),
+      partialize: (state) => ({
+        stories: state.stories,
+        storyArchive: state.storyArchive
+      })
     }
   )
 );

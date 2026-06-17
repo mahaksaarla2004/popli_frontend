@@ -3,6 +3,7 @@ import { View, Text, Image, Pressable, ScrollView, Dimensions, ActivityIndicator
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, MapPin, Award, Play, LayoutGrid } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinksSheet } from '../../components/sheets/LinksSheet';
 import { apiClient } from '../../api/client';
 import { useAuthStore, useChatStore, useFeedStore } from '../../store';
 import { getDefaultAvatar, formatSocialCount } from '../../utils';
@@ -19,6 +20,7 @@ export default function PublicProfileScreen() {
   const [profile, setProfile] = useState<any>(cachedProfile || null);
   const [loading, setLoading] = useState(!cachedProfile);
   const [error, setError] = useState('');
+  const [isLinksSheetOpen, setIsLinksSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'reels' | 'awards'>('reels');
 
   const { followingIds, toggleFollow, userProfile, blockedUsers, toggleBlock } = useAuthStore();
@@ -118,6 +120,28 @@ export default function PublicProfileScreen() {
               <Text className="text-primary-pink text-xs font-semibold mt-0.5">{profile.category.toUpperCase()}</Text>
             )}
             <Text className="text-white/80 mt-1 leading-5">{profile.bio}</Text>
+            
+            {profile.socialLinks && profile.socialLinks.length > 0 && (
+              <Pressable 
+                onPress={() => {
+                  if (profile.socialLinks.length === 1) {
+                    let url = profile.socialLinks[0].url;
+                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                      url = 'https://' + url;
+                    }
+                    import('react-native').then(rn => rn.Linking.openURL(url));
+                  } else {
+                    setIsLinksSheetOpen(true);
+                  }
+                }}
+                className="mt-2"
+              >
+                <Text className="text-[#D946EF] text-sm font-bold">
+                  {profile.socialLinks[0].title || profile.socialLinks[0].url.replace(/^https?:\/\//, '').split('/')[0]}
+                  {profile.socialLinks.length > 1 ? ` and ${profile.socialLinks.length - 1} other${profile.socialLinks.length > 2 ? 's' : ''}` : ''}
+                </Text>
+              </Pressable>
+            )}
             
             <View className="flex-row items-center mt-2">
               <MapPin size={14} color="#9CA3AF" />
@@ -252,7 +276,7 @@ export default function PublicProfileScreen() {
                 </View>
                 <Text className="text-white font-bold text-lg text-center mb-2">Awards & Gifts</Text>
                 <Text className="text-neutral-silver text-sm text-center">
-                  This user hasn't received any public awards or gifts yet.
+                  This user hasn&apos;t received any public awards or gifts yet.
                 </Text>
               </View>
             )}
@@ -262,6 +286,12 @@ export default function PublicProfileScreen() {
         {/* Bottom Spacing */}
         <View className="h-24" />
       </ScrollView>
+
+      <LinksSheet 
+        isVisible={isLinksSheetOpen} 
+        onClose={() => setIsLinksSheetOpen(false)} 
+        links={profile?.socialLinks || []} 
+      />
     </SafeAreaView>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { AlignLeft, AlignCenter, AlignRight, Type } from 'lucide-react-native';
+import { apiClient } from '../../api/client';
 
 interface TextEditorOverlayProps {
   initialText?: string;
@@ -35,7 +36,48 @@ export default function TextEditorOverlay({ initialText = '', onComplete }: Text
   const [align, setAlign] = useState<'left' | 'center' | 'right'>('center');
   const [bgStyle, setBgStyle] = useState<'none' | 'solid' | 'transparent'>('none');
   
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const inputRef = useRef<TextInput>(null);
+
+  const handleTextChange = (newText: string) => {
+    setText(newText);
+    const match = newText.match(/@([\w.-]*)$/);
+    if (match) {
+      const query = match[1];
+      setMentionQuery(query);
+      
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+
+      timeoutRef.current = setTimeout(() => {
+        abortControllerRef.current = new AbortController();
+        apiClient.get(`/users/search?q=${query}`, { signal: abortControllerRef.current.signal })
+          .then(res => {
+            setSuggestions(Array.isArray(res.data) ? res.data : res.data.users || []);
+          })
+          .catch(err => {
+            if (err.name !== 'CanceledError') console.error('Mention search error:', err);
+          });
+      }, 300);
+    } else {
+      setMentionQuery(null);
+      setSuggestions([]);
+    }
+  };
+
+  const handleSelectSuggestion = (username: string) => {
+    if (mentionQuery !== null) {
+      const newText = text.replace(new RegExp(`@${mentionQuery}$`), `@${username} `);
+      setText(newText);
+      setMentionQuery(null);
+      setSuggestions([]);
+      inputRef.current?.focus();
+    }
+  };
 
   useEffect(() => {
     // Focus automatically when opened
@@ -115,7 +157,7 @@ export default function TextEditorOverlay({ initialText = '', onComplete }: Text
           <TextInput
             ref={inputRef}
             value={text}
-            onChangeText={setText}
+            onChangeText={handleTextChange}
             placeholder="Type something..."
             placeholderTextColor="rgba(255,255,255,0.5)"
             multiline
@@ -134,6 +176,28 @@ export default function TextEditorOverlay({ initialText = '', onComplete }: Text
       {/* Bottom Controls */}
       <View className="pb-8">
         
+        {/* Mention Suggestions */}
+        {suggestions.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 px-4 max-h-16">
+            <View className="flex-row gap-2">
+              {suggestions.map((user) => (
+                <Pressable
+                  key={user.id}
+                  onPress={() => handleSelectSuggestion(user.username)}
+                  className="bg-black/60 border border-white/20 rounded-full flex-row items-center px-3 py-2"
+                >
+                  <Image 
+                    source={{ uri: user.avatar || 'https://via.placeholder.com/150' }} 
+                    className="w-6 h-6 rounded-full bg-gray-600 mr-2" 
+                  />
+                  <Text className="text-white font-bold text-sm">@{user.username}</Text>
+                  {user.name && <Text className="text-white/60 text-xs ml-1">{user.name}</Text>}
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+
         {/* Font Selector */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6 px-4">
           <View className="flex-row gap-3">

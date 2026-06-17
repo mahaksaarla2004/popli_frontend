@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Creator, Reel, Comment, Chat, Message, NotificationItem, TransactionItem, GiftType } from '../types';
@@ -23,10 +25,12 @@ interface AuthState {
     followersCount: number;
     followingCount: number;
     giftsReceivedCount: number;
+    coinsEarned?: number;
     isVerified: boolean;
     isProfileComplete?: boolean;
     email?: string;
     phone?: string;
+    socialLinks?: { title: string; url: string }[];
   };
   followingIds: string[];
   theme: 'dark' | 'light';
@@ -99,7 +103,8 @@ export const useAuthStore = create<AuthState>()(
           await apiClient.put('/users/me', profile);
           
           // Also update the feedStore so reels instantly show the new name/username/avatar
-          const { useFeedStore } = require('./feedStore');
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const { useFeedStore } = require('./useFeedStore');
           useFeedStore.getState().updateCreatorInfo(useAuthStore.getState().userProfile.id, profile);
           
           return { success: true };
@@ -213,7 +218,42 @@ export const useAuthStore = create<AuthState>()(
         } catch (e) {
           console.error('Logout error', e);
         }
-        set({ isLoggedIn: false, followingIds: [], token: null });
+
+        // Fully reset auth state
+        set({ 
+          isLoggedIn: false, 
+          followingIds: [], 
+          token: null,
+          userProfile: {
+            id: '',
+            name: '',
+            username: '',
+            avatar: '',
+            bio: '',
+            city: '',
+            category: '',
+            followersCount: 0,
+            followingCount: 0,
+            giftsReceivedCount: 0,
+            isVerified: false
+          },
+          blockedUsers: [],
+          preferences: { isPrivateProfile: false }
+        });
+
+        // Trigger feedStore wipe
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const { useFeedStore } = require('./useFeedStore');
+          useFeedStore.getState().clearCache();
+        } catch(e) {}
+        
+        // Trigger storyStore wipe
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const { useStoryStore } = require('./useStoryStore');
+          useStoryStore.getState().clearCache();
+        } catch(e) {}
       }
     }),
     {

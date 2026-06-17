@@ -3,14 +3,18 @@ import { View, Text, TextInput, Pressable, Image, KeyboardAvoidingView, Platform
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, MapPin, Users, Lock, ChevronRight, Hash, Check } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
+import { useHashtagStore } from '../../store';
 
 export default function ShareScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ uri: string, type: string, mode: string, musicId?: string }>();
+  const params = useLocalSearchParams<{ uri: string, type: string, mode: string, musicId?: string, challengeId?: string }>();
   const [caption, setCaption] = useState('');
   const [location, setLocation] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isMonetized, setIsMonetized] = useState(true);
+
+  const { searchHashtags, searchSuggestions, isSearching: isHashtagSearching } = useHashtagStore();
+  const [activeHashtagQuery, setActiveHashtagQuery] = useState<string | null>(null);
 
   // Tagging State
   const [isTagModalVisible, setTagModalVisible] = useState(false);
@@ -44,6 +48,36 @@ export default function ShareScreen() {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleCaptionChange = (text: string) => {
+    setCaption(text);
+    
+    // Find if the cursor is at the end of a hashtag
+    const words = text.split(/[\s\n]+/);
+    const lastWord = words[words.length - 1];
+    
+    if (lastWord.startsWith('#') && lastWord.length > 1) {
+      setActiveHashtagQuery(lastWord);
+      searchHashtags(lastWord);
+    } else {
+      setActiveHashtagQuery(null);
+    }
+  };
+
+  const handleSelectHashtag = (tagName: string) => {
+    if (!activeHashtagQuery) return;
+    
+    const words = caption.split(/[\s\n]+/);
+    words.pop(); // Remove the partial hashtag
+    
+    // Join back, add the full hashtag and a space
+    const newCaption = words.length > 0 
+      ? `${words.join(' ')} #${tagName} ` 
+      : `#${tagName} `;
+      
+    setCaption(newCaption);
+    setActiveHashtagQuery(null);
   };
 
   const toggleTagUser = (user: any) => {
@@ -88,6 +122,7 @@ export default function ShareScreen() {
         taggedUserIds: taggedUsers.map((u: any) => u.id),
         category: selectedTopics.join(','),
         privacy: selectedPrivacy,
+        challengeId: params.challengeId,
         isMonetized
       } : {
         mediaUrl: uploadedUrl,
@@ -145,10 +180,34 @@ export default function ShareScreen() {
             placeholderTextColor="#9CA3AF"
             multiline
             value={caption}
-            onChangeText={setCaption}
+            onChangeText={handleCaptionChange}
             textAlignVertical="top"
           />
         </View>
+
+        {/* Hashtag Suggestions */}
+        {activeHashtagQuery && (
+          <View className="px-4 py-2 border-b border-white/5 bg-[#1A0E2C]">
+            {isHashtagSearching ? (
+              <ActivityIndicator size="small" color="#A855F7" />
+            ) : searchSuggestions.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {searchSuggestions.map((tag) => (
+                  <Pressable 
+                    key={tag.id} 
+                    onPress={() => handleSelectHashtag(tag.name)}
+                    className="mr-3 bg-[#3E2B5C] px-3 py-1.5 rounded-full flex-row items-center"
+                  >
+                    <Text className="text-white font-bold">#{tag.name}</Text>
+                    <Text className="text-white/50 text-xs ml-1">{tag.usageCount}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text className="text-white/50 text-xs">No matching hashtags</Text>
+            )}
+          </View>
+        )}
 
         {/* Options */}
         <View className="mt-2">

@@ -37,7 +37,7 @@ export default function RewardsScreen() {
   );
 
   const handleWithdrawClick = () => {
-    if (kycStatus === 'APPROVED' || kycStatus === 'COMPLETED') {
+    if (kycStatus === 'APPROVED' || kycStatus === 'COMPLETED' || kycStatus === 'PENDING') {
       router.push('/withdraw' as any);
     } else {
       router.push('/kyc' as any);
@@ -65,18 +65,43 @@ export default function RewardsScreen() {
 
   return (
     <View className="flex-1 bg-[#0D0518] pt-14">
-      {/* Header handled by Expo Router possibly, or we can add one */}
-      <View className="px-4 pb-4">
-        <Pressable
-          onPress={handleWithdrawClick}
-          className="bg-[#8B5CF6] w-full py-4 rounded-2xl flex-row justify-center items-center gap-2 active:scale-[0.98]"
-        >
-          <Text className="text-white font-bold text-lg">Withdraw Funds</Text>
-          <ArrowRight size={20} color="white" />
-        </Pressable>
+      {/* HEADER */}
+      <View className="px-4 pb-2 pt-2 flex-row justify-between items-center">
+        <Text className="text-white font-bold text-2xl">Creator Rewards</Text>
+        <Users size={24} color="white" />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}>
+        
+        {/* TOTAL BALANCE CARD */}
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-[24px] p-5 mb-6 shadow-lg mt-2">
+          <Text className="text-white/50 text-xs font-bold uppercase tracking-wider mb-1">Total Balance</Text>
+          <Text className="text-[#FBBF24] font-black text-4xl mb-3">₹{totalEarnings.toFixed(2)}</Text>
+          
+          <View className="self-start bg-[#10B981]/20 px-3 py-1.5 rounded-full mb-6">
+            <Text className="text-[#10B981] text-xs font-bold">↗ +0% from last month</Text>
+          </View>
+          
+          <View className="flex-row items-center justify-center mb-6 px-4">
+            <View className="items-center flex-1">
+              <Text className="text-white/50 text-[10px] mb-1">Tax (TDS)</Text>
+              <Text className="text-white font-bold text-lg">10%</Text>
+            </View>
+            <View className="w-[1px] h-8 bg-[#3E2B5C]" />
+            <View className="items-center flex-1">
+              <Text className="text-white/50 text-[10px] mb-1">Platform Fee</Text>
+              <Text className="text-white font-bold text-lg">2%</Text>
+            </View>
+          </View>
+
+          <Pressable
+            onPress={handleWithdrawClick}
+            className="bg-[#8B5CF6] w-full py-4 rounded-xl flex-row justify-center items-center gap-2 active:scale-[0.98]"
+          >
+            <Text className="text-white font-bold text-lg">Withdraw Funds</Text>
+            <ArrowRight size={20} color="white" />
+          </Pressable>
+        </View>
         {/* Earnings Breakdown */}
         <Text className="text-white font-bold text-lg mb-4">Earnings Breakdown</Text>
 

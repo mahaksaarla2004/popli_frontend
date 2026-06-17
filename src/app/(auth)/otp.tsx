@@ -31,8 +31,10 @@ export default function OTPScreen() {
 
   // Initialize otpArray size dynamically on mount or parameter changes
   useEffect(() => {
-    setOtpArray(Array(otpLength).fill(''));
-    setFocusedIndex(0);
+    setTimeout(() => {
+      setOtpArray(Array(otpLength).fill(''));
+      setFocusedIndex(0);
+    }, 0);
     // Focus first input box on load
     setTimeout(() => {
       hiddenInputRef.current?.focus();

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Image, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useEditorStore } from '../../store';
-import { ChevronLeft, ChevronRight, Type, Sticker as StickerIcon, Music as MusicIcon, MoreHorizontal, Download, Sparkles, Navigation, Send as SendIcon, PlusCircle, Play, Pause, Trash2, Pencil } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Type, Sticker as StickerIcon, Music as MusicIcon, MoreHorizontal, Download, Sparkles, Navigation, Send as SendIcon, PlusCircle, Play, Pause, Trash2, Pencil, VolumeX, Volume2 } from 'lucide-react-native';
 import { useAudioPlayer } from 'expo-audio';
 import DraggableLayer from '../../components/editor/DraggableLayer';
 import TextEditorOverlay, { TextLayerData } from '../../components/editor/TextEditorOverlay';
@@ -12,6 +12,11 @@ import DrawingOverlay, { DrawingPath } from '../../components/editor/DrawingOver
 import ReelTimelineEditor, { ReelTimelineData } from '../../components/editor/ReelTimelineEditor';
 import Svg, { Path, G } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
+
+import MusicPickerSheet from '../../components/sheets/MusicPickerSheet';
+import StickerSheet from '../../components/sheets/StickerSheet';
+import EffectsSheet from '../../components/sheets/EffectsSheet';
+import SendToSheet from '../../components/sheets/SendToSheet';
 
 export type EditorLayer = {
   id: string;
@@ -23,20 +28,20 @@ export type EditorLayer = {
   rotation: number;
 };
 
-import MusicPickerSheet from '../../components/sheets/MusicPickerSheet';
-import StickerSheet from '../../components/sheets/StickerSheet';
-import EffectsSheet from '../../components/sheets/EffectsSheet';
-import SendToSheet from '../../components/sheets/SendToSheet';
-
 export default function StoryEditorScreen() {
   const router = useRouter();
-  const { uri, mode, type, speed, effect, musicId } = useLocalSearchParams<{ 
+  const { uri, mode, type, speed, effect, musicId, originalStoryId, originalOwnerId, originalOwnerUsername, returnTo, challengeId } = useLocalSearchParams<{ 
     uri: string; 
     mode: string; 
     type?: string;
     speed?: string;
     effect?: string;
     musicId?: string;
+    originalStoryId?: string;
+    originalOwnerId?: string;
+    originalOwnerUsername?: string;
+    returnTo?: string;
+    challengeId?: string;
   }>();
 
   const setEditorData = useEditorStore(state => state.setEditorData);
@@ -53,6 +58,7 @@ export default function StoryEditorScreen() {
   const [textMode, setTextMode] = useState(false);
   const [drawingMode, setDrawingMode] = useState(false);
   const [storyText, setStoryText] = useState('');
+  const [isVideoMuted, setIsVideoMuted] = useState(false);
   
   const [showMusicSheet, setShowMusicSheet] = useState(false);
   const [showStickerSheet, setShowStickerSheet] = useState(false);
@@ -76,7 +82,8 @@ export default function StoryEditorScreen() {
   useFocusEffect(
     useCallback(() => {
       if (isVideo) {
-        try { videoPlayer?.play(); if (videoPlayer) videoPlayer.muted = false; } catch(e) {}
+        // eslint-disable-next-line react-hooks/immutability
+        try { videoPlayer?.play(); if (videoPlayer) videoPlayer.muted = isVideoMuted; } catch(e) {}
       }
       if (selectedMusic && isPlayingMusic) {
         try { audioPlayer?.play(); } catch(e) {}
@@ -85,8 +92,16 @@ export default function StoryEditorScreen() {
         try { audioPlayer?.pause(); } catch(e) {}
         try { if (videoPlayer) { videoPlayer.pause(); videoPlayer.muted = true; } } catch(e) {}
       };
-    }, [videoPlayer, audioPlayer, isVideo, selectedMusic, isPlayingMusic])
+    }, [videoPlayer, audioPlayer, isVideo, selectedMusic, isPlayingMusic, isVideoMuted])
   );
+
+  // Sync state changes explicitly
+  useEffect(() => {
+    if (videoPlayer) {
+      // eslint-disable-next-line react-hooks/immutability
+      videoPlayer.muted = isVideoMuted;
+    }
+  }, [isVideoMuted, videoPlayer]);
 
   const navigateToShare = (target: 'your_story' | 'close_friends' | 'share', targetUserIds?: string[]) => {
     try { audioPlayer?.pause(); } catch(e) {}
@@ -105,6 +120,12 @@ export default function StoryEditorScreen() {
         musicArtist: selectedMusic?.artist,
         musicUrl: selectedMusic?.audioUrl,
         isStory: 'true',
+        originalStoryId,
+        originalOwnerId,
+        originalOwnerUsername,
+        returnTo,
+        challengeId,
+        isVideoMuted: isVideoMuted ? 'true' : 'false',
         ...(targetUserIds && { targetUserIds: JSON.stringify(targetUserIds) })
       }
     });
@@ -120,6 +141,7 @@ export default function StoryEditorScreen() {
     if (musicData) {
       setSelectedMusic(musicData);
       setIsPlayingMusic(true);
+      setIsVideoMuted(true); // Mute video by default when music is added
       
       if (musicData.audioUrl) {
         audioPlayer?.replace(musicData.audioUrl);
@@ -386,16 +408,23 @@ export default function StoryEditorScreen() {
 
 
         {!textMode && !drawingMode && (
-          <View className="absolute top-12 left-0 right-0 px-4 flex-row justify-between items-center z-10 pt-2">
-            <Pressable onPress={() => router.back()} className="w-[44px] h-[44px] items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/20 active:scale-95 transition-transform">
-              <ChevronLeft size={24} color="#FFFFFF" />
-            </Pressable>
+          <View className="absolute top-12 left-0 right-0 px-4 flex-row justify-between items-center z-10 pt-2 pointer-events-box-none">
+            <View className="flex-row items-center gap-3">
+              <Pressable onPress={() => router.back()} className="w-[44px] h-[44px] items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/20 active:scale-95 transition-transform">
+                <ChevronLeft size={24} color="#FFFFFF" />
+              </Pressable>
+              {isVideo && (
+                <Pressable onPress={() => setIsVideoMuted(!isVideoMuted)} className="w-[44px] h-[44px] items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/20 active:scale-95 transition-transform">
+                  {isVideoMuted ? <VolumeX size={20} color="#FFFFFF" /> : <Volume2 size={20} color="#FFFFFF" />}
+                </Pressable>
+              )}
+            </View>
             {mode === 'POST' && (
               <Pressable 
                 onPress={() => {
                   try { audioPlayer?.pause(); } catch(e) {}
                   try { videoPlayer?.pause(); } catch(e) {}
-                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId } });
+                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId, challengeId } });
                 }}
                 className="bg-[#A855F7] px-6 py-2.5 rounded-full active:scale-95 transition-transform shadow-lg shadow-purple-500/40"
               >
@@ -457,7 +486,8 @@ export default function StoryEditorScreen() {
                         uri, mode, type, speed, effect, 
                         musicId: selectedMusic?.id || musicId,
                         musicTitle: selectedMusic?.title,
-                        musicUrl: selectedMusic?.audioUrl
+                        musicUrl: selectedMusic?.audioUrl,
+                        challengeId
                       }
                     });
                   }}
@@ -470,8 +500,9 @@ export default function StoryEditorScreen() {
               <Pressable 
                 onPress={() => {
                   try { audioPlayer?.pause(); } catch(e) {}
+                  // eslint-disable-next-line react-hooks/immutability
                   try { if (videoPlayer) { videoPlayer.pause(); videoPlayer.muted = true; } } catch(e) {}
-                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId } });
+                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId, challengeId } });
                 }}
                 className="items-center justify-center bg-[#A855F7] px-8 py-3.5 rounded-[20px] flex-row gap-2 shadow-xl shadow-purple-500/30 ml-3 active:scale-95 transition-transform"
               >

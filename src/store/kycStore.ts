@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Creator, Reel, Comment, Chat, Message, NotificationItem, TransactionItem, GiftType } from '../types';
@@ -122,7 +124,8 @@ export const useKYCStore = create<KYCState>()(
       fetchKycStatus: async () => {
         try {
           const res = await apiClient.get('/kyc/status');
-          if (res.data?.status === 'approved' || res.data?.status === 'pending') {
+          const status = res.data?.status?.toUpperCase();
+          if (status === 'APPROVED' || status === 'PENDING') {
             set({ kycCompleted: true, currentStep: 3 });
             useAuthStore.getState().updateProfile({ isVerified: true });
           }

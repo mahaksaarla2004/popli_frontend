@@ -35,7 +35,7 @@ export default function BlockedUsersScreen() {
             <UserX size={48} color="#EF4444" />
             <Text className="text-white text-lg font-bold mt-4">No blocked accounts</Text>
             <Text className="text-neutral-grey text-sm text-center px-8 mt-2">
-              When you block someone, they won't be able to see your profile or content.
+              When you block someone, they won&apos;t be able to see your profile or content.
             </Text>
           </View>
         ) : (

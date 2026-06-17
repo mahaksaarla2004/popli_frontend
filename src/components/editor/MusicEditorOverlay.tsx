@@ -117,7 +117,7 @@ export default function MusicEditorOverlay({ song, onComplete }: MusicEditorOver
         <View className="bg-white/10 h-16 rounded-xl flex-row items-center justify-center relative overflow-hidden border border-white/20">
           <View className="absolute inset-0 flex-row items-center justify-between px-2 opacity-50">
              {Array.from({length: 40}).map((_, i) => (
-                <View key={i} className="w-1 bg-white rounded-full" style={{ height: Math.max(4, Math.random() * 32) }} />
+                <View key={i} className="w-1 bg-white rounded-full" style={{ height: Math.max(4, ((i * 13) % 28) + 4) }} />
              ))}
           </View>
           <View className="w-24 h-full bg-white/20 border-x-2 border-white absolute z-10 shadow-lg" />

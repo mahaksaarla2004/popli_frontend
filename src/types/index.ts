@@ -59,7 +59,7 @@ export interface Reel {
   distanceKm?: number; // Calculated dynamically via GPS
   city?: string;
   isMonetized?: boolean;
-  taggedUsers?: Array<{ id: string; username: string }>;
+  taggedUsers?: { id: string; username: string }[];
   layersData?: any;
   createdAt?: string;
   mediaUrl?: string;
@@ -102,6 +102,9 @@ export interface Message {
   text: string;
   timestamp: string; // e.g. "9:41 AM"
   status: 'sent' | 'delivered' | 'seen';
+  type?: 'TEXT' | 'STORY_MENTION';
+  storyId?: string;
+  mediaUrl?: string;
 }
 
 export interface Chat {
@@ -118,7 +121,7 @@ export interface Chat {
 
 export interface NotificationItem {
   id: string;
-  type: 'like' | 'comment' | 'follow' | 'gift' | 'viral_alert' | 'nearby_trend' | 'milestone';
+  type: 'like' | 'comment' | 'follow' | 'gift' | 'viral_alert' | 'nearby_trend' | 'milestone' | 'mention' | 'story_mention' | 'reply' | 'comment_like';
   senderName?: string;
   senderAvatar?: string;
   title: string;
@@ -126,6 +129,9 @@ export interface NotificationItem {
   timestamp: string;
   isRead: boolean;
   coinsCount?: number; // for gift notifications
+  postId?: string;
+  commentId?: string;
+  replyId?: string;
 }
 
 export interface TransactionItem {

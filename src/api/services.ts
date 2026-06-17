@@ -35,9 +35,15 @@ export const chatApi = {
 };
 
 export const notificationsApi = {
-  getNotifications: (page = 1) => apiClient.get(`/notifications?page=${page}`),
-  markRead: (id: string) => apiClient.post(`/notifications/${id}/read`),
-  markAllRead: () => apiClient.post('/notifications/read-all'),
+  getNotifications: (cursor?: string, limit = 20) => {
+    const params = new URLSearchParams();
+    if (cursor) params.append('cursor', cursor);
+    if (limit) params.append('limit', String(limit));
+    return apiClient.get(`/notifications?${params.toString()}`);
+  },
+  getUnreadCount: () => apiClient.get('/notifications/unread-count'),
+  markRead: (id: string) => apiClient.patch(`/notifications/${id}/read`),
+  markAllRead: () => apiClient.patch('/notifications/read-all'),
 };
 
 export const walletApi = {
