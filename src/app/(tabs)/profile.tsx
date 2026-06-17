@@ -90,7 +90,7 @@ export default function ProfileScreen() {
       <ScrollView 
         className="flex-1" 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingBottom: 150 }}
       >
         
         {/* INCOMPLETE PROFILE BANNER */}
@@ -241,8 +241,10 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
                 {reel.isMonetized && activeTab === 'reels' && (
-                  <View className="absolute top-1 right-1 bg-[#F59E0B]/90 px-1 py-0.5 rounded flex-row items-center">
-                    <Text className="text-black text-[9px] font-black">₹{((reel.viewsCount || 0) * 0.0044).toFixed(3)}</Text>
+                  <View className="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded flex-row items-center border border-white/10">
+                    <Text className="text-[#10B981] text-[9px] font-bold">
+                      ₹{((reel.viewsCount || 0) * 0.005) > 0 ? ((reel.viewsCount || 0) * 0.005).toFixed(2) : '0'}
+                    </Text>
                   </View>
                 )}
               </Pressable>

@@ -3,19 +3,23 @@ import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, Scrol
 import { apiClient } from '../../api/client';
 
 interface InteractiveStickerOverlayProps {
-  type: 'location' | 'mention' | 'question' | 'hashtag';
+  type: 'location' | 'mention' | 'question' | 'hashtag' | 'poll' | 'reaction' | 'add_yours';
   onComplete: (data: InteractiveStickerData | null) => void;
 }
 
 export type InteractiveStickerData = {
-  type: 'location' | 'mention' | 'question' | 'hashtag';
+  type: 'location' | 'mention' | 'question' | 'hashtag' | 'poll' | 'reaction' | 'add_yours' | 'temperature' | 'time';
   text: string;
   styleVariant: number; // For toggling between different visual styles of the same sticker
+  options?: string[]; // For polls
+  emoji?: string; // For reactions
 };
 
 export default function InteractiveStickerOverlay({ type, onComplete }: InteractiveStickerOverlayProps) {
   const [text, setText] = useState('');
   const [styleVariant, setStyleVariant] = useState(0);
+  const [options, setOptions] = useState<string[]>(['YES', 'NO']);
+  const [emoji, setEmoji] = useState('😍');
   const inputRef = useRef<TextInput>(null);
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -57,13 +61,15 @@ export default function InteractiveStickerOverlay({ type, onComplete }: Interact
   };
 
   const handleDone = () => {
-    if (text.trim().length === 0) {
+    if (text.trim().length === 0 && type !== 'poll' && type !== 'reaction') {
       onComplete(null);
     } else {
       onComplete({
         type,
         text: text.trim().replace('@', ''), // clean up @ if typed
-        styleVariant
+        styleVariant,
+        options: type === 'poll' ? options : undefined,
+        emoji: type === 'reaction' ? emoji : undefined,
       });
     }
   };
@@ -130,6 +136,73 @@ export default function InteractiveStickerOverlay({ type, onComplete }: Interact
             <Text className={`${textColor} opacity-50 font-semibold`}>Type something...</Text>
           </View>
         </Pressable>
+      );
+    }
+
+    if (type === 'poll') {
+      const colors = ['bg-white', 'bg-black', 'bg-purple-500'];
+      const textColors = ['text-black', 'text-white', 'text-white'];
+      const bgColor = colors[styleVariant % colors.length];
+      const textColor = textColors[styleVariant % textColors.length];
+      const placeholderText = text || 'Ask a question...';
+
+      return (
+        <View className="w-72 items-center">
+          <Pressable onPress={toggleStyle} className={`w-full ${bgColor} rounded-2xl overflow-hidden shadow-2xl mb-4 p-6 items-center`}>
+            <Text className={`${textColor} font-bold text-xl text-center`}>{placeholderText}</Text>
+          </Pressable>
+          <View className="w-full flex-row justify-between gap-2">
+            <TextInput
+              value={options[0]}
+              onChangeText={(val) => setOptions([val, options[1]])}
+              className="flex-1 bg-white rounded-xl p-4 text-center text-black font-bold text-lg shadow-lg"
+              placeholder="YES"
+              placeholderTextColor="#9ca3af"
+              autoFocus
+            />
+            <TextInput
+              value={options[1]}
+              onChangeText={(val) => setOptions([options[0], val])}
+              className="flex-1 bg-white rounded-xl p-4 text-center text-black font-bold text-lg shadow-lg"
+              placeholder="NO"
+              placeholderTextColor="#9ca3af"
+            />
+          </View>
+        </View>
+      );
+    }
+
+    if (type === 'reaction') {
+      const placeholderText = text || 'How do you feel?';
+      return (
+        <View className="w-64 bg-white rounded-2xl p-6 shadow-2xl items-center">
+          <Text className="text-black font-bold text-lg text-center mb-4">{placeholderText}</Text>
+          <View className="flex-row items-center justify-between w-full bg-gray-100 rounded-full p-2">
+            <TextInput 
+              value={emoji}
+              onChangeText={setEmoji}
+              maxLength={2}
+              className="w-12 h-12 bg-white rounded-full text-center text-2xl shadow-sm leading-10"
+            />
+            <View className="flex-1 h-2 bg-gray-300 mx-3 rounded-full" />
+          </View>
+          <Text className="text-gray-400 text-xs mt-4">Type to change emoji</Text>
+        </View>
+      );
+    }
+
+    if (type === 'add_yours') {
+      const placeholderText = text || 'Write a prompt...';
+      return (
+        <View className="w-72 bg-white rounded-2xl overflow-hidden shadow-2xl">
+          <View className="bg-black p-4 items-center flex-row justify-center gap-2">
+            <Image source={require('../../../assets/images/camera-icon.png')} style={{width:24, height:24, tintColor:'white'}} defaultSource={{uri: 'https://cdn-icons-png.flaticon.com/512/685/685655.png'}} />
+            <Text className="text-white font-bold text-sm tracking-widest">ADD YOURS</Text>
+          </View>
+          <View className="p-6 items-center">
+            <Text className="text-black font-bold text-xl text-center">{placeholderText}</Text>
+          </View>
+        </View>
       );
     }
 

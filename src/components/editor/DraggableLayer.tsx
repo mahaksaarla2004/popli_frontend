@@ -79,7 +79,8 @@ export default function DraggableLayer({
       runOnJS(onActivate)(id);
     })
     .onUpdate((e) => {
-      scale.value = savedScale.value * e.scale;
+      const newScale = savedScale.value * e.scale;
+      scale.value = Math.max(0.2, Math.min(newScale, 5.0));
     })
     .onEnd(() => {
       savedScale.value = scale.value;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, Image, KeyboardAvoidingView, Platform, Modal, TouchableOpacity, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore, useChatStore, useStoryStore, useFeedStore } from '../../store';
 import { 
   ChevronLeft, Video, Info, Plus, Mic, Image as ImageIcon, 
@@ -69,6 +70,7 @@ const ReelPreviewCard = ({ reelId }: { reelId: string }) => {
 
 export default function ChatScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id, creatorName, creatorUsername, creatorAvatar } = useLocalSearchParams();
   const [inputText, setInputText] = useState('');
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -189,7 +191,7 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView 
       style={{ flex: 1, backgroundColor: '#12081E' }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       {/* HEADER */}
@@ -392,7 +394,10 @@ export default function ChatScreen() {
       </ScrollView>
 
       {/* BOTTOM INPUT BAR */}
-      <View className="flex-row items-center px-4 py-3 bg-[#12081E] border-t border-white/5 gap-3">
+      <View 
+        className="flex-row items-center px-4 pt-3 bg-[#12081E] border-t border-white/5 gap-3"
+        style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+      >
         {/* Plus Button */}
         <Pressable className="w-10 h-10 rounded-full bg-[#1A0E2C] items-center justify-center border border-white/5">
           <Plus size={20} color="#9CA3AF" />

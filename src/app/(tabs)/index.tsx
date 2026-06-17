@@ -110,6 +110,7 @@ export default function HomeFeedScreen() {
       flashListRef.current?.scrollToOffset({ offset: 0, animated: true });
     }
     
+    setRefreshCount(prev => prev + 1);
     setRefreshing(false);
   }, [activeTab]);
 
@@ -221,7 +222,9 @@ export default function HomeFeedScreen() {
     );
   }, [isFocused, activeReelId, filteredReels, handleOpenComments, handleOpenSend, handleOpenGifts, handleOpenProfile, width, listHeight]);
 
-  const keyExtractor = useCallback((item: Reel) => item.id, []);
+  const [refreshCount, setRefreshCount] = useState(0);
+
+  const keyExtractor = useCallback((item: Reel) => `${item.id}-${refreshCount}`, [refreshCount]);
 
   // Removed getItemLayout as FlashList handles it efficiently with estimatedItemSize
 

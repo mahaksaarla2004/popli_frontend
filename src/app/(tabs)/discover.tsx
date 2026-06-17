@@ -85,7 +85,7 @@ export default function DiscoverScreen() {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 110, gap: 24 }}
+        contentContainerStyle={{ paddingBottom: 150, gap: 24 }}
       >
         {searchQuery.trim().length > 0 ? (
           /* ==================================

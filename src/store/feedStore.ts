@@ -270,7 +270,7 @@ export const useFeedStore = create<FeedState>()(
         try {
           let cursorParam = cursor ? `&cursor=${cursor}` : '';
           console.log(`[FEED STORE] fetchReels API Request: cursor=${cursor}`);
-          let res = await apiClient.get(`/reels/feed?limit=${limit}&category=${category}${cursorParam}`);
+          let res = await apiClient.get(`/reels/feed?limit=${limit}&category=${category}${cursorParam}&_t=${Date.now()}`);
           
           const formatVideoUrl = (url: string) => {
             if (!url) return '';
@@ -332,12 +332,12 @@ export const useFeedStore = create<FeedState>()(
           let excludeIdsParam = allExcludeIds.slice(-50).join(',');
           
           console.log(`[FEED STORE] fetchExploreReels API Request: page=${page}`);
-          let res = await apiClient.get(`/reels/explore?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIdsParam}`);
+          let res = await apiClient.get(`/reels/explore?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIdsParam}&_t=${Date.now()}`);
           
           if (res.data.length === 0 && seenIds.length > 0) {
             get().clearSeenReels();
             excludeIdsParam = page === 1 ? '' : currentReels.map(r => r.id).join(',');
-            res = await apiClient.get(`/reels/explore?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIdsParam}`);
+            res = await apiClient.get(`/reels/explore?page=${page}&limit=${limit}&category=${category}&excludeIds=${excludeIdsParam}&_t=${Date.now()}`);
           }
 
           const formatVideoUrl = (url: string) => {
@@ -392,7 +392,7 @@ export const useFeedStore = create<FeedState>()(
       },
       fetchFollowingReels: async (page = 1, limit = 10) => {
         try {
-          const res = await apiClient.get(`/reels/following?page=${page}&limit=${limit}`);
+          const res = await apiClient.get(`/reels/following?page=${page}&limit=${limit}&_t=${Date.now()}`);
           const formatVideoUrl = (url: string) => {
             if (!url) return '';
             if (url.includes('res.cloudinary.com') && url.toLowerCase().endsWith('.mov')) {
@@ -425,7 +425,7 @@ export const useFeedStore = create<FeedState>()(
           set((state) => {
             const existingIds = new Set(state.reels.map(r => r.id));
             const newReels = fetchedReels.filter((r: any) => !existingIds.has(r.id));
-            return { reels: [...state.reels, ...newReels] };
+            return { reels: page === 1 ? fetchedReels : [...state.reels, ...newReels] };
           });
         } catch (error) {
           console.error("Error fetching following reels:", error);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, Pressable, TextInput, Dimensions, KeyboardAvoidingView, Platform, Animated, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Image, Pressable, TextInput, Dimensions, KeyboardAvoidingView, Platform, Animated, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useStoryStore, useAuthStore } from '../../store';
 import { apiClient } from '../../api/client';
@@ -8,6 +8,7 @@ import Svg, { Path, G } from 'react-native-svg';
 import { formatRelativeTime, getDefaultAvatar } from '../../utils';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useAudioPlayer } from 'expo-audio';
 
 const { width, height } = Dimensions.get('window');
 
@@ -50,6 +51,82 @@ const MentionTag = React.memo(({ layer, onPress }: { layer: any, onPress: (userI
 });
 MentionTag.displayName = 'MentionTag';
 
+const StoryAudio = ({ url, isPaused }: { url: string, isPaused: boolean }) => {
+  const player = useAudioPlayer(url);
+  useEffect(() => {
+    if (!isPaused) player.play();
+    else player.pause();
+  }, [isPaused, player]);
+  return null;
+};
+
+const PollSticker = ({ layer, onVote }: { layer: any, onVote: (optIndex: number) => void }) => {
+  const [voted, setVoted] = useState<number | null>(null);
+  
+  return (
+    <View className="w-72 bg-white rounded-2xl overflow-hidden shadow-2xl p-4">
+      <Text className="text-black font-bold text-xl text-center mb-4">{layer.content.text}</Text>
+      <View className="flex-row gap-2">
+        <Pressable 
+          onPress={(e) => { e.stopPropagation(); setVoted(0); onVote(0); }}
+          className={`flex-1 p-3 rounded-xl border ${voted === 0 ? 'bg-purple-100 border-purple-500' : 'bg-gray-50 border-gray-200'}`}
+        >
+          <Text className="text-center font-bold text-black">{layer.content.options?.[0] || 'YES'}</Text>
+        </Pressable>
+        <Pressable 
+          onPress={(e) => { e.stopPropagation(); setVoted(1); onVote(1); }}
+          className={`flex-1 p-3 rounded-xl border ${voted === 1 ? 'bg-purple-100 border-purple-500' : 'bg-gray-50 border-gray-200'}`}
+        >
+          <Text className="text-center font-bold text-black">{layer.content.options?.[1] || 'NO'}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+const ReactionSticker = ({ layer, onReact }: { layer: any, onReact: () => void }) => {
+  return (
+    <View className="w-64 bg-white rounded-2xl p-4 shadow-2xl items-center">
+      <Text className="text-black font-bold text-lg text-center mb-2">{layer.content.text}</Text>
+      <Pressable 
+        onPress={(e) => { e.stopPropagation(); onReact(); }}
+        className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center border border-gray-200 shadow-sm"
+      >
+        <Text className="text-4xl">{layer.content.emoji || '😍'}</Text>
+      </Pressable>
+    </View>
+  );
+};
+
+const AddYoursSticker = ({ layer, onPress }: { layer: any, onPress: () => void }) => {
+  return (
+    <Pressable 
+      onPress={(e) => { e.stopPropagation(); onPress(); }}
+      className="w-72 bg-white rounded-2xl overflow-hidden shadow-2xl"
+    >
+      <View className="bg-black p-3 items-center flex-row justify-center gap-2">
+        <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/685/685655.png'}} style={{width:20, height:20, tintColor:'white'}} />
+        <Text className="text-white font-bold text-sm tracking-widest">ADD YOURS</Text>
+      </View>
+      <View className="p-5 items-center">
+        <Text className="text-black font-bold text-lg text-center">{layer.content.text}</Text>
+      </View>
+    </Pressable>
+  );
+};
+
+const MusicSticker = ({ layer }: { layer: any }) => {
+  return (
+    <View className="bg-white/90 backdrop-blur-md rounded-2xl p-3 flex-row items-center gap-3 shadow-xl w-64">
+      <Image source={{ uri: layer.content.coverUrl || layer.content.cover }} className="w-12 h-12 rounded-lg bg-gray-200" />
+      <View className="flex-1">
+        <Text className="text-black font-bold text-sm" numberOfLines={1}>{layer.content.title}</Text>
+        <Text className="text-gray-600 text-xs" numberOfLines={1}>{layer.content.artist}</Text>
+      </View>
+    </View>
+  );
+};
+
 export default function StoryViewerScreen() {
   const { id: rawId, storyId } = useLocalSearchParams<{ id: string, storyId?: string }>();
   const id = rawId ? decodeURIComponent(rawId) : '';
@@ -83,7 +160,55 @@ export default function StoryViewerScreen() {
   const [isPaused, setIsPaused] = useState(false);
   const [initialStoryLoaded, setInitialStoryLoaded] = useState(false);
 
+  const handleReply = () => {
+    if (!replyText.trim()) return;
+    setReplyText('');
+    setIsPaused(false);
+    // Send reply to API logic can go here
+  };
+
+  const [showViewersSheet, setShowViewersSheet] = useState(false);
+  const [viewersList, setViewersList] = useState<any[]>([]);
+  const [isLoadingViewers, setIsLoadingViewers] = useState(false);
+  const sheetAnim = useRef(new Animated.Value(height)).current;
+
   const [progressAnim] = useState(() => new Animated.Value(0));
+
+  const fetchViewers = async (storyId: string) => {
+    setIsLoadingViewers(true);
+    try {
+      const res = await apiClient.get(`/stories/${storyId}/viewers`);
+      setViewersList(res.data);
+    } catch (err) {
+      console.error('Failed to fetch viewers', err);
+    } finally {
+      setIsLoadingViewers(false);
+    }
+  };
+
+  const openViewersSheet = () => {
+    setIsPaused(true);
+    setShowViewersSheet(true);
+    const storyId = userStories[currentIndex]?.id;
+    if (storyId) fetchViewers(storyId);
+    
+    Animated.spring(sheetAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      bounciness: 0,
+    }).start();
+  };
+
+  const closeViewersSheet = () => {
+    Animated.spring(sheetAnim, {
+      toValue: height,
+      useNativeDriver: true,
+      bounciness: 0,
+    }).start(() => {
+      setShowViewersSheet(false);
+      setIsPaused(false);
+    });
+  };
 
   const handleNext = () => {
     if (currentIndex < userStories.length - 1) {
@@ -164,6 +289,14 @@ export default function StoryViewerScreen() {
   };
 
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleStickerInteraction = async (layerId: string, type: string, value: string) => {
+    try {
+      await apiClient.post(`/stories/${activeStory.id}/interact`, { layerId, type, value });
+    } catch (error) {
+      console.error('Failed to submit interaction:', error);
+    }
+  };
 
   const handleDelete = async () => {
     if (isDeleting) return;
@@ -271,7 +404,16 @@ export default function StoryViewerScreen() {
                 ];
 
                 return (
-                  <View key={layer.id} style={{ position: 'absolute', left: 0, top: 0, transform }} pointerEvents="none">
+                  <View 
+                    key={layer.id} 
+                    style={{
+                      position: 'absolute',
+                      left: layer.x || 0,
+                      top: layer.y || 0,
+                      transform
+                    }}
+                    pointerEvents={['interactive', 'music'].includes(layer.type) ? 'box-none' : 'none'}
+                  >
                     {layer.type === 'text' && layer.content && typeof layer.content === 'object' && (
                       <View style={{
                         backgroundColor: layer.content.backgroundColor,
@@ -295,8 +437,17 @@ export default function StoryViewerScreen() {
                         {layer.content}
                       </Text>
                     )}
-                    {layer.type === 'sticker' && layer.content && (
+                    {layer.type === 'emoji' && (
+                      <Text className="text-5xl">{layer.content}</Text>
+                    )}
+                    {layer.type === 'sticker' && (
                       <Image source={{ uri: layer.content }} className="w-32 h-32" resizeMode="contain" />
+                    )}
+                    {layer.type === 'music' && (
+                      <>
+                        <StoryAudio url={layer.content.audioUrl || layer.content.previewUrl} isPaused={isPaused} />
+                        <MusicSticker layer={layer} />
+                      </>
                     )}
                     {layer.type === 'interactive' && layer.content?.type === 'mention' && (
                       <MentionTag layer={layer} onPress={handleMentionPress} />
@@ -304,6 +455,25 @@ export default function StoryViewerScreen() {
                     {layer.type === 'interactive' && layer.content?.type === 'location' && (
                       <View className="bg-white/90 px-4 py-2 rounded-xl flex-row items-center gap-1">
                         <Text className="text-black font-bold text-lg">{layer.content.text}</Text>
+                      </View>
+                    )}
+                    {layer.type === 'interactive' && layer.content?.type === 'poll' && (
+                      <PollSticker layer={layer} onVote={(idx) => handleStickerInteraction(layer.id, 'POLL_VOTE', idx.toString())} />
+                    )}
+                    {layer.type === 'interactive' && layer.content?.type === 'reaction' && (
+                      <ReactionSticker layer={layer} onReact={() => handleStickerInteraction(layer.id, 'REACTION', layer.content.emoji || '😍')} />
+                    )}
+                    {layer.type === 'interactive' && layer.content?.type === 'add_yours' && (
+                      <AddYoursSticker layer={layer} onPress={() => {}} />
+                    )}
+                    {layer.type === 'interactive' && layer.content?.type === 'time' && (
+                      <View className="bg-black/50 px-4 py-2 rounded-xl flex-row items-center gap-1">
+                        <Text className="text-white font-bold text-3xl tracking-widest">{layer.content.text}</Text>
+                      </View>
+                    )}
+                    {layer.type === 'interactive' && layer.content?.type === 'temperature' && (
+                      <View className="bg-black/50 px-4 py-2 rounded-xl flex-row items-center gap-1">
+                        <Text className="text-white font-bold text-3xl">{layer.content.text}</Text>
                       </View>
                     )}
                   </View>
@@ -424,8 +594,21 @@ export default function StoryViewerScreen() {
           return null;
         })()}
 
-        {/* Bottom Reply Bar */}
-        {activeStory.repliesAllowed && activeStory.creatorId !== userProfile.username && (
+        {/* Bottom Bar: Owner Views or User Reply */}
+        {activeStory.creatorId === userProfile.username ? (
+          <View className="absolute bottom-4 left-4 z-30">
+            <Pressable 
+              onPress={openViewersSheet}
+              className="flex-row items-center gap-1 bg-black/40 px-3 py-1.5 rounded-full border border-white/10"
+              hitSlop={10}
+            >
+              <Eye size={16} color="#FFFFFF" />
+              <Text className="text-white font-semibold text-xs ml-1">
+                {activeStory.viewers?.length || 0}
+              </Text>
+            </Pressable>
+          </View>
+        ) : activeStory.repliesAllowed ? (
           <View className="absolute bottom-4 left-4 right-4 flex-row items-center gap-3 z-30">
             <View className="flex-1 border border-white/30 rounded-full px-4 py-3 bg-black/20 backdrop-blur-md flex-row items-center">
               <TextInput
@@ -436,25 +619,94 @@ export default function StoryViewerScreen() {
                 className="flex-1 text-white text-sm"
                 onFocus={() => setIsPaused(true)}
                 onBlur={() => setIsPaused(false)}
+                onSubmitEditing={handleReply}
               />
             </View>
-            <Pressable onPress={() => { addReaction(activeStory.id, userProfile.username, '❤️'); }}>
+            <Pressable onPress={() => {}} hitSlop={10}>
               <Heart size={28} color="#FFFFFF" />
             </Pressable>
-            <Pressable>
+            <Pressable onPress={() => {}} hitSlop={10}>
               <Send size={28} color="#FFFFFF" />
             </Pressable>
           </View>
-        )}
-
-        {/* View Count for own stories */}
-        {activeStory.creatorId === userProfile.username && (
-          <View className="absolute bottom-6 left-4 z-30 flex-row items-center gap-1 bg-black/40 px-3 py-1.5 rounded-full border border-white/10">
-            <Text className="text-white text-xs font-bold">👁️ {activeStory.viewers.length} Views</Text>
-          </View>
-        )}
+        ) : null}
 
       </View>
+
+      {/* Viewers Bottom Sheet */}
+      {showViewersSheet && (
+        <Animated.View 
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: height * 0.6,
+            backgroundColor: '#1E1E1E',
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            transform: [{ translateY: sheetAnim }],
+            zIndex: 100,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -5 },
+            shadowOpacity: 0.3,
+            shadowRadius: 10,
+            elevation: 10,
+          }}
+        >
+          {/* Header */}
+          <View className="items-center py-3 border-b border-white/10">
+            <View className="w-12 h-1.5 bg-white/30 rounded-full mb-3" />
+            <Text className="text-white font-bold text-lg">Viewers</Text>
+            <View className="absolute right-4 top-4">
+              <Pressable onPress={closeViewersSheet} hitSlop={15}>
+                <X size={24} color="#FFFFFF" />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Views Count */}
+          <View className="px-4 py-4 flex-row items-center border-b border-white/5">
+            <Eye size={20} color="#FFFFFF" />
+            <Text className="text-white font-semibold ml-2 text-base">{viewersList.length} Views</Text>
+          </View>
+
+          {/* List */}
+          {isLoadingViewers ? (
+            <View className="flex-1 justify-center items-center">
+              <ActivityIndicator color="#FFFFFF" size="large" />
+            </View>
+          ) : viewersList.length === 0 ? (
+            <View className="flex-1 justify-center items-center">
+              <Text className="text-white/60 text-base">No viewers yet</Text>
+            </View>
+          ) : (
+            <ScrollView className="flex-1 px-4">
+              {viewersList.map((viewer) => (
+                <Pressable 
+                  key={viewer.id} 
+                  className="flex-row items-center justify-between py-3"
+                  onPress={() => {
+                    closeViewersSheet();
+                    router.push(`/user/${viewer.user.username}`);
+                  }}
+                >
+                  <View className="flex-row items-center gap-3">
+                    <Image 
+                      source={{ uri: viewer.user.avatar || getDefaultAvatar(viewer.user.username) }}
+                      className="w-12 h-12 rounded-full bg-white/10"
+                    />
+                    <View>
+                      <Text className="text-white font-bold text-sm">{viewer.user.username}</Text>
+                      <Text className="text-white/60 text-xs">{viewer.user.name}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+        </Animated.View>
+      )}
     </KeyboardAvoidingView>
   );
 }

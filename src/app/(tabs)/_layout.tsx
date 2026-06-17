@@ -3,8 +3,12 @@ import { Tabs } from 'expo-router';
 import { View, Text, Platform } from 'react-native';
 import { Home, Compass, Plus, MessageSquare, User, Award } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'android' ? 16 : 20);
+
   return (
     <Tabs
       screenOptions={{
@@ -13,11 +17,11 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#FACC15', // Yellow
         tabBarInactiveTintColor: '#9CA3AF', // Cool Grey
         tabBarStyle: {
-          backgroundColor: 'rgba(26, 11, 46, 0.95)', // Glassmorphic Dark Purple
+          backgroundColor: '#12081E', // Solid Dark Purple to prevent transparent bleed
           borderTopWidth: 1,
           borderTopColor: 'rgba(139, 92, 246, 0.2)', // Translucent Violet
-          height: Platform.OS === 'ios' ? 88 : 68,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+          height: 58 + bottomPadding,
+          paddingBottom: bottomPadding,
           paddingTop: 8,
           position: 'absolute',
           bottom: 0,

@@ -12,6 +12,8 @@ import DrawingOverlay, { DrawingPath } from '../../components/editor/DrawingOver
 import ReelTimelineEditor, { ReelTimelineData } from '../../components/editor/ReelTimelineEditor';
 import Svg, { Path, G } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 
 import MusicPickerSheet from '../../components/sheets/MusicPickerSheet';
 import StickerSheet from '../../components/sheets/StickerSheet';
@@ -197,7 +199,7 @@ export default function StoryEditorScreen() {
         scale: 1,
         rotation: 0
       }]);
-    } else if (['LOCATION', 'MENTION', 'QUESTION', 'HASHTAG', 'TEMPERATURE'].includes(sticker.type)) {
+    } else if (['LOCATION', 'MENTION', 'QUESTION', 'HASHTAG', 'TEMPERATURE', 'POLL', 'REACTION', 'ADD_YOURS', 'TIME', 'MUSIC'].includes(sticker.type)) {
       if (sticker.type === 'TEMPERATURE') {
         setLayers(prev => [...prev, {
           id: Date.now().toString(),
@@ -205,6 +207,17 @@ export default function StoryEditorScreen() {
           content: { type: 'temperature', text: '84°F', styleVariant: 0 },
           x: 0, y: 0, scale: 1, rotation: 0
         }]);
+      } else if (sticker.type === 'TIME') {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setLayers(prev => [...prev, {
+          id: Date.now().toString(),
+          type: 'interactive',
+          content: { type: 'time', text: timeStr, styleVariant: 0 },
+          x: 0, y: 0, scale: 1, rotation: 0
+        }]);
+      } else if (sticker.type === 'MUSIC') {
+        setShowMusicSheet(true);
       } else {
         setEditingInteractiveSticker(sticker.type.toLowerCase());
       }
@@ -259,7 +272,7 @@ export default function StoryEditorScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black">
       
-      <Pressable onPress={() => setActiveLayerId(null)} className="flex-1 rounded-3xl overflow-hidden mt-12 mb-20 relative bg-neutral-900">
+        <View className="flex-1 rounded-3xl overflow-hidden mt-12 mb-20 relative bg-neutral-900">
         {uri ? (
           isVideo ? (
             <VideoView player={videoPlayer} style={{ width: '100%', height: '100%', borderRadius: 24 }} nativeControls={false} />
@@ -271,6 +284,12 @@ export default function StoryEditorScreen() {
             <Text className="text-white/50">No Media</Text>
           </View>
         )}
+
+        {/* Background Tap to Deselect */}
+        <Pressable 
+          style={StyleSheet.absoluteFill} 
+          onPress={() => setActiveLayerId(null)} 
+        />
 
         <View style={{ ...StyleSheet.absoluteFill, zIndex: 5 }} pointerEvents="none">
           <Svg width="100%" height="100%">
@@ -461,7 +480,7 @@ export default function StoryEditorScreen() {
             </Pressable>
           </View>
         )}
-      </Pressable>
+      </View>
 
       {!textMode && !drawingMode && !showTimelineEditor && (
         <View className="absolute bottom-6 left-4 right-4 flex-row justify-between items-center z-10">
