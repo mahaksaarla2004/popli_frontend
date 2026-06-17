@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { Camera } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
 
 interface InteractiveStickerOverlayProps {
@@ -196,7 +197,7 @@ export default function InteractiveStickerOverlay({ type, onComplete }: Interact
       return (
         <View className="w-72 bg-white rounded-2xl overflow-hidden shadow-2xl">
           <View className="bg-black p-4 items-center flex-row justify-center gap-2">
-            <Image source={require('../../../assets/images/camera-icon.png')} style={{width:24, height:24, tintColor:'white'}} defaultSource={{uri: 'https://cdn-icons-png.flaticon.com/512/685/685655.png'}} />
+            <Camera size={24} color="white" />
             <Text className="text-white font-bold text-sm tracking-widest">ADD YOURS</Text>
           </View>
           <View className="p-6 items-center">
