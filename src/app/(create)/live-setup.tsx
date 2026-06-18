@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, PressablePlatform, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { X, Radio, Settings, Users, ArrowRight } from 'lucide-react-native';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";

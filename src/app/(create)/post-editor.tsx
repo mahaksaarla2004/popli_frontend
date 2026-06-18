@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TextInput, PressablePlatform, ScrollView, ActivityIndicator, Modal, FlatList, Switch } from 'react-native';
+import { View, Text, Image, TextInput, Pressable, Platform, ScrollView, ActivityIndicator, Modal, FlatList, Switch } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, MapPin, Users, Music, ChevronRight, Check, Search, X, IndianRupee } from 'lucide-react-native';
 import { useFeedStore, useAuthStore } from '../../store';

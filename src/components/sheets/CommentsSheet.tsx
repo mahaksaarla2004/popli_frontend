@@ -22,6 +22,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
   const [replyingTo, setReplyingTo] = useState<{id: string, username: string} | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
@@ -99,7 +100,8 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
   };
 
   const handlePostComment = async () => {
-    if (!newCommentText.trim()) return;
+    if (!newCommentText.trim() || isSubmitting) return;
+    setIsSubmitting(true);
     
     const textToPost = newCommentText.trim();
     const parentId = replyingTo ? replyingTo.id : undefined;
@@ -154,6 +156,12 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
       }
       return [optimisticComment, ...prev];
     });
+
+    // We can release the submission lock after a short delay to prevent double taps,
+    // since the actual backend call is handled inside feedStore.addComment asynchronously.
+    setTimeout(() => {
+      setIsSubmitting(false);
+    }, 500);
   };
 
   const handleLike = (commentId: string) => {
@@ -164,7 +172,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
     // Optimistic local update
     const toggleInList = (list: Comment[]): Comment[] => {
       return list.map(c => {
-        if (c.id === commentId) {
+        if (String(c.id) === String(commentId)) {
           const newLiked = !c.isLiked;
           return { ...c, isLiked: newLiked, likesCount: c.likesCount + (newLiked ? 1 : -1) };
         }
@@ -228,7 +236,11 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
         
         <View className="flex-row items-center gap-4 pt-1">
           <Pressable 
-            onPress={() => setReplyingTo({ id: isReply ? comment.parentId! : comment.id, username: comment.user?.username || 'user' })}
+            onPress={() => {
+              const targetId = isReply ? comment.parentId! : comment.id;
+              if (String(targetId).startsWith('temp-')) return;
+              setReplyingTo({ id: targetId, username: comment.user?.username || 'user' });
+            }}
             className="py-2 pr-3"
           >
             <Text className="text-neutral-grey text-[10px] font-semibold">Reply</Text>

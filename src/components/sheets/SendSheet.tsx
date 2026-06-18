@@ -1,5 +1,5 @@
 /*  */import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TextInput, Pressable, ScrollView, PlatformModal, ActivityIndicator } from 'react-native';
+import { View, Text, Image, TextInput, Pressable, ScrollView, Platform, Modal, ActivityIndicator } from 'react-native';
 import { X, Search, Send } from 'lucide-react-native';
 import { useAuthStore, useChatStore } from '../../store';
 import { MotiView } from 'moti';

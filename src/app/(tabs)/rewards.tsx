@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, Dimensions, ActivityIndicator, TextInputPlatform, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Dimensions, ActivityIndicator, TextInput, Platform, Alert, Modal } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ChevronLeft, Landmark, Coins, Clock, CheckCircle2, History } from 'lucide-react-native';
 import RechargeCoinsSheet from '../../components/RechargeCoinsSheet';
@@ -21,6 +21,15 @@ export default function RewardsScreen() {
   const [amount, setAmount] = useState('');
   const [upiId, setUpiId] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
+
+  // Custom Alert State
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{title: string, message: string, type: 'error' | 'success'}>({title: '', message: '', type: 'error'});
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' = 'error') => {
+    setAlertConfig({ title, message, type });
+    setAlertVisible(true);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -63,30 +72,30 @@ export default function RewardsScreen() {
 
   const submitWithdrawRequest = async () => {
     if (!upiId || !amount) {
-      Alert.alert('Error', 'Please enter UPI ID and Amount');
+      showAlert('Error', 'Please enter UPI ID and Amount');
       return;
     }
     const amt = parseFloat(amount);
     if (amt < 500) {
-      Alert.alert('Error', 'Minimum withdrawal is ₹500');
+      showAlert('Error', 'Minimum withdrawal is ₹500');
       return;
     }
     if (amt > withdrawable) {
-      Alert.alert('Error', 'Insufficient balance');
+      showAlert('Error', 'Insufficient balance');
       return;
     }
 
     try {
       setWithdrawing(true);
       await apiClient.post('/wallet/withdraw', { amount: amt, upiId });
-      Alert.alert('Success', 'Withdrawal requested successfully!');
+      showAlert('Success', 'Withdrawal requested successfully!', 'success');
       setAmount('');
       setUpiId('');
       // Refresh wallet
       const res = await apiClient.get('/wallet');
       setWallet(res.data);
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || 'Failed to withdraw');
+      showAlert('Error', e.response?.data?.message || 'Failed to withdraw');
     } finally {
       setWithdrawing(false);
     }
@@ -229,6 +238,31 @@ export default function RewardsScreen() {
           setLocalCoinsAdded(prev => prev + addedCoins);
         }}
       />
+
+      {/* Custom Alert Modal */}
+      <Modal visible={alertVisible} transparent animationType="fade">
+        <View className="flex-1 bg-black/60 items-center justify-center px-6">
+          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-3xl p-6 w-full max-w-sm items-center shadow-2xl">
+            {alertConfig.type === 'error' ? (
+              <View className="w-16 h-16 rounded-full bg-red-500/20 items-center justify-center mb-4">
+                <Text className="text-red-500 text-3xl font-bold">!</Text>
+              </View>
+            ) : (
+              <View className="w-16 h-16 rounded-full bg-green-500/20 items-center justify-center mb-4">
+                <CheckCircle2 size={32} color="#10B981" />
+              </View>
+            )}
+            <Text className="text-white font-bold text-xl mb-2 text-center">{alertConfig.title}</Text>
+            <Text className="text-white/70 text-center mb-6 leading-5">{alertConfig.message}</Text>
+            <Pressable 
+              onPress={() => setAlertVisible(false)}
+              className="bg-[#A855F7] w-full py-4 rounded-xl items-center active:scale-[0.98]"
+            >
+              <Text className="text-white font-bold uppercase tracking-wider">OK</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

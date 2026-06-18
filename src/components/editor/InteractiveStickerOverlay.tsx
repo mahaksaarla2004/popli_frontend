@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, PressablePlatform, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, Pressable, Platform, ScrollView, Image } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { useKeyboardHandler } from 'react-native-keyboard-controller';
 import { Camera } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 interface InteractiveStickerOverlayProps {
   type: 'location' | 'mention' | 'question' | 'hashtag' | 'poll' | 'reaction' | 'add_yours';
@@ -27,6 +28,25 @@ export default function InteractiveStickerOverlay({ type, onComplete }: Interact
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const keyboardHeight = useSharedValue(0);
+
+  useKeyboardHandler({
+    onMove: (e) => {
+      'worklet';
+      keyboardHeight.value = Math.max(e.height, 0);
+    },
+    onEnd: (e) => {
+      'worklet';
+      keyboardHeight.value = Math.max(e.height, 0);
+    },
+  }, []);
+
+  const containerStyle = useAnimatedStyle(() => {
+    return {
+      paddingBottom: keyboardHeight.value,
+    };
+  });
 
   useEffect(() => {
     setTimeout(() => {
@@ -212,7 +232,7 @@ export default function InteractiveStickerOverlay({ type, onComplete }: Interact
   };
 
   return (
-    <KeyboardAvoidingView behavior="padding" className="absolute inset-0 bg-black/80 z-50">
+    <Animated.View className="absolute inset-0 bg-black/80 z-50" style={containerStyle}>
       
       {/* Top Controls */}
       <View className="flex-row justify-between items-center px-4 pt-16 pb-4 z-10">
@@ -276,6 +296,6 @@ export default function InteractiveStickerOverlay({ type, onComplete }: Interact
         />
       </View>
 
-    </KeyboardAvoidingView>
+    </Animated.View>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, PressablePlatform, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Pressable, Platform, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 // (assuming we can just replace Pressable with TouchableOpacity inside renderOtpBoxes)
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore, useKYCStore } from '../../store';

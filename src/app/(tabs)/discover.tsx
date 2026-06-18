@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Image, ScrollView, Pressable, DimensionsPlatform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Image, ScrollView, Pressable, Dimensions, Platform, ActivityIndicator } from 'react-native';
 import { Search, QrCode, TrendingUp, Compass, Award, ShieldAlert, Sparkles, Zap, Users, Trophy, ChevronLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useFeedStore, useAuthStore } from '../../store';

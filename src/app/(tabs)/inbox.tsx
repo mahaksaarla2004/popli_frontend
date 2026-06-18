@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Image, Pressable, TextInputPlatform, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, Image, Pressable, TextInput, Platform, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
   ArrowLeft, Edit, Search, MessageSquare, Bell, 

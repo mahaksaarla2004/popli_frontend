@@ -9,7 +9,7 @@ import CameraSettingsSheet from '../../components/CameraSettingsSheet';
 import EffectsSheet from '../../components/sheets/EffectsSheet';
 import { useCameraSettingsStore } from '../../store';
 import { useAudioPlayer } from 'expo-audio';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Line } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
@@ -130,6 +130,9 @@ export default function CreateScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync();
       if (photo) {
+        // if (cameraSettings.saveOriginals) {
+        //   try { await MediaLibrary.saveToLibraryAsync(photo.uri); } catch(e) {}
+        // }
         router.push({ pathname: '/(create)/story-editor', params: { uri: photo.uri, type: 'photo', mode: activeMode, challengeId } });
       }
     } catch (err) {
@@ -155,6 +158,9 @@ export default function CreateScreen() {
       setIsRecording(false);
 
       if (video) {
+        // if (cameraSettings.saveOriginals) {
+        //   try { await MediaLibrary.saveToLibraryAsync(video.uri); } catch(e) {}
+        // }
         router.push({ 
           pathname: '/(create)/story-editor', 
           params: { 
@@ -269,7 +275,22 @@ export default function CreateScreen() {
             facing={facing} 
             flash={flash}
             mode={activeMode === 'REEL' ? 'video' : 'picture'}
+            videoQuality={cameraSettings.videoResolution === '4K' ? '2160p' : '1080p'}
+            videoStabilizationMode={cameraSettings.stabilization ? 'auto' : 'off'}
+            mirror={facing === 'front' ? cameraSettings.mirrorFront : false}
           />
+        )}
+
+        {/* Grid Lines Overlay */}
+        {cameraSettings.grid && (
+          <View style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <Svg height="100%" width="100%">
+              <Line x1="33.33%" y1="0" x2="33.33%" y2="100%" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+              <Line x1="66.66%" y1="0" x2="66.66%" y2="100%" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+              <Line x1="0" y1="33.33%" x2="100%" y2="33.33%" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+              <Line x1="0" y1="66.66%" x2="100%" y2="66.66%" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+            </Svg>
+          </View>
         )}
 
         {/* Local Filter Overlay Preview */}

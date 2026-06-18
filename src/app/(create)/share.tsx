@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ImagePlatform, ScrollView, ActivityIndicator, Switch, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, Image, Platform, ScrollView, ActivityIndicator, Switch, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, IndianRupee, Gift } from 'lucide-react-native';
 import { useAuthStore } from '../../store';

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, Pressable, Platform, Keyboard } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring, interpolate } from 'react-native-reanimated';
+import { useKeyboardHandler } from 'react-native-keyboard-controller';
 import { Plus, Camera, Image as ImageIcon, Mic, Send, X, Smile, Square } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadToCloudinary } from '../../api/upload';
@@ -27,6 +28,24 @@ export default function ChatInputBar({
   // Animation values
   const hasText = inputText.trim().length > 0;
   const expansion = useSharedValue(0);
+  const keyboardHeight = useSharedValue(0);
+
+  useKeyboardHandler({
+    onMove: (e) => {
+      'worklet';
+      keyboardHeight.value = Math.max(e.height, 0);
+    },
+    onEnd: (e) => {
+      'worklet';
+      keyboardHeight.value = Math.max(e.height, 0);
+    },
+  }, []);
+
+  const containerStyle = useAnimatedStyle(() => {
+    return {
+      paddingBottom: keyboardHeight.value > 0 ? keyboardHeight.value + 8 : Math.max(insets.bottom, 12),
+    };
+  });
 
   useEffect(() => {
     expansion.value = withSpring(hasText ? 1 : 0, { damping: 20, stiffness: 200 });
@@ -42,7 +61,6 @@ export default function ChatInputBar({
       onSend(inputText.trim());
       setInputText('');
       onTyping(false);
-      Keyboard.dismiss();
     }
   };
 
@@ -112,7 +130,7 @@ export default function ChatInputBar({
   });
 
   return (
-    <View className="bg-[#12081E] border-t border-white/5 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+    <Animated.View className="bg-[#12081E] border-t border-white/5 pt-2" style={containerStyle}>
       
       {/* Reply Context Bar */}
       {replyingTo && (
@@ -164,6 +182,6 @@ export default function ChatInputBar({
           )}
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }

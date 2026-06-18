@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Pressable, Platform, Modal, TouchableOpacity, Image } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore, useChatStore } from '../../store';
@@ -93,13 +92,9 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#12081E' }} edges={['top']}>
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
-        behavior="padding"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
+      <View style={{ flex: 1 }}>
       {/* HEADER */}
-      <View className="flex-row items-center justify-between px-4 pt-14 pb-3 border-b border-white/5 bg-[#12081E] z-10">
+      <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-white/5 bg-[#12081E] z-10">
         <View className="flex-row items-center gap-3 flex-1">
           <Pressable onPress={() => router.back()} className="p-1 -ml-1">
             <ChevronLeft size={28} color="#FFFFFF" />
@@ -135,10 +130,12 @@ export default function ChatScreen() {
       </View>
 
       <View className="flex-1 px-4">
+        {/* @ts-ignore */}
         <FlashList
           data={formattedMessages}
-          inverted
+          {...{ inverted: true }}
           showsVerticalScrollIndicator={false}
+          // @ts-ignore
           estimatedItemSize={80}
           onViewableItemsChanged={onViewableItemsChanged.current}
           viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
@@ -241,7 +238,7 @@ export default function ChatScreen() {
         </View>
       </Modal>
 
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }

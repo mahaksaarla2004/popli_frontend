@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert, DimensionsPlatform } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, Dimensions, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Coins, ArrowUpRight, TrendingUp, Landmark, Wallet, ArrowDownLeft, Clock, CheckCircle2, ListFilter } from 'lucide-react-native';
 import { useWalletStore, useKYCStore } from '../store';

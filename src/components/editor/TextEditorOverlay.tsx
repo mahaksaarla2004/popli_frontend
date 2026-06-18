@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, PressablePlatform, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, Pressable, Platform, ScrollView, Image } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { useKeyboardHandler } from 'react-native-keyboard-controller';
 import { AlignLeft, AlignCenter, AlignRight, Type } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 interface TextEditorOverlayProps {
   initialText?: string;
@@ -43,6 +44,25 @@ export default function TextEditorOverlay({ initialText = '', onComplete }: Text
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const inputRef = useRef<TextInput>(null);
+
+  const keyboardHeight = useSharedValue(0);
+
+  useKeyboardHandler({
+    onMove: (e) => {
+      'worklet';
+      keyboardHeight.value = Math.max(e.height, 0);
+    },
+    onEnd: (e) => {
+      'worklet';
+      keyboardHeight.value = Math.max(e.height, 0);
+    },
+  }, []);
+
+  const containerStyle = useAnimatedStyle(() => {
+    return {
+      paddingBottom: keyboardHeight.value,
+    };
+  });
 
   const handleTextChange = (newText: string) => {
     setText(newText);
@@ -122,11 +142,10 @@ export default function TextEditorOverlay({ initialText = '', onComplete }: Text
   const toggleBackgroundStyle = () => {
     if (bgStyle === 'none') setBgStyle('solid');
     else if (bgStyle === 'solid') setBgStyle('transparent');
-    else setBgStyle('none');
   };
 
   return (
-    <KeyboardAvoidingView behavior="padding" className="absolute inset-0 bg-black/80 z-50">
+    <Animated.View className="absolute inset-0 bg-black/80 z-50" style={containerStyle}>
       
       {/* Top Controls */}
       <View className="flex-row justify-between items-center px-4 pt-16 pb-4">
@@ -230,6 +249,6 @@ export default function TextEditorOverlay({ initialText = '', onComplete }: Text
         </ScrollView>
       </View>
 
-    </KeyboardAvoidingView>
+    </Animated.View>
   );
 }

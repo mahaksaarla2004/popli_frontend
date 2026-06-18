@@ -4,6 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useStoryStore, useAuthStore } from '../store';
 
+// Global throttle to prevent rapid double-taps causing multiple screen pushes
+let lastNavigationTime = 0;
+const NAVIGATION_THROTTLE_MS = 800;
+
 interface StoryRingProps {
   userId: string;
   avatarUrl: string;
@@ -30,6 +34,10 @@ export default function StoryRing({ userId, avatarUrl, size = 64, showName = fal
   const isCloseFriends = firstUnread?.isCloseFriends || (hasStory && userStories[0].isCloseFriends);
 
   const handlePress = () => {
+    const now = Date.now();
+    if (now - lastNavigationTime < NAVIGATION_THROTTLE_MS) return;
+    lastNavigationTime = now;
+
     if (hasStory) {
       router.push(`/story-viewer/${userId}`);
     } else if (userId === userProfile.username) {

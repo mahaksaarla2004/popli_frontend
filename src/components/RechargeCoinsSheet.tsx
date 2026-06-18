@@ -61,7 +61,6 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
                 <Pressable
                   key={pack.id}
                   onPress={() => setSelectedPackId(pack.id)}
-                  style={{ width: '48%' }}
                   className="bg-white rounded-2xl p-4 items-center border relative active:scale-95 transition-all"
                   style={[{ borderColor: isSelected ? '#A855F7' : '#F3F4F6' }, { width: '48%' }]}
                 >

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { Search, Send, CheckCircle2 } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
+import { useAuthStore } from '../../store';
 
 interface SendToSheetProps {
   onClose: () => void;
@@ -13,13 +14,22 @@ export default function SendToSheet({ onClose, onSend }: SendToSheetProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const currentUser = useAuthStore(state => state.userProfile);
 
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const res = await apiClient.get(`/users/search?q=${search}`);
-        setUsers(res.data);
+        if (search.trim() === '') {
+          if (currentUser?.id) {
+            const res = await apiClient.get(`/social/${currentUser.id}/followers`);
+            // The API might return { follower: { ... } } or just the user object
+            setUsers(res.data.map((u: any) => u.follower || u));
+          }
+        } else {
+          const res = await apiClient.get(`/users/search?q=${search}`);
+          setUsers(res.data);
+        }
       } catch (err) {
         console.error("Failed to fetch users", err);
       } finally {
@@ -69,7 +79,7 @@ export default function SendToSheet({ onClose, onSend }: SendToSheetProps) {
       </View>
 
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 100 }}>
-        <Text className="text-neutral-grey text-xs font-bold uppercase mb-4 ml-2">{search ? 'Search Results' : 'Suggested'}</Text>
+        <Text className="text-neutral-grey text-xs font-bold uppercase mb-4 ml-2">{search ? 'Search Results' : 'Your Followers'}</Text>
         
         {loading && <ActivityIndicator color="#A855F7" className="mt-4" />}
         

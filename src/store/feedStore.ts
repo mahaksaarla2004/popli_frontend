@@ -212,7 +212,7 @@ export const useFeedStore = create<FeedState>()(
           // Recursive function to toggle like in potentially nested comments
           const toggleInComments = (commentsList: Comment[]): Comment[] => {
             return commentsList.map(c => {
-              if (c.id === commentId) {
+              if (String(c.id) === String(commentId)) {
                 const newLiked = !c.isLiked;
                 return {
                   ...c,
@@ -604,8 +604,13 @@ export const useFeedStore = create<FeedState>()(
       name: 'popli-feed-store-v2',
       storage: createJSONStorage(() => mmkvStoreStorage),
       partialize: (state) => Object.fromEntries(
-        Object.entries(state).filter(([key]) => !['userReels'].includes(key))
-      ) as any
+        Object.entries(state).filter(([key]) => !['userReels', 'isFetchingFeed'].includes(key))
+      ) as any,
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.isFetchingFeed = false;
+        }
+      }
     }
   )
 );

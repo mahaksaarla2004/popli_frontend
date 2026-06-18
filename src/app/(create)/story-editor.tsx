@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Image, Pressable, TextInputPlatform, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, TextInput, Platform, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useEditorStore } from '../../store';
 import { ChevronLeft, ChevronRight, Type, Sticker as StickerIcon, Music as MusicIcon, MoreHorizontal, Download, Sparkles, Navigation, Send as SendIcon, PlusCircle, Play, Pause, Trash2, Pencil, VolumeX, Volume2 } from 'lucide-react-native';
@@ -271,7 +271,7 @@ export default function StoryEditorScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-black">
+    <View className="flex-1 bg-black">
       
         <View className="flex-1 rounded-3xl overflow-hidden mt-12 mb-20 relative bg-neutral-900">
         {uri ? (
@@ -617,6 +617,6 @@ export default function StoryEditorScreen() {
           onCancel={() => setShowTimelineEditor(false)}
         />
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, AlertPlatform, Modal } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, Platform, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, MessageCircle, AlertTriangle, ChevronDown, ChevronUp, Sparkles, Send } from 'lucide-react-native';
 import { FAQ_LIST } from '../constants/staticData';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollViewPlatform, Image , ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Platform, Image , ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { ChevronLeft, Camera, Sparkles, Globe, ChevronRight } from 'lucide-react-native';

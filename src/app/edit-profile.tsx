@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, AlertPlatform, Image, Modal } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert, Platform, Image, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, AtSign, Link as LinkIcon, UserPlus, Check } from 'lucide-react-native';
 import { useAuthStore, useFeedStore } from '../store';

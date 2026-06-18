@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Image, PressableScrollView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Image, ScrollView, Pressable, Platform, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { User, Lock, Eye, EyeOff, Play } from 'lucide-react-native';
