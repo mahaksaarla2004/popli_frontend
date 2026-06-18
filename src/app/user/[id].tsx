@@ -14,7 +14,7 @@ export default function PublicProfileScreen() {
   const { sendDirectMessage } = useChatStore();
   
   // Optimistic UI: Pre-load profile from feedStore if available
-  const { creators } = useFeedStore();
+  const { creators, setProfileReels } = useFeedStore();
   const cachedProfile = creators.find((c: any) => c.username === username);
 
   const [profile, setProfile] = useState<any>(cachedProfile || null);
@@ -34,6 +34,9 @@ export default function PublicProfileScreen() {
         if (!cachedProfile) setLoading(true);
         const res = await apiClient.get(`/users/creator/${encodeURIComponent(username)}`);
         setProfile(res.data);
+        if (res.data.reels && Array.isArray(res.data.reels)) {
+          setProfileReels(res.data.username, res.data.reels);
+        }
       } catch (e: any) {
         console.error("Error fetching creator profile:", e);
         if (!cachedProfile) setError("Creator not found");
@@ -76,6 +79,19 @@ export default function PublicProfileScreen() {
           <ArrowLeft size={24} color="#FFFFFF" />
         </Pressable>
         <Text className="text-white font-bold text-lg ml-2">{profile.username}</Text>
+
+        {!isOwnProfile && (
+          <View className="ml-auto flex-row items-center">
+            <Pressable 
+              onPress={() => toggleBlock(profile.id)}
+              className="px-3 py-1.5 rounded-full bg-white/10"
+            >
+              <Text className={isBlocked ? "text-[#EF4444] font-bold text-xs" : "text-white font-bold text-xs"}>
+                {isBlocked ? 'Unblock' : 'Block'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -247,7 +263,10 @@ export default function PublicProfileScreen() {
                     <Pressable 
                       key={reel.id} 
                       onPress={() => {
-                        router.push(`/reel/${reel.id}`);
+                        router.push({
+                          pathname: `/reel/${reel.id}`,
+                          params: { source: 'profile', profileUsername: profile.username }
+                        });
                       }}
                       className="w-[33.33%] h-44 border-[0.5px] border-black active:opacity-80 relative bg-neutral-grey"
                     >

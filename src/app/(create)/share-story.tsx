@@ -357,7 +357,7 @@ export default function ShareStoryScreen() {
             {target === 'share' 
               ? 'Sending direct messages to your friends'
               : (mode === 'REEL' && isStory !== 'true'
-                ? 'Uploading to Cloudinary (please wait, large videos take time)' 
+                ? 'Posting...' 
                 : (target === 'close_friends' ? 'Sharing with Close Friends' : 'Sharing to Your Story'))}
           </Text>
         </MotiView>

@@ -45,9 +45,8 @@ export default function HashtagScreen() {
   const renderItem = ({ item }: { item: any }) => (
     <Pressable 
       onPress={() => {
-        // Navigate to single reel view. For now, pushing to a standalone view or back to feed
-        // with specific reel ID is ideal. Let's just push to a hypothetical standalone view or profile reel.
-        router.push(`/reel/${item.id}`); 
+        // Pass source context so the reel viewer knows to load the hashtag feed instead of the main feed
+        router.push(`/reel/${item.id}?source=hashtag&hashtagName=${cleanName}`); 
       }}
       className="flex-1 aspect-[9/16] m-[1px] bg-[#1A0E2C]"
     >

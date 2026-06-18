@@ -111,8 +111,10 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
     setMentionQuery(null);
     setSuggestions([]);
 
+    const tempId = `temp-${Date.now()}`;
+
     // Optimistic backend-connected store update
-    addComment({
+    const addCommentPromise = addComment({
       reelId,
       userId: userProfile.id,
       user: {
@@ -128,7 +130,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
 
     // Optimistic local update
     const optimisticComment: Comment = {
-      id: `temp-${Date.now()}`,
+      id: tempId,
       reelId,
       userId: userProfile.id,
       user: {
@@ -157,6 +159,27 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
       return [optimisticComment, ...prev];
     });
 
+    addCommentPromise.then((realComment) => {
+      if (realComment && realComment.id) {
+        setLocalComments(prev => {
+          const replaceTempId = (list: Comment[]): Comment[] => {
+            return list.map(c => {
+              if (c.id === tempId) {
+                return { ...c, id: realComment.id };
+              }
+              if (c.replies && c.replies.length > 0) {
+                return { ...c, replies: replaceTempId(c.replies) };
+              }
+              return c;
+            });
+          };
+          return replaceTempId(prev);
+        });
+      }
+    }).catch(e => {
+      console.error("Failed to post comment:", e);
+    });
+
     // We can release the submission lock after a short delay to prevent double taps,
     // since the actual backend call is handled inside feedStore.addComment asynchronously.
     setTimeout(() => {
@@ -164,8 +187,8 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
     }, 500);
   };
 
-  const handleLike = (commentId: string) => {
-    if (commentId.startsWith('temp-')) return; // Cannot like a temporary comment
+  const handleLike = (commentId: string | number) => {
+    if (String(commentId).startsWith('temp-')) return; // Cannot like a temporary comment
     
     toggleCommentLike(commentId);
     
@@ -219,9 +242,9 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
       <View key={comment.id} className={`flex-row items-start py-3.5 px-4 gap-3 border-b border-white/5 ${isReply ? 'ml-10 border-b-0 py-2 px-0' : ''} ${isHighlighted ? 'bg-[#D946EF]/20 rounded-lg' : ''}`}>
         <Image 
           source={{ 
-            uri: comment.user?.avatar?.includes('unsplash.com') 
-              ? getDefaultAvatar(comment.user?.username || 'user') 
-              : (comment.user?.avatar || getDefaultAvatar(comment.user?.username || 'user'))
+            uri: comment.user?.avatar
+              ? comment.user.avatar
+              : getDefaultAvatar(comment.user?.username || 'user')
           }} 
           className="w-9 h-9 rounded-full" 
         />
@@ -359,9 +382,9 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
         <View className="px-4 py-4 pb-8 flex-row items-center gap-4">
           <Image 
             source={{ 
-              uri: userProfile.avatar?.includes('unsplash.com') 
-                ? getDefaultAvatar(userProfile.username) 
-                : (userProfile.avatar || getDefaultAvatar(userProfile.username))
+              uri: userProfile.avatar
+                ? userProfile.avatar
+                : getDefaultAvatar(userProfile.username)
             }} 
             className="w-10 h-10 rounded-full bg-neutral-grey" 
           />

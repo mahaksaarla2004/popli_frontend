@@ -496,30 +496,6 @@ export default function StoryEditorScreen() {
                 <Pressable onPress={() => setShowTimelineEditor(true)} className="bg-black/60 backdrop-blur-md border border-white/20 px-4 py-3.5 rounded-[20px] flex-row items-center justify-center flex-1 active:scale-95 transition-all">
                   <Text className="text-white font-bold text-[14px]">Edit video</Text>
                 </Pressable>
-                <Pressable 
-                  onPress={() => {
-                    try { audioPlayer?.pause(); } catch(e) {}
-                    try { videoPlayer?.pause(); } catch(e) {}
-                    setEditorData({
-                      layers,
-                      timelineData,
-                      musicData: selectedMusic
-                    });
-                    router.push({ 
-                      pathname: '/(create)/post-editor', 
-                      params: { 
-                        uri, mode, type, speed, effect, 
-                        musicId: selectedMusic?.id || musicId,
-                        musicTitle: selectedMusic?.title,
-                        musicUrl: selectedMusic?.audioUrl,
-                        challengeId
-                      }
-                    });
-                  }}
-                  className="bg-black/60 backdrop-blur-md border border-white/20 px-4 py-3.5 rounded-[20px] flex-row items-center justify-center flex-1 active:scale-95 transition-all"
-                >
-                  <Text className="text-white font-bold text-[14px]">Edit Layers</Text>
-                </Pressable>
               </View>
 
               <Pressable 

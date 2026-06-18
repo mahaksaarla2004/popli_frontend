@@ -58,7 +58,7 @@ export default function InboxScreen() {
       if (res.data && res.data.id) {
         router.push({
           pathname: `/chat/[id]`,
-          params: { id: res.data.id, creatorName: name, creatorUsername: username, creatorAvatar: avatar }
+          params: { id: res.data.id, creatorId: userId, creatorName: name, creatorUsername: username, creatorAvatar: avatar }
         });
       }
     } catch (e) {
@@ -85,6 +85,20 @@ export default function InboxScreen() {
     avatar: chat?.creatorAvatar || 'https://i.pravatar.cc/150',
     active: (chat?.creatorName ? chat.creatorName.length : 0) % 2 === 0 // Simulated online status
   }));
+
+  // Format the last message preview to hide raw data tags like [STORY:uuid]
+  const formatMessagePreview = (msg: string) => {
+    if (!msg) return '';
+    if (msg.startsWith('[STORY:')) {
+      const textPart = msg.replace(/\[STORY:.*?\]\s*/, '').trim();
+      return textPart ? `Shared a story: ${textPart}` : 'Shared a story';
+    }
+    if (msg.startsWith('[REEL:')) {
+      const textPart = msg.replace(/\[REEL:.*?\]\s*/, '').trim();
+      return textPart ? `Shared a reel: ${textPart}` : 'Shared a reel';
+    }
+    return msg;
+  };
 
   return (
     <KeyboardAvoidingView behavior="padding" className="flex-1 bg-[#12081E] pt-14">
@@ -167,7 +181,7 @@ export default function InboxScreen() {
                           {chat?.creatorName || 'Unknown'}
                         </Text>
                         <Text className={`${chat.unreadCount && chat.unreadCount > 0 ? 'text-white font-medium' : 'text-neutral-grey font-medium'} text-xs`} numberOfLines={1}>
-                          {chat.lastMessage}
+                          {formatMessagePreview(chat.lastMessage)}
                         </Text>
                       </View>
                     </View>

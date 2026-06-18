@@ -515,9 +515,9 @@ export default function StoryViewerScreen() {
             <View className="flex-row items-center gap-2">
               <Image 
                 source={{ 
-                  uri: activeStory.creatorAvatar?.includes('unsplash.com') 
-                    ? getDefaultAvatar(activeStory.creatorId) 
-                    : (activeStory.creatorAvatar || getDefaultAvatar(activeStory.creatorId))
+                  uri: activeStory.creatorAvatar 
+                    ? activeStory.creatorAvatar 
+                    : getDefaultAvatar(activeStory.creatorId) 
                 }} 
                 className="w-8 h-8 rounded-full border border-white/20" 
               />

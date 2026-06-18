@@ -1,82 +1,116 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Pressable, ActivityIndicator, Dimensions, StyleSheet, Text } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Pressable, ActivityIndicator, Dimensions, StyleSheet, Text, ViewToken } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
+import { FlashList } from '@shopify/flash-list';
 import { ReelItem } from '../../components/feed/ReelItem';
 import { CommentsSheet } from '../../components/sheets/CommentsSheet';
 import { GiftSheet } from '../../components/sheets/GiftSheet';
 import { SendSheet } from '../../components/sheets/SendSheet';
 import { apiClient } from '../../api/client';
+import { useFeedStore, useHashtagStore } from '../../store';
 import { Reel } from '../../types';
 import { MotiView } from 'moti';
 
 const { height, width } = Dimensions.get('window');
 
 export default function ReelViewerScreen() {
-  const { id, commentId } = useLocalSearchParams<{ id: string, commentId?: string }>();
+  const { id, commentId, source, hashtagName, profileUsername } = useLocalSearchParams<{ id: string, commentId?: string, source?: string, hashtagName?: string, profileUsername?: string }>();
   const router = useRouter();
   
-  const [reel, setReel] = useState<Reel | null>(null);
+  const { reels: mainReels, profileReels, userReels, likedReels } = useFeedStore();
+  const { hashtagReels } = useHashtagStore();
+  
+  const [swipableReels, setSwipableReels] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // FlashList State
+  const [activeReelId, setActiveReelId] = useState<string>(id as string);
+  const flashListRef = useRef<any>(null);
 
   // Sheet States
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [isSendOpen, setIsSendOpen] = useState(false);
   const [isGiftsOpen, setIsGiftsOpen] = useState(false);
+  const [selectedReelId, setSelectedReelId] = useState<string>('');
+  const [selectedReel, setSelectedReel] = useState<Reel | null>(null);
   const [burstGift, setBurstGift] = useState<{ visible: boolean; icon: string }>({ visible: false, icon: '' });
 
   useEffect(() => {
-    if (commentId && reel) {
+    if (commentId && activeReelId) {
+      setSelectedReelId(activeReelId);
       setTimeout(() => setIsCommentsOpen(true), 0);
     }
-  }, [commentId, reel]);
+  }, [commentId, activeReelId]);
 
   useEffect(() => {
-    const fetchReel = async () => {
-      console.log("Fetching reel with ID:", id);
-      if (!id || id === 'undefined') {
-        console.error("Invalid reel ID!");
-        setLoading(false);
-        return;
-      }
-      try {
-        const res = await apiClient.get(`/reels/${id}`);
-        const r = res.data;
-        setReel({
-          id: r.id,
-          creatorId: r.creatorId,
-          creatorName: r.creator?.name || 'User',
-          creatorUsername: r.creator?.username || 'user',
-          creatorAvatar: r.creator?.avatar || '',
-          creatorIsVerified: r.creator?.isVerified || false,
-          videoUrl: r.mediaUrl,
-          thumbnailUrl: r.thumbnailUrl || r.mediaUrl,
-          description: r.description || '',
-          musicName: r.musicName || 'Original Audio',
-          likesCount: r.likesCount || 0,
-          commentsCount: r.commentsCount || 0,
-          sharesCount: r.sharesCount || 0,
-          viewsCount: r.viewsCount || 0,
-          savesCount: r.savesCount || 0,
-          isLiked: false, // Default or derived from backend
-          isSaved: false,
-          isFollowed: false,
-          category: r.category || 'lifestyle',
-          isMonetized: r.isMonetized,
-          location: { city: r.city || 'Unknown', latitude: r.latitude || 0, longitude: r.longitude || 0 }
-        });
-      } catch (err) {
-        console.error('Error fetching reel:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (id) fetchReel();
-  }, [id]);
+    let sourceReels = mainReels;
+    if (source === 'hashtag' && hashtagName) {
+      sourceReels = hashtagReels[hashtagName] || [];
+    } else if (source === 'profile' && profileUsername) {
+      sourceReels = profileReels[profileUsername] || [];
+    } else if (source === 'userReels') {
+      sourceReels = userReels;
+    } else if (source === 'likedReels') {
+      sourceReels = likedReels;
+    }
 
-  const handleOpenComments = useCallback(() => setIsCommentsOpen(true), []);
-  const handleOpenSend = useCallback(() => setIsSendOpen(true), []);
-  const handleOpenGifts = useCallback(() => setIsGiftsOpen(true), []);
+    const storeReelIndex = sourceReels.findIndex(r => r.id === id);
+    if (storeReelIndex >= 0) {
+      setSwipableReels(sourceReels);
+      setLoading(false);
+    } else {
+      // Fallback: fetch single reel if not in store (e.g. from a deep link)
+      const fetchReel = async () => {
+        try {
+          const res = await apiClient.get(`/reels/${id}`);
+          const r = res.data;
+          setSwipableReels([{
+            id: r.id,
+            creatorId: r.creatorId,
+            creatorName: r.creator?.name || 'User',
+            creatorUsername: r.creator?.username || 'user',
+            creatorAvatar: r.creator?.avatar || '',
+            creatorIsVerified: r.creator?.isVerified || false,
+            videoUrl: r.mediaUrl,
+            thumbnailUrl: r.thumbnailUrl || r.mediaUrl,
+            description: r.description || '',
+            musicName: r.musicName || 'Original Audio',
+            likesCount: r.likesCount || 0,
+            commentsCount: r.commentsCount || 0,
+            sharesCount: r.sharesCount || 0,
+            viewsCount: r.viewsCount || 0,
+            savesCount: r.savesCount || 0,
+            isLiked: false,
+            isSaved: false,
+            isFollowed: false,
+            category: r.category || 'lifestyle',
+            isMonetized: r.isMonetized,
+            location: { city: r.city || 'Unknown', latitude: r.latitude || 0, longitude: r.longitude || 0 }
+          }]);
+        } catch (err) {
+          console.error('Error fetching reel:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchReel();
+    }
+  }, [id, mainReels, hashtagReels, source, hashtagName]);
+
+  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems.length > 0 && viewableItems[0].isViewable) {
+      setActiveReelId(viewableItems[0].item.id);
+    }
+  }, []);
+
+  const [viewabilityConfig] = useState(() => ({ 
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 50
+  }));
+  const handleOpenComments = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsCommentsOpen(true); }, []);
+  const handleOpenSend = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsSendOpen(true); }, []);
+  const handleOpenGifts = useCallback((r: Reel) => { setSelectedReel(r); setIsGiftsOpen(true); }, []);
   const handleOpenProfile = useCallback((creatorUsername: string) => { router.push(`/user/${creatorUsername}`); }, [router]);
 
   const handleGiftSendSuccess = (icon: string) => {
@@ -92,7 +126,7 @@ export default function ReelViewerScreen() {
     );
   }
 
-  if (!reel) {
+  if (swipableReels.length === 0) {
     return (
       <View className="flex-1 bg-black items-center justify-center">
         <Pressable onPress={() => router.back()} className="absolute top-14 left-4 p-2 z-50 rounded-full bg-black/40">
@@ -103,30 +137,50 @@ export default function ReelViewerScreen() {
     );
   }
 
+  const renderItem = ({ item, index }: { item: Reel, index: number }) => {
+    return (
+      <ReelItem
+        item={item}
+        isActive={item.id === activeReelId}
+        onOpenComments={handleOpenComments}
+        onOpenSend={handleOpenSend}
+        onOpenGifts={handleOpenGifts}
+        onOpenProfile={handleOpenProfile}
+        windowWidth={width}
+        windowHeight={height}
+        isStandalone={true}
+      />
+    );
+  };
+
+  const initialIndex = swipableReels.findIndex(r => r.id === id);
+
   return (
     <View className="flex-1 bg-black">
       <Pressable onPress={() => router.back()} className="absolute top-14 left-4 p-2 z-50 rounded-full bg-black/40 border border-white/10">
         <ChevronLeft color="white" size={28} />
       </Pressable>
       
-      <View style={{ width, height }}>
-        <ReelItem
-          item={reel}
-          isActive={true}
-          onOpenComments={handleOpenComments}
-          onOpenSend={handleOpenSend}
-          onOpenGifts={handleOpenGifts}
-          onOpenProfile={handleOpenProfile}
-          windowWidth={width}
-          windowHeight={height}
-          isStandalone={true}
-        />
-      </View>
+      <FlashList
+        ref={flashListRef}
+        data={swipableReels}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        initialScrollIndex={initialIndex >= 0 ? initialIndex : 0}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        estimatedItemSize={height}
+        extraData={{ activeReelId }}
+        contentContainerStyle={{ backgroundColor: '#000' }}
+      />
 
       {/* Sheets & Overlays */}
-      <CommentsSheet reelId={reel.id} isOpen={isCommentsOpen} onClose={() => setIsCommentsOpen(false)} highlightedCommentId={commentId} />
-      <SendSheet reelId={reel.id} isOpen={isSendOpen} onClose={() => setIsSendOpen(false)} />
-      <GiftSheet reel={reel} isOpen={isGiftsOpen} onClose={() => setIsGiftsOpen(false)} onSendSuccess={handleGiftSendSuccess} />
+      <CommentsSheet reelId={selectedReelId} isOpen={isCommentsOpen} onClose={() => setIsCommentsOpen(false)} highlightedCommentId={commentId} />
+      <SendSheet reelId={selectedReelId} isOpen={isSendOpen} onClose={() => setIsSendOpen(false)} />
+      <GiftSheet reel={selectedReel} isOpen={isGiftsOpen} onClose={() => setIsGiftsOpen(false)} onSendSuccess={handleGiftSendSuccess} />
 
       {burstGift.visible && (
         <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-black/40 z-50">

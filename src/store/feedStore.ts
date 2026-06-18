@@ -26,7 +26,7 @@ interface FeedState {
   toggleLikeReel: (reelId: string) => void;
   toggleSaveReel: (reelId: string) => void;
   addLocalReel: (reel: Reel) => void;
-  addComment: (comment: Omit<Comment, 'id' | 'createdAt' | 'likesCount'>) => void;
+  addComment: (comment: Omit<Comment, 'id' | 'createdAt' | 'likesCount'>) => Promise<any>;
   toggleCommentLike: (commentId: string) => void;
   setMoodFilter: (filter: string) => void;
   registerValidView: (reelId: string, creatorUsername: string) => void;
@@ -36,9 +36,11 @@ interface FeedState {
   likedReels: Reel[];
   watchHistory: Reel[];
   userReels: Reel[];
+  profileReels: Record<string, Reel[]>;
   fetchLikedReels: () => Promise<void>;
   fetchWatchHistory: () => Promise<void>;
   fetchUserReels: (userId: string) => Promise<void>;
+  setProfileReels: (username: string, reels: Reel[]) => void;
   fetchFollowingReels: (page?: number, limit?: number) => Promise<void>;
   updateCreatorInfo: (creatorId: string, updates: Partial<{name: string, username: string, avatar: string}>) => void;
   deleteReel: (reelId: string) => Promise<void>;
@@ -61,6 +63,7 @@ export const useFeedStore = create<FeedState>()(
       likedReels: [],
       watchHistory: [],
       userReels: [],
+      profileReels: {},
       comments: [],
       seenReelIds: [],
       homeNextCursor: null,
@@ -77,6 +80,7 @@ export const useFeedStore = create<FeedState>()(
         reels: [],
         userReels: [],
         likedReels: [],
+        profileReels: {},
         watchHistory: [],
         seenReelIds: [],
         homeNextCursor: null,
@@ -203,8 +207,11 @@ export const useFeedStore = create<FeedState>()(
               reels: state.reels.map((r) => r.id === comment.reelId ? { ...r, commentsCount: r.commentsCount + 1 } : r)
             };
           });
+          
+          return savedComment;
         } catch (e) {
           console.error("Failed to add comment to backend:", e);
+          throw e;
         }
       },
       toggleCommentLike: async (commentId) => {
@@ -231,7 +238,7 @@ export const useFeedStore = create<FeedState>()(
         });
 
         // Backend Sync
-        if (!commentId.startsWith('temp-')) {
+        if (!String(commentId).startsWith('temp-')) {
           try {
             await apiClient.post(`/reels/comments/${commentId}/like`);
           } catch (e) {
@@ -598,7 +605,13 @@ export const useFeedStore = create<FeedState>()(
           console.error("Error deleting reel:", error);
           throw error;
         }
-      }
+      },
+
+      setProfileReels: (username: string, reels: Reel[]) => {
+        set((state) => ({
+          profileReels: { ...state.profileReels, [username]: reels }
+        }));
+      },
     }),
     {
       name: 'popli-feed-store-v2',

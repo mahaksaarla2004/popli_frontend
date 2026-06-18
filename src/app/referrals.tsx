@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, Dimensions, Share, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import { ChevronLeft, User, Link as LinkIcon, Star, UserPlus, Trophy, Send } from 'lucide-react-native';
 import { apiClient } from '../api/client';
 
@@ -34,8 +35,8 @@ export default function ReferralsScreen() {
   const referralLink = `app.popli.in/join/${referralCode}`;
 
   const handleCopy = async () => {
-    // Fallback since clipboard package is not installed to prevent crash
-    Alert.alert('Link Ready', `Your link is ready to share:\n${referralLink}`);
+    await Clipboard.setStringAsync(referralCode);
+    Alert.alert('Copied!', 'Referral code copied to clipboard');
   };
 
   const handleShare = async () => {

@@ -165,9 +165,42 @@ export const useChatStore = create<ChatState>()(
         }
       },
       sendMessage: async (chatId, text, mediaUrl, options?: { type?: 'TEXT'|'VOICE', replyToId?: string, replyToText?: string }) => {
+        const tempId = `temp-${Date.now()}`;
+        const { userProfile } = useAuthStore.getState();
+        
+        const tempMsg = {
+          id: tempId,
+          chatId,
+          senderId: userProfile?.id || 'me',
+          text: text || (options?.type === 'VOICE' ? 'Voice message' : 'Sent media'),
+          mediaUrl,
+          type: options?.type || 'TEXT',
+          replyToId: options?.replyToId,
+          replyToText: options?.replyToText,
+          reactions: {},
+          timestamp: new Date().toISOString(),
+          status: 'sending'
+        };
+
+        // Optimistically add the message
+        set((state) => ({
+          messages: [tempMsg as any, ...state.messages],
+          chats: state.chats.map((c) => {
+            if (c.id === chatId) {
+              return {
+                ...c,
+                lastMessage: tempMsg.text,
+                lastMessageTime: 'Just now',
+                unreadCount: 0,
+              };
+            }
+            return c;
+          }),
+        }));
+
         try {
           const res = await apiClient.post(`/chats/${chatId}/messages`, { 
-            text: text || (options?.type === 'VOICE' ? 'Voice message' : 'Sent media'), 
+            text: tempMsg.text, 
             mediaUrl,
             type: options?.type || 'TEXT',
             replyToId: options?.replyToId,
@@ -176,10 +209,10 @@ export const useChatStore = create<ChatState>()(
           const rawMsg = res.data;
           
           const newMsg = {
-            id: rawMsg.id || Date.now().toString(),
+            id: rawMsg.id || tempId,
             chatId: rawMsg.chatId || chatId,
-            senderId: rawMsg.senderId || 'me',
-            text: rawMsg.text || text,
+            senderId: rawMsg.senderId || userProfile?.id || 'me',
+            text: rawMsg.text || tempMsg.text,
             mediaUrl: rawMsg.mediaUrl || mediaUrl,
             type: rawMsg.type || options?.type || 'TEXT',
             storyId: rawMsg.storyId,
@@ -191,23 +224,27 @@ export const useChatStore = create<ChatState>()(
           };
           
           set((state) => {
-            if (state.messages.some(m => m.id === newMsg.id)) return state;
+            // Replace temp message with the real one
             return {
-            messages: [...state.messages, newMsg as any],
-            chats: state.chats.map((c) => {
-              if (c.id === chatId) {
-                return {
-                  ...c,
-                  lastMessage: text || (options?.type === 'VOICE' ? 'Voice message' : 'Sent media'),
-                  lastMessageTime: formatRelativeTime(new Date().toISOString())
-                };
-              }
-              return c;
-            })
+              messages: state.messages.map(m => m.id === tempId ? newMsg as any : m),
+              chats: state.chats.map((c) => {
+                if (c.id === chatId) {
+                  return { ...c, lastMessageTime: newMsg.timestamp };
+                }
+                return c;
+              }),
             };
           });
+          
+          if (socket) {
+            socket.emit('sendMessage', { ...newMsg, room: chatId });
+          }
         } catch (error) {
           console.error("Failed to send message:", error);
+          // Update status to failed
+          set((state) => ({
+            messages: state.messages.map(m => m.id === tempId ? { ...m, status: 'failed' } : m),
+          }));
         }
       },
       sendDirectMessage: async (receiver, text, mediaUrl) => {

@@ -1,6 +1,8 @@
-import React from 'react';
-import { View, Text, Pressable, ScrollView, Modal, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, ScrollView, Modal, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Play, X } from 'lucide-react-native';
+import { apiClient } from '../api/client';
+import { useAuthStore } from '../store';
 
 interface ChallengeSubmissionSheetProps {
   visible: boolean;
@@ -14,7 +16,31 @@ export default function ChallengeSubmissionSheet({ visible, onClose, onSubmit, c
   
 
 
-  const handleRecordNew = () => {
+  const [isChecking, setIsChecking] = useState(false);
+
+  const handleRecordNew = async () => {
+    if (challengeId) {
+      setIsChecking(true);
+      const { userProfile } = useAuthStore.getState();
+      try {
+        const res = await apiClient.get(`/reels/user/${userProfile?.id}`);
+        const alreadySubmitted = res.data.some((r: any) => r.challengeId === challengeId);
+        if (alreadySubmitted) {
+          Alert.alert(
+            "Already Participated", 
+            "Aap ek challenge mein sirf ek hi baar reel post kar sakti hain.",
+            [{ text: "OK" }]
+          );
+          setIsChecking(false);
+          onClose();
+          return;
+        }
+      } catch(e) {
+        console.warn("Failed to check if already submitted", e);
+      }
+      setIsChecking(false);
+    }
+
     onClose();
     if (challengeId) {
       router.push({ pathname: '/(tabs)/create', params: { challengeId } });
@@ -49,9 +75,14 @@ export default function ChallengeSubmissionSheet({ visible, onClose, onSubmit, c
             {/* Record New Button */}
             <Pressable
               onPress={handleRecordNew}
+              disabled={isChecking}
               className="bg-gradient-to-r from-[#A855F7] to-[#D946EF] rounded-2xl p-4 flex-row items-center justify-center active:opacity-80 mt-2"
             >
-              <Text className="text-white font-bold text-lg">🎥 Record New Video</Text>
+              {isChecking ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-bold text-lg">🎥 Record New Video</Text>
+              )}
             </Pressable>
 
             {/* In a real implementation we would fetch user's recent reels here */}

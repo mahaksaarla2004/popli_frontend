@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, Dimensions, TextInput, ActivityIndicator, Animated, PanResponder, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Dimensions, TextInput, ActivityIndicator, Animated, PanResponder, Alert, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Building2, Smartphone, Check, ChevronRight, Clock, RefreshCw, Gift, Eye } from 'lucide-react-native';
+import { ChevronLeft, Building2, Smartphone, Check, ChevronRight, Clock, RefreshCw, Gift, Eye, CheckCircle2 } from 'lucide-react-native';
 import { apiClient } from '../api/client';
 
 const { width } = Dimensions.get('window');
@@ -16,6 +16,15 @@ export default function WithdrawScreen() {
   const [loading, setLoading] = useState(true);
   const [withdrawing, setWithdrawing] = useState(false);
 
+  // Custom Alert State
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{title: string, message: string, type: 'error' | 'success'}>({title: '', message: '', type: 'error'});
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' = 'error') => {
+    setAlertConfig({ title, message, type });
+    setAlertVisible(true);
+  };
+
   const [pan] = useState(() => new Animated.ValueXY());
   const maxSwipe = width - 32 - 40 - 16; // container width minus padding and button size
 
@@ -25,18 +34,18 @@ export default function WithdrawScreen() {
 
   const handleWithdrawSubmit = async () => {
     if (!upiId || !amount) {
-      Alert.alert('Error', 'Please enter UPI ID and Amount');
+      showAlert('Error', 'Please enter UPI ID and Amount', 'error');
       Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
       return;
     }
     const amt = parseFloat(amount);
     if (amt < 500) {
-      Alert.alert('Error', 'Minimum withdrawal is ₹500');
+      showAlert('Error', 'Minimum withdrawal is ₹500', 'error');
       Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
       return;
     }
     if (amt > availableBalance) {
-      Alert.alert('Error', 'Insufficient balance');
+      showAlert('Error', 'Insufficient balance', 'error');
       Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
       return;
     }
@@ -44,10 +53,12 @@ export default function WithdrawScreen() {
     try {
       setWithdrawing(true);
       await apiClient.post('/wallet/withdraw', { amount: amt, upiId });
-      Alert.alert('Success', 'Withdrawal requested successfully!');
-      router.back();
+      showAlert('Success', 'Withdrawal requested successfully!', 'success');
+      setTimeout(() => {
+        router.back();
+      }, 2000);
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || 'Failed to withdraw');
+      showAlert('Error', e.response?.data?.message || 'Failed to withdraw', 'error');
       Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
     } finally {
       setWithdrawing(false);
@@ -245,6 +256,31 @@ export default function WithdrawScreen() {
         </View>
         
       </ScrollView>
+
+      {/* Custom Alert Modal */}
+      <Modal visible={alertVisible} transparent animationType="fade">
+        <View className="flex-1 bg-black/60 items-center justify-center px-6">
+          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-3xl p-6 w-full max-w-sm items-center shadow-2xl">
+            {alertConfig.type === 'error' ? (
+              <View className="w-16 h-16 rounded-full bg-red-500/20 items-center justify-center mb-4">
+                <Text className="text-red-500 text-3xl font-bold">!</Text>
+              </View>
+            ) : (
+              <View className="w-16 h-16 rounded-full bg-green-500/20 items-center justify-center mb-4">
+                <CheckCircle2 size={32} color="#10B981" />
+              </View>
+            )}
+            <Text className="text-white font-bold text-xl mb-2 text-center">{alertConfig.title}</Text>
+            <Text className="text-white/70 text-center mb-6 leading-5">{alertConfig.message}</Text>
+            <Pressable 
+              onPress={() => setAlertVisible(false)}
+              className="bg-[#A855F7] w-full py-4 rounded-xl items-center active:scale-[0.98]"
+            >
+              <Text className="text-white font-bold uppercase tracking-wider">OK</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

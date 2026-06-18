@@ -50,7 +50,7 @@ export default function ProfileScreen() {
     following: followingIds.length || 0,
     followers: userProfile.followersCount || 0,
     likes: totalLikes, // Real stat
-    avatar: userProfile.avatar?.includes('unsplash.com') ? getDefaultAvatar(userProfile.username) : (userProfile.avatar || getDefaultAvatar(userProfile.username))
+    avatar: userProfile.avatar || getDefaultAvatar(userProfile.username)
   };
 
   const totalEarnings = userProfile.coinsEarned || 0;
@@ -229,7 +229,10 @@ export default function ProfileScreen() {
               <Pressable
                 key={reel.id}
                 onPress={() => {
-                  router.push(`/reel/${reel.id}`);
+                  router.push({
+                    pathname: `/reel/${reel.id}`,
+                    params: { source: activeTab === 'reels' ? 'userReels' : 'likedReels' }
+                  });
                 }}
                 className="w-[33.33%] h-44 border-[0.5px] border-black active:opacity-80"
               >

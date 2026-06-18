@@ -12,12 +12,12 @@ import { apiClient } from '../../api/client';
 
 export default function ChatScreen() {
   const router = useRouter();
-  const { id, creatorName, creatorUsername, creatorAvatar } = useLocalSearchParams();
+  const { id, creatorId, creatorName, creatorUsername, creatorAvatar } = useLocalSearchParams();
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [replyingTo, setReplyingTo] = useState<any>(null);
   const [viewerImage, setViewerImage] = useState<string | null>(null);
 
-  const { userProfile, toggleBlock } = useAuthStore();
+  const { userProfile, toggleBlock, blockedUsers } = useAuthStore();
   const { 
     chats, 
     messages: storeMessages, 
@@ -37,6 +37,9 @@ export default function ChatScreen() {
   const displayAvatar = chat?.creatorAvatar || (creatorAvatar as string) || 'https://i.pravatar.cc/150';
   const displayName = chat?.creatorName || (creatorName as string) || 'Unknown User';
   const displayUsername = chat?.creatorUsername || (creatorUsername as string) || 'user';
+  
+  const targetUserId = chat?.creatorId || (creatorId as string);
+  const isBlocked = blockedUsers.some(u => u.id === targetUserId);
 
   // Only show messages for this chat, sort newest first for inverted FlashList
   const messages = storeMessages
@@ -206,16 +209,17 @@ export default function ChatScreen() {
 
               <Pressable 
                 onPress={() => {
-                  toggleBlock(chat?.creatorId || id as string);
-                  setShowOptionsModal(false);
-                  router.back();
+                  if (targetUserId) {
+                    toggleBlock(targetUserId);
+                  }
+                  // Let the modal stay open so they can see it changed to Unblock
                 }}
                 className="flex-row items-center px-4 py-4 active:bg-white/5 rounded-xl"
               >
                 <Ban size={20} color="#EF4444" />
                 <View className="ml-3">
-                  <Text className="text-[#EF4444] font-semibold text-base">Block User</Text>
-                  <Text className="text-neutral-grey text-xs mt-0.5">They won't be able to message you</Text>
+                  <Text className="text-[#EF4444] font-semibold text-base">{isBlocked ? 'Unblock User' : 'Block User'}</Text>
+                  <Text className="text-neutral-grey text-xs mt-0.5">{isBlocked ? 'They will be able to message you again' : "They won't be able to message you"}</Text>
                 </View>
               </Pressable>
             </View>

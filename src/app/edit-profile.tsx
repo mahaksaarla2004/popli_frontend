@@ -132,7 +132,7 @@ export default function EditProfileScreen() {
             onPress={handlePickImage}
             className="w-24 h-24 rounded-full bg-[#F59E0B]/20 items-center justify-center border-4 border-[#F59E0B]/50 mb-3 overflow-hidden"
           >
-             {avatarUri && !avatarUri.includes('unsplash.com') ? (
+             {avatarUri ? (
                <Image source={{ uri: avatarUri }} className="w-full h-full" resizeMode="cover" />
              ) : (
                <Image source={{ uri: getDefaultAvatar(userProfile?.username || 'user') }} className="w-full h-full" resizeMode="cover" />

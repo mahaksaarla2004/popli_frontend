@@ -144,6 +144,10 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
                   <>
                     <Text className="text-[#6B7280] text-[10px]">Delivered</Text>
                   </>
+                ) : msg.status === 'sending' ? (
+                  <Text className="text-[#A855F7] text-[10px]">Sending...</Text>
+                ) : msg.status === 'failed' ? (
+                  <Text className="text-[#EF4444] text-[10px]">Failed</Text>
                 ) : (
                   <Text className="text-[#6B7280] text-[10px]">Sent</Text>
                 )}

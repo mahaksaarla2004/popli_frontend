@@ -86,7 +86,7 @@ export default function SettingsScreen() {
             className="flex-row items-center gap-4 flex-1"
           >
             <View className="w-14 h-14 rounded-full overflow-hidden items-center justify-center border-2 border-[#F59E0B]/50 bg-[#F59E0B]/20">
-              {userProfile?.avatar && !userProfile.avatar.includes('unsplash.com') ? (
+              {userProfile?.avatar ? (
                 <Image source={{ uri: userProfile.avatar }} className="w-full h-full" resizeMode="cover" />
               ) : (
                 <Image source={{ uri: getDefaultAvatar(userProfile?.username || 'user') }} className="w-full h-full" resizeMode="cover" />

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ArrowLeft, BarChart2, Star, Target, Shield, Settings } from 'lucide-react-native';
 import { useAuthStore } from '../../store';
 
@@ -24,8 +24,14 @@ const ActionCard = ({ icon: Icon, title, description, onPress }: any) => (
 export default function CreatorPortalScreen() {
   const router = useRouter();
 
-  const { userProfile } = useAuthStore();
+  const { userProfile, fetchProfile } = useAuthStore();
   const level = Math.floor((userProfile?.followersCount || 0) / 100) + 1;
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [])
+  );
 
   return (
     <View className="flex-1 bg-[#0B001A] pt-14">
@@ -58,12 +64,6 @@ export default function CreatorPortalScreen() {
           icon={BarChart2} 
           title="Creator Analytics" 
           description="Deep dive into your audience, views, and engagement metrics." 
-          onPress={() => router.push('/analytics')}
-        />
-        <ActionCard 
-          icon={Target} 
-          title="Content Performance" 
-          description="See which of your videos are trending and why." 
           onPress={() => router.push('/analytics')}
         />
         <ActionCard 
