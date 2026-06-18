@@ -1,0 +1,164 @@
+{
+  "frontend": [
+    {
+      "file": "api\\socket.ts",
+      "line": 8,
+      "content": "console.log(\"Mock connectSockets called\");",
+      "keyword": "mock"
+    },
+    {
+      "file": "api\\socket.ts",
+      "line": 12,
+      "content": "console.log(\"Mock disconnectSockets called\");",
+      "keyword": "mock"
+    },
+    {
+      "file": "app\\(auth)\\permissions.tsx",
+      "line": 7,
+      "content": "// Safe mock wrapper or conditional execution for camera/mic permissions",
+      "keyword": "mock"
+    },
+    {
+      "file": "app\\(auth)\\personalization-loader.tsx",
+      "line": 53,
+      "content": "{/* Visual Floating Mock Cards (Simulates feed downloading) */}",
+      "keyword": "mock"
+    },
+    {
+      "file": "app\\(create)\\live-setup.tsx",
+      "line": 13,
+      "content": "{/* Fake Camera Preview Background */}",
+      "keyword": "fake"
+    },
+    {
+      "file": "app\\(create)\\story-editor.tsx",
+      "line": 600,
+      "content": "duration={15} // Mock duration since we don't have metadata immediately",
+      "keyword": "mock"
+    },
+    {
+      "file": "app\\(tabs)\\discover.tsx",
+      "line": 319,
+      "content": "{/* 5. DUMMY CHALLENGES BANNER REMOVED AS PER USER REQUEST */}",
+      "keyword": "dummy"
+    },
+    {
+      "file": "app\\(tabs)\\rewards.tsx",
+      "line": 49,
+      "content": "// Fake splitting for UI matching screenshot",
+      "keyword": "fake"
+    },
+    {
+      "file": "components\\chat\\ChatInputBar.tsx",
+      "line": 7,
+      "content": "const { Audio } = require('expo-audio'); // fallback if needed, or we just mock voice for now",
+      "keyword": "mock"
+    },
+    {
+      "file": "components\\chat\\ChatInputBar.tsx",
+      "line": 76,
+      "content": "// Mock sending voice message",
+      "keyword": "mock"
+    },
+    {
+      "file": "components\\editor\\MusicEditorOverlay.tsx",
+      "line": 116,
+      "content": "{/* Pseudo Timeline Slider (Visual mock for now, actual implementation requires advanced pan handler",
+      "keyword": "mock"
+    },
+    {
+      "file": "components\\editor\\MusicEditorOverlay.tsx",
+      "line": 125,
+      "content": "<Text className=\"text-white/50 text-xs text-center mt-3 font-medium\">Drag to select 15s segment (Moc",
+      "keyword": "mock"
+    },
+    {
+      "file": "components\\editor\\ReelTimelineEditor.tsx",
+      "line": 167,
+      "content": "{/* Fake Video Thumbnails */}",
+      "keyword": "fake"
+    },
+    {
+      "file": "components\\sheets\\CommentsSheet.tsx",
+      "line": 159,
+      "content": "if (commentId.startsWith('temp-')) return; // Cannot like a temporary comment",
+      "keyword": "temporary"
+    },
+    {
+      "file": "lib\\firebase.ts",
+      "line": 11,
+      "content": "// MOCK OTP FLOW FOR LOCAL TESTING",
+      "keyword": "mock"
+    },
+    {
+      "file": "lib\\firebase.ts",
+      "line": 30,
+      "content": "console.log('MOCK OTP VERIFIED!');",
+      "keyword": "mock"
+    },
+    {
+      "file": "lib\\firebase.ts",
+      "line": 31,
+      "content": "// Return a special mock token that backend will recognize",
+      "keyword": "mock"
+    },
+    {
+      "file": "services\\geoService.ts",
+      "line": 71,
+      "content": "// Find closest mock city from coordinates",
+      "keyword": "mock"
+    },
+    {
+      "file": "store\\authStore.ts",
+      "line": 160,
+      "content": "// Add a mock object so it appears instantly; fetchBlockedUsers will correct it later",
+      "keyword": "mock"
+    }
+  ],
+  "backend": [
+    {
+      "file": "auth\\auth.service.ts",
+      "line": 33,
+      "content": "// Mock logic for local testing without Firebase SHA-1 setup",
+      "keyword": "mock"
+    },
+    {
+      "file": "auth\\auth.service.ts",
+      "line": 243,
+      "content": "// We now enforce Firebase Token verification instead of mock OTPs.",
+      "keyword": "mock"
+    }
+  ],
+  "admin": [
+    {
+      "file": "components\\GlobalContextBar.tsx",
+      "line": 29,
+      "content": "// Dispatch a dummy event so active listeners update!",
+      "keyword": "dummy"
+    },
+    {
+      "file": "constants\\navigation.ts",
+      "line": 64,
+      "content": "--- HIDING DUMMY TABS FOR V1 LAUNCH ---",
+      "keyword": "dummy"
+    },
+    {
+      "file": "pages\\Reels.tsx",
+      "line": 444,
+      "content": "{/* Recommender metrics - Removed dummy metrics */}",
+      "keyword": "dummy"
+    },
+    {
+      "file": "pages\\Settings.tsx",
+      "line": 108,
+      "content": "Revert all temporary creator shadow-bans, verifies, coin payout values, and campaign histories to de",
+      "keyword": "temporary"
+    },
+    {
+      "file": "redux\\slices\\authSlice.ts",
+      "line": 3,
+      "content": "import { MOCK_USERS } from '../../mock/db';",
+      "keyword": "mock"
+    }
+  ]
+}

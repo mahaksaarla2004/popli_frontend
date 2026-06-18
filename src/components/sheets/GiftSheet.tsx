@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Platform, StyleSheet, ActivityIndicator, ScrollView, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { X, Award, Coins, Gift, Heart, Crown, Gem, Rocket, PartyPopper, Sparkles, Star, Flower2, Zap, CheckCircle2 } from 'lucide-react-native';
 import { useWalletStore } from '../../store';
@@ -38,6 +39,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { coinBalance, sendGiftCoins, rechargeCoins } = useWalletStore();
 
   const selectedGift = GIFT_CATALOG.find((g) => g.id === selectedGiftId)!;
@@ -92,7 +94,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
         exit={{ translateY: 600, opacity: 0 }}
         transition={{ type: 'timing', duration: 300 }}
         className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] z-50 shadow-2xl flex-col"
-        style={{ paddingBottom: Platform.OS === 'ios' ? 30 : 20 }}
+        style={{ paddingBottom: Math.max(insets.bottom, 20) }}
       >
         <View className="items-center py-3">
           <View className="w-10 h-1 bg-gray-300 rounded-full" />
@@ -159,7 +161,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
               <TouchableOpacity
                 onPress={handleSendGift}
                 disabled={isSending}
-                className={`w-full py-4 rounded-xl items-center justify-center ${isSending ? 'bg-[#D8B4FE]/50' : 'bg-[#D8B4FE]'}`}
+                className={`w-full py-4 rounded-xl items-center justify-center ${isSending ? 'bg-[#A855F7]/50' : 'bg-[#A855F7]'}`}
               >
                 {isSending ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
@@ -256,7 +258,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
       </MotiView>
 
       {showInsufficientModal && (
-        <View style={StyleSheet.absoluteFill} className="z-[100] flex-1 bg-black/50 items-center justify-center px-6">
+        <View style={[StyleSheet.absoluteFill, { elevation: 100, zIndex: 100 }]} className="flex-1 bg-black/50 items-center justify-center px-6">
           <MotiView 
             from={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -291,7 +293,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
       )}
 
       {showSuccessModal && (
-        <View style={StyleSheet.absoluteFill} className="z-[100] flex-1 bg-black/50 items-center justify-center px-6">
+        <View style={[StyleSheet.absoluteFill, { elevation: 100, zIndex: 100 }]} className="flex-1 bg-black/50 items-center justify-center px-6">
           <MotiView 
             from={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -316,7 +318,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
       )}
 
       {showErrorModal && (
-        <View style={StyleSheet.absoluteFill} className="z-[100] flex-1 bg-black/50 items-center justify-center px-6">
+        <View style={[StyleSheet.absoluteFill, { elevation: 100, zIndex: 100 }]} className="flex-1 bg-black/50 items-center justify-center px-6">
           <MotiView 
             from={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

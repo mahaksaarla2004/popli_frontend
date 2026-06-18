@@ -16,6 +16,7 @@ export default function ChatScreen() {
   const { id, creatorName, creatorUsername, creatorAvatar } = useLocalSearchParams();
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [replyingTo, setReplyingTo] = useState<any>(null);
+  const [viewerImage, setViewerImage] = useState<string | null>(null);
 
   const { userProfile, toggleBlock } = useAuthStore();
   const { 
@@ -28,7 +29,8 @@ export default function ChatScreen() {
     mutedChats, 
     markChatRead,
     markMessageSeen,
-    isTyping
+    isTyping,
+    sendTyping
   } = useChatStore();
   
   const chat = chats.find(c => c.id === id);
@@ -71,8 +73,7 @@ export default function ChatScreen() {
 
   const handleTyping = (typing: boolean) => {
     if (id && userProfile?.id) {
-      // In a real app, this should debounce and emit to socket via the store or API
-      apiClient.post(`/chats/${id}/typing`, { isTyping: typing }).catch(() => {});
+      sendTyping(id as string, typing);
     }
   };
 
@@ -91,10 +92,11 @@ export default function ChatScreen() {
   });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#12081E' }} edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#12081E' }} edges={['top']}>
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
       {/* HEADER */}
       <View className="flex-row items-center justify-between px-4 pt-14 pb-3 border-b border-white/5 bg-[#12081E] z-10">
@@ -155,6 +157,7 @@ export default function ChatScreen() {
             <MessageBubble 
               msg={item} 
               onReply={(msg) => setReplyingTo(msg)} 
+              onImagePress={(url) => setViewerImage(url)}
             />
           )}
         />
@@ -221,6 +224,21 @@ export default function ChatScreen() {
             </View>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* IMAGE VIEWER MODAL */}
+      <Modal visible={!!viewerImage} transparent={true} animationType="fade" onRequestClose={() => setViewerImage(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' }}>
+          <Pressable 
+            style={{ position: 'absolute', top: 50, right: 20, zIndex: 10, padding: 10 }} 
+            onPress={() => setViewerImage(null)}
+          >
+            <X size={28} color="white" />
+          </Pressable>
+          {viewerImage && (
+            <Image source={{ uri: viewerImage }} style={{ width: '100%', height: '80%' }} resizeMode="contain" />
+          )}
+        </View>
       </Modal>
 
       </KeyboardAvoidingView>

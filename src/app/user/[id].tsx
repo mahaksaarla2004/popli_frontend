@@ -32,7 +32,7 @@ export default function PublicProfileScreen() {
     async function fetchProfile() {
       try {
         if (!cachedProfile) setLoading(true);
-        const res = await apiClient.get(`/users/creator/${username}`);
+        const res = await apiClient.get(`/users/creator/${encodeURIComponent(username)}`);
         setProfile(res.data);
       } catch (e: any) {
         console.error("Error fetching creator profile:", e);
@@ -110,6 +110,10 @@ export default function PublicProfileScreen() {
                 <Text className="text-white font-bold text-lg">{formatSocialCount(profile.followingCount || 0)}</Text>
                 <Text className="text-neutral-silver text-xs">Following</Text>
               </Pressable>
+              <View className="items-center">
+                <Text className="text-white font-bold text-lg">₹{formatSocialCount(profile.coinsEarned || 0)}</Text>
+                <Text className="text-neutral-silver text-xs">Earnings</Text>
+              </View>
             </View>
           </View>
 

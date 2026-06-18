@@ -41,14 +41,12 @@ export default function RewardsScreen() {
     }, [])
   );
 
-  const viewEarnings = wallet?.viewEarnings ?? 0;
-  const giftEarnings = wallet?.giftEarnings ?? 0;
-  const referralEarnings = wallet?.referralEarnings ?? 0;
-  const totalEarnings = viewEarnings + giftEarnings + referralEarnings;
+  const viewEarnings = wallet?.inrEarnings ?? 0;
+  const giftEarnings = wallet?.totalEarnings ?? 0; // Using totalEarnings to aggregate
+  const totalEarnings = wallet?.totalEarnings ?? 0;
   
-  // Fake splitting for UI matching screenshot
-  const pendingValidation = 0.00;
-  const withdrawable = totalEarnings;
+  const pendingValidation = wallet?.pendingBalance ?? 0;
+  const withdrawable = wallet?.withdrawableBalance ?? 0;
   
   const coins = (wallet?.coins ?? 0) + localCoinsAdded;
   const transactions = wallet?.transactions || [];
@@ -186,24 +184,6 @@ export default function RewardsScreen() {
             </View>
           </View>
 
-          {/* VIRTUAL COINS BALANCE */}
-          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-5 mb-8 flex-row justify-between items-center">
-             <View className="flex-row items-center gap-4">
-               <View className="bg-[#F59E0B]/20 w-12 h-12 rounded-full items-center justify-center border border-[#F59E0B]/30">
-                 <Coins size={24} color="#FBBF24" />
-               </View>
-               <View>
-                 <Text className="text-white/60 font-bold text-[10px] uppercase tracking-wider mb-0.5">Virtual Coins Balance</Text>
-                 <Text className="text-[#FBBF24] font-black text-2xl">{coins.toLocaleString()}</Text>
-               </View>
-             </View>
-             <Pressable 
-               onPress={() => setRechargeVisible(true)}
-               className="bg-[#12081E] border border-[#3E2B5C] px-4 py-2.5 rounded-xl active:opacity-70"
-             >
-               <Text className="text-white font-bold text-xs">Buy Coins</Text>
-             </Pressable>
-          </View>
 
           {/* LEDGER & HISTORY */}
           <View className="flex-row items-center gap-2 mb-4">

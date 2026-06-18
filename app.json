@@ -37,6 +37,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withUcropStrings.js",
       "expo-router",
       [
         "expo-splash-screen",

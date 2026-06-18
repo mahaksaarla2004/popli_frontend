@@ -63,9 +63,26 @@ export default function ReelTimelineEditor({ player, duration, initialData, onCo
     });
   };
 
+  // Safe JS wrappers for video player (Worklets cannot capture the player object)
+  const handlePause = () => {
+    if (player) player.pause();
+  };
+
+  const handlePlay = () => {
+    if (player) player.play();
+  };
+
+  const handleSeek = (time: number) => {
+    if (player) player.seekBy(time - player.currentTime);
+  };
+
+  const handleScrub = (time: number) => {
+    if (onScrub) onScrub(time);
+  };
+
   const leftHandleGesture = Gesture.Pan()
     .onStart(() => {
-      if (player) { runOnJS(player.pause.bind(player))(); }
+      runOnJS(handlePause)();
     })
     .onChange((e) => {
       let newPercent = startPercent.value + (e.changeX / TIMELINE_WIDTH);
@@ -74,16 +91,16 @@ export default function ReelTimelineEditor({ player, duration, initialData, onCo
       startPercent.value = newPercent;
       
       const newTime = newPercent * duration;
-      if (player) { runOnJS(player.seekBy.bind(player))(newTime - player.currentTime); }
-      if (onScrub) runOnJS(onScrub)(newTime);
+      runOnJS(handleSeek)(newTime);
+      runOnJS(handleScrub)(newTime);
     })
     .onEnd(() => {
-      if (player) { runOnJS(player.play.bind(player))(); }
+      runOnJS(handlePlay)();
     });
 
   const rightHandleGesture = Gesture.Pan()
     .onStart(() => {
-      if (player) { runOnJS(player.pause.bind(player))(); }
+      runOnJS(handlePause)();
     })
     .onChange((e) => {
       let newPercent = endPercent.value + (e.changeX / TIMELINE_WIDTH);
@@ -92,15 +109,13 @@ export default function ReelTimelineEditor({ player, duration, initialData, onCo
       endPercent.value = newPercent;
       
       const newTime = newPercent * duration;
-      if (player) { runOnJS(player.seekBy.bind(player))(newTime - player.currentTime); }
-      if (onScrub) runOnJS(onScrub)(newTime);
+      runOnJS(handleSeek)(newTime);
+      runOnJS(handleScrub)(newTime);
     })
     .onEnd(() => {
       const newTime = startPercent.value * duration;
-      if (player) { 
-        runOnJS(player.seekBy.bind(player))(newTime - player.currentTime); 
-        runOnJS(player.play.bind(player))(); 
-      }
+      runOnJS(handleSeek)(newTime);
+      runOnJS(handlePlay)();
     });
 
   const leftHandleStyle = useAnimatedStyle(() => {

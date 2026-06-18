@@ -1,16 +1,12 @@
-// import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
-// export const firebaseAuth = auth();
+export const firebaseAuth = auth();
 
-let confirmationResult: any | null = null;
-
-let mockPhone: string | null = null;
+let confirmationResult: FirebaseAuthTypes.ConfirmationResult | null = null;
 
 export async function sendFirebaseOTP(phoneNumber: string) {
   try {
-    // MOCK OTP FLOW FOR LOCAL TESTING
-    console.log('MOCKING FIREBASE OTP FOR:', phoneNumber);
-    mockPhone = phoneNumber;
+    confirmationResult = await auth().signInWithPhoneNumber(phoneNumber);
     return true;
   } catch (error) {
     console.error('Error sending Firebase OTP:', error);
@@ -19,17 +15,16 @@ export async function sendFirebaseOTP(phoneNumber: string) {
 }
 
 export async function verifyFirebaseOTP(otp: string) {
-  if (!mockPhone) throw new Error('No OTP requested. Please go back and request a new one.');
-  
-  if (otp !== '123456') {
-    throw new Error('Invalid OTP. For testing, please use 123456.');
+  if (!confirmationResult) {
+    throw new Error('No OTP requested. Please go back and request a new one.');
   }
 
   try {
-    // ACCEPT ANY OTP FOR MOCKING
-    console.log('MOCK OTP VERIFIED!');
-    // Return a special mock token that backend will recognize
-    return 'MOCK_TOKEN_' + mockPhone;
+    const userCredential = await confirmationResult.confirm(otp);
+    if (!userCredential?.user) throw new Error('Verification failed.');
+    
+    // Return the actual JWT token to the backend
+    return await userCredential.user.getIdToken();
   } catch (error) {
     console.error('Error verifying Firebase OTP:', error);
     throw error;

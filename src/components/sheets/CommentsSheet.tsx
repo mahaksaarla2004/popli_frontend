@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView, Modal } from 'react-native';
+import { View, Text, Image, TextInput, Pressable, ScrollView, Platform, Modal } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { X, Send, Heart, Smile } from 'lucide-react-native';
 import { useFeedStore, useAuthStore } from '../../store';
 import { formatSocialCount, getDefaultAvatar } from '../../utils';
@@ -259,7 +260,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
   return (
     <Modal visible={isOpen} transparent animationType="none" onRequestClose={onClose}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+        behavior="padding" 
         style={{ flex: 1 }}
       >
         <View className="flex-1 justify-end">

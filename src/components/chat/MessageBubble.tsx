@@ -8,7 +8,7 @@ import { useAuthStore, useChatStore } from '../../store';
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
-export default function MessageBubble({ msg, onReply }: { msg: any, onReply: (msg: any) => void }) {
+export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any, onReply: (msg: any) => void, onImagePress?: (url: string) => void }) {
   const router = useRouter();
   const { userProfile } = useAuthStore();
   const { reactToMessage } = useChatStore();
@@ -70,7 +70,7 @@ export default function MessageBubble({ msg, onReply }: { msg: any, onReply: (ms
   const renderContent = () => {
     if (msg.attachment && !msg.isStoryMention) {
       return (
-        <View className="relative rounded-xl overflow-hidden">
+        <Pressable onPress={() => onImagePress && onImagePress(msg.attachment)} className="relative rounded-xl overflow-hidden">
           <Image source={{ uri: getThumbnailUrl(msg.attachment) }} style={{ width: 180, height: 240 }} resizeMode="cover" />
           {msg.isVideo && (
             <View className="absolute inset-0 items-center justify-center bg-black/20">
@@ -79,7 +79,7 @@ export default function MessageBubble({ msg, onReply }: { msg: any, onReply: (ms
               </View>
             </View>
           )}
-        </View>
+        </Pressable>
       );
     }
 

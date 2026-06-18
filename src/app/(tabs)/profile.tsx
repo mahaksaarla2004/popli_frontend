@@ -237,7 +237,7 @@ export default function ProfileScreen() {
                 <View className="absolute bottom-2 left-2 flex-row items-center gap-1">
                   <Play size={10} color="#FFFFFF" fill="#FFFFFF" />
                   <Text className="text-white text-[10px] font-bold drop-shadow-md">
-                    {formatSocialCount(reel.likesCount)}
+                    {formatSocialCount(reel.viewsCount || 0)}
                   </Text>
                 </View>
                 {reel.isMonetized && activeTab === 'reels' && (

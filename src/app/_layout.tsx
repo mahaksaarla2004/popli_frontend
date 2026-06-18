@@ -78,7 +78,7 @@ export default function RootLayout() {
     if (!isOnboarded) {
       // Force un-onboarded users to onboarding
       if (rootSegment !== '(auth)' || segments[1] !== 'onboarding') {
-        router.replace('/(auth)/onboarding');
+        setTimeout(() => router.replace('/(auth)/onboarding'), 0);
       }
       return;
     }
@@ -87,7 +87,7 @@ export default function RootLayout() {
     if (isOnboarded && !isLoggedIn) {
       // If not in auth group, force to login
       if (!inAuthGroup) {
-        router.replace('/(auth)/login');
+        setTimeout(() => router.replace('/(auth)/login'), 0);
       }
       return;
     }
@@ -100,14 +100,14 @@ export default function RootLayout() {
         if (!allowedAuthRoutes.includes(segments[1] as string)) {
           if (useAuthStore.getState().isFirstLogin) {
             useAuthStore.getState().setFirstLogin(false);
-            router.replace('/kyc');
+            setTimeout(() => router.replace('/kyc'), 0);
           } else {
-            router.replace('/(tabs)');
+            setTimeout(() => router.replace('/(tabs)'), 0);
           }
         }
       }
     }
-  }, [isLoggedIn, isOnboarded, segments]);
+  }, [isLoggedIn, isOnboarded, segments, rootNavigationState?.key]);
 
   // Handle Splash Screen Removal
   useEffect(() => {
@@ -122,7 +122,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardProvider>
         <SafeAreaProvider>
-          <SafeAreaView style={{ flex: 1, backgroundColor: '#0B001A' }} edges={['top', 'bottom', 'left', 'right']}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: '#0B001A' }} edges={['left', 'right']}>
             <StatusBar style="light" />
           <Stack
             screenOptions={{

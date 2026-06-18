@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, Dimensions, ViewToken, StyleSheet, useWindowDimensions, ScrollView, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { Bell, MessageSquare, Send } from 'lucide-react-native';
 import { ReelItem } from '../../components/feed/ReelItem';
@@ -7,7 +8,7 @@ import { CommentsSheet } from '../../components/sheets/CommentsSheet';
 import { GiftSheet } from '../../components/sheets/GiftSheet';
 import { SendSheet } from '../../components/sheets/SendSheet';
 import { useFeedStore, useAuthStore, useStoryStore, useChatStore } from '../../store';
-import { requestGPSLocation, getClosestMockCity } from '../../services/geoService';
+import { requestGPSLocation } from '../../services/geoService';
 import { Reel } from '../../types';
 import { MotiView } from 'moti';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -18,6 +19,7 @@ export default function HomeFeedScreen() {
   const router = useRouter();
   const { targetUsername } = useLocalSearchParams<{ targetUsername?: string }>();
   const { height, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const { reels, setGPS } = useFeedStore();
   const { userProfile, followingIds } = useAuthStore();
   const { stories } = useStoryStore();
@@ -244,7 +246,10 @@ export default function HomeFeedScreen() {
     >
       
       {/* Top Segmented Tabs Overlay & Notification Bell */}
-      <View className="absolute top-12 left-0 right-0 z-20 flex-row justify-between items-center px-4">
+      <View 
+        className="absolute left-0 right-0 z-20 flex-row justify-between items-center px-4"
+        style={{ top: Math.max(insets.top, 10) }}
+      >
         <View className="w-[84px] h-10" />
 
         <View className="flex-row bg-black/40 rounded-full p-1 items-center">

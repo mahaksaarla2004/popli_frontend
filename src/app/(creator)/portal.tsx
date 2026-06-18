@@ -5,14 +5,17 @@ import { ArrowLeft, BarChart2, Star, Target, Shield, Settings } from 'lucide-rea
 import { useAuthStore } from '../../store';
 
 const ActionCard = ({ icon: Icon, title, description, onPress }: any) => (
-  <Pressable onPress={onPress} className="bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 gap-2 mb-4">
+  <Pressable 
+    onPress={onPress} 
+    className="bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 gap-2 mb-4"
+  >
     <View className="flex-row items-center gap-3">
-      <View className="w-10 h-10 rounded-full bg-[#A855F7]/10 items-center justify-center border border-[#A855F7]/20">
-        <Icon size={20} color="#A855F7" />
+      <View className="w-12 h-12 rounded-full bg-[#A855F7]/10 items-center justify-center border border-[#A855F7]/20">
+        <Icon size={22} color="#A855F7" />
       </View>
       <View className="flex-1">
-        <Text className="text-white font-bold text-sm">{title}</Text>
-        <Text className="text-neutral-grey text-xs mt-1 leading-5">{description}</Text>
+        <Text className="text-white font-extrabold text-[15px]">{title}</Text>
+        <Text className="text-white/60 text-[11px] mt-1 leading-4 font-medium">{description}</Text>
       </View>
     </View>
   </Pressable>
@@ -25,13 +28,13 @@ export default function CreatorPortalScreen() {
   const level = Math.floor((userProfile?.followersCount || 0) / 100) + 1;
 
   return (
-    <View className="flex-1 bg-[#12081E] pt-14">
+    <View className="flex-1 bg-[#0B001A] pt-14">
       {/* Header */}
-      <View className="flex-row items-center px-4 pb-6 border-b border-white/5">
-        <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-          <ArrowLeft size={20} color="#FFFFFF" />
+      <View className="flex-row items-center justify-center relative px-4 pb-4 bg-[#0B001A] border-b border-white/5 z-10">
+        <Pressable onPress={() => router.back()} className="absolute left-4 top-0 p-2 -ml-2 active:opacity-70">
+          <ArrowLeft size={24} color="#FFFFFF" />
         </Pressable>
-        <Text className="text-white font-bold text-base ml-2">Creator Portal</Text>
+        <Text className="text-white font-black text-lg tracking-tight">Creator Portal</Text>
       </View>
 
       <ScrollView 
@@ -39,15 +42,17 @@ export default function CreatorPortalScreen() {
         contentContainerStyle={{ gap: 8, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="items-center py-6 gap-2">
-          <Star size={48} color={userProfile?.isVerified ? "#FACC15" : "#9CA3AF"} fill={userProfile?.isVerified ? "#FACC15" : "transparent"} />
-          <Text className="text-white text-xl font-bold mt-2">Level {level} Creator</Text>
-          <Text className="text-neutral-grey text-sm text-center px-6">
-            You have {userProfile?.followersCount || 0} followers and {userProfile?.giftsReceivedCount || 0} gifts! Keep up the great work.
+        <View className="items-center py-8 gap-2 bg-[#1A0E2C] rounded-3xl border border-white/5 mb-6">
+          <View className="w-20 h-20 rounded-full bg-yellow-500/10 items-center justify-center border border-yellow-500/20 mb-2">
+            <Star size={40} color={userProfile?.isVerified ? "#F59E0B" : "#6B7280"} fill={userProfile?.isVerified ? "#F59E0B" : "transparent"} />
+          </View>
+          <Text className="text-white text-2xl font-black tracking-tight">Level {level} Creator</Text>
+          <Text className="text-white/60 text-xs text-center px-8 font-medium leading-5">
+            You have <Text className="text-white font-bold">{userProfile?.followersCount || 0}</Text> followers and <Text className="text-white font-bold">{userProfile?.giftsReceivedCount || 0}</Text> gifts. Keep up the amazing work!
           </Text>
         </View>
 
-        <Text className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-4 mb-2">Creator Tools</Text>
+        <Text className="text-white/40 text-[10px] font-black uppercase tracking-[0.2em] mb-3 ml-2">Creator Tools</Text>
 
         <ActionCard 
           icon={BarChart2} 

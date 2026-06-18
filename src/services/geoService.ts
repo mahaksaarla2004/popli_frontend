@@ -68,18 +68,4 @@ export async function requestGPSLocation(): Promise<{
   }
 }
 
-// Find closest mock city from coordinates
-export function getClosestMockCity(latitude: number, longitude: number): string {
-  let closestCity = 'Indore';
-  let minDistance = Infinity;
 
-  Object.entries(CITY_COORDINATES).forEach(([cityName, coords]) => {
-    const dist = getHaversineDistance(latitude, longitude, coords.latitude, coords.longitude);
-    if (dist < minDistance) {
-      minDistance = dist;
-      closestCity = cityName;
-    }
-  });
-
-  return closestCity;
-}

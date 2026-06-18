@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, Pressable, Dimensions, StyleSheet } from 'react-native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedProps, runOnJS } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { Undo, PenTool, Check, Eraser } from 'lucide-react-native';
@@ -76,21 +76,21 @@ export default function DrawingOverlay({ initialPaths = [], onComplete }: Drawin
   };
 
   return (
-    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+    <View style={StyleSheet.absoluteFill}>
       <View className="flex-1 bg-black/50 z-50">
         
         {/* Top Controls */}
         <View className="flex-row justify-between items-center px-4 pt-16 pb-4 z-10 absolute top-0 left-0 right-0">
           <View className="flex-row gap-4">
-            <Pressable onPress={handleUndo} disabled={paths.length === 0} className={`w-10 h-10 items-center justify-center rounded-full ${paths.length === 0 ? 'bg-black/20' : 'bg-black/60'}`}>
+            <TouchableOpacity onPress={handleUndo} disabled={paths.length === 0} className={`w-10 h-10 items-center justify-center rounded-full ${paths.length === 0 ? 'bg-black/20' : 'bg-black/60'}`}>
               <Undo size={20} color={paths.length === 0 ? 'rgba(255,255,255,0.3)' : '#FFF'} />
-            </Pressable>
+            </TouchableOpacity>
           </View>
 
-          <Pressable onPress={handleDone} className="bg-white px-4 py-2 rounded-full flex-row items-center gap-2">
+          <TouchableOpacity onPress={handleDone} className="bg-white px-4 py-2 rounded-full flex-row items-center gap-2">
             <Check size={16} color="#000" />
             <Text className="text-black font-bold">Done</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
 
         {/* Drawing Canvas */}
@@ -126,18 +126,22 @@ export default function DrawingOverlay({ initialPaths = [], onComplete }: Drawin
         <View className="absolute bottom-10 left-0 right-0 items-center px-4">
           <View className="bg-black/60 backdrop-blur-md rounded-full px-4 py-3 flex-row gap-4 border border-white/20">
             {COLORS.map(c => (
-              <Pressable 
+              <TouchableOpacity 
                 key={c}
                 onPress={() => { setColor(c); setIsEraser(false); }}
-                className={`w-8 h-8 rounded-full border-2 items-center justify-center ${color === c && !isEraser ? 'border-white scale-110' : 'border-transparent'}`}
+                className="w-8 h-8 rounded-full border-2 items-center justify-center"
+                style={{
+                  borderColor: color === c && !isEraser ? '#FFF' : 'transparent',
+                  transform: [{ scale: color === c && !isEraser ? 1.1 : 1 }]
+                }}
               >
                 <View className="w-6 h-6 rounded-full border border-black/20" style={{ backgroundColor: c }} />
-              </Pressable>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
 
       </View>
-    </GestureHandlerRootView>
+    </View>
   );
 }

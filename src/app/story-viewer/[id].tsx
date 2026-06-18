@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, Pressable, TextInput, Dimensions, KeyboardAvoidingView, Platform, Animated, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, Image, Pressable, TextInput, Dimensions, Platform, Animated, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useStoryStore, useAuthStore } from '../../store';
 import { apiClient } from '../../api/client';
@@ -353,7 +354,7 @@ export default function StoryViewerScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-black">
       <View className="flex-1 relative">
         
         {/* Background Media */}

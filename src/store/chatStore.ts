@@ -19,9 +19,10 @@ interface ChatState {
   notifications: NotificationItem[];
   isTyping: Record<string, boolean>;
   mutedChats: string[];
-  sendMessage: (chatId: string, text: string, mediaUrl?: string) => Promise<void>;
+  sendMessage: (chatId: string, text: string, mediaUrl?: string, options?: { type?: 'TEXT'|'VOICE', replyToId?: string, replyToText?: string }) => Promise<void>;
   toggleMuteChat: (chatId: string) => void;
   sendDirectMessage: (receiver: { id: string, name?: string, username?: string, avatar?: string }, text?: string, mediaUrl?: string) => void;
+  sendTyping: (chatId: string, isTyping: boolean) => void;
   markChatRead: (chatId: string) => void;
   deleteChat: (chatId: string) => Promise<void>;
   deleteMessage: (chatId: string, messageId: string) => Promise<void>;
@@ -220,6 +221,13 @@ export const useChatStore = create<ChatState>()(
           await get().fetchChats();
         } catch (error) {
           console.error("Failed to send direct message:", error);
+        }
+      },
+      sendTyping: (chatId, isTyping) => {
+        if (socket) {
+          const { useAuthStore } = require('./authStore');
+          const userId = useAuthStore.getState().userProfile?.id;
+          socket.emit('typing', { chatId, isTyping, userId });
         }
       },
       markChatRead: async (chatId) => {

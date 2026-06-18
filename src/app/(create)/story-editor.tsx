@@ -443,6 +443,11 @@ export default function StoryEditorScreen() {
                 onPress={() => {
                   try { audioPlayer?.pause(); } catch(e) {}
                   try { videoPlayer?.pause(); } catch(e) {}
+                  setEditorData({
+                    layers,
+                    timelineData,
+                    musicData: selectedMusic
+                  });
                   router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId, challengeId } });
                 }}
                 className="bg-[#A855F7] px-6 py-2.5 rounded-full active:scale-95 transition-transform shadow-lg shadow-purple-500/40"
@@ -521,6 +526,11 @@ export default function StoryEditorScreen() {
                   try { audioPlayer?.pause(); } catch(e) {}
                   // eslint-disable-next-line react-hooks/immutability
                   try { if (videoPlayer) { videoPlayer.pause(); videoPlayer.muted = true; } } catch(e) {}
+                  setEditorData({
+                    layers,
+                    timelineData,
+                    musicData: selectedMusic
+                  });
                   router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId, challengeId } });
                 }}
                 className="items-center justify-center bg-[#A855F7] px-8 py-3.5 rounded-[20px] flex-row gap-2 shadow-xl shadow-purple-500/30 ml-3 active:scale-95 transition-transform"

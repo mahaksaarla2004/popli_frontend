@@ -1,15 +1,32 @@
-// import { io, Socket } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { BASE_URL } from './client';
 
-let chatSocket: any | null = null;
-let notificationSocket: any | null = null;
+let chatSocket: Socket | null = null;
+let notificationSocket: Socket | null = null;
 
 export const connectSockets = (token: string) => {
-  console.log("Mock connectSockets called");
+  if (chatSocket || notificationSocket) disconnectSockets();
+
+  chatSocket = io(`${BASE_URL}/chat`, {
+    auth: { token },
+    transports: ['websocket'],
+  });
+
+  notificationSocket = io(`${BASE_URL}/notifications`, {
+    auth: { token },
+    transports: ['websocket'],
+  });
 };
 
 export const disconnectSockets = () => {
-  console.log("Mock disconnectSockets called");
+  if (chatSocket) {
+    chatSocket.disconnect();
+    chatSocket = null;
+  }
+  if (notificationSocket) {
+    notificationSocket.disconnect();
+    notificationSocket = null;
+  }
 };
 
 export const getChatSocket = () => chatSocket;
