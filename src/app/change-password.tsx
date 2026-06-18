@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, AlertPlatform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 const InputField = ({ label, value, onChange, placeholder }: any) => (
   <View className="mb-5">
@@ -40,7 +41,7 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-[#12081E] pt-14">
       {/* Header */}
       <View className="flex-row items-center px-4 pb-4">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">

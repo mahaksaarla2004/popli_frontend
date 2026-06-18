@@ -1,9 +1,10 @@
 /*  */import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, Image, TextInput, Pressable, ScrollView, PlatformModal, ActivityIndicator } from 'react-native';
 import { X, Search, Send } from 'lucide-react-native';
 import { useAuthStore, useChatStore } from '../../store';
 import { MotiView } from 'moti';
 import { apiClient, BASE_URL } from '../../api/client';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 interface SendSheetProps {
   reelId: string;
@@ -61,7 +62,7 @@ export const SendSheet = ({ reelId, isOpen, onClose }: SendSheetProps) => {
   return (
     <Modal visible={isOpen} transparent animationType="none" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
         style={{ flex: 1 }}
       >
         <View className="flex-1 justify-end">

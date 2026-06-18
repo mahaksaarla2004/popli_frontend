@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Image, Pressable, KeyboardAvoidingView, ScrollView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Image, PressableScrollView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { User, Lock, Eye, EyeOff, Play } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { apiClient } from '../../api/client';
 import { sendFirebaseOTP } from '../../lib/firebase';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { setLogin, setFirstLogin, mockRegisteredUsers } = useAuthStore();
+  const { setLogin, setFirstLogin } = useAuthStore();
   const [identifier, setIdentifier] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
@@ -73,7 +74,7 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       className="flex-1 bg-[#0B001A]"
     >
       <ScrollView 

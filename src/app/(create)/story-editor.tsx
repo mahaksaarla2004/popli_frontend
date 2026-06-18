@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Image, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, TextInputPlatform, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useEditorStore } from '../../store';
 import { ChevronLeft, ChevronRight, Type, Sticker as StickerIcon, Music as MusicIcon, MoreHorizontal, Download, Sparkles, Navigation, Send as SendIcon, PlusCircle, Play, Pause, Trash2, Pencil, VolumeX, Volume2 } from 'lucide-react-native';
@@ -19,6 +19,7 @@ import MusicPickerSheet from '../../components/sheets/MusicPickerSheet';
 import StickerSheet from '../../components/sheets/StickerSheet';
 import EffectsSheet from '../../components/sheets/EffectsSheet';
 import SendToSheet from '../../components/sheets/SendToSheet';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export type EditorLayer = {
   id: string;
@@ -270,7 +271,7 @@ export default function StoryEditorScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-black">
       
         <View className="flex-1 rounded-3xl overflow-hidden mt-12 mb-20 relative bg-neutral-900">
         {uri ? (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, PressablePlatform, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKYCStore, useAuthStore } from '../../store';
 import { User, Phone, Lock, ChevronLeft, Eye, EyeOff, AtSign } from 'lucide-react-native';
@@ -7,6 +7,7 @@ import { MotiView } from 'moti';
 
 import { sendFirebaseOTP } from '../../lib/firebase';
 import { apiClient } from '../../api/client';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -189,7 +190,7 @@ export default function SignupScreen() {
 
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       className="flex-1 bg-[#0B001A]"
     >
       <ScrollView 

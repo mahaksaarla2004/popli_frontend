@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Alert, ActivityIndicator, Platform, Animated, Modal, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Alert, ActivityIndicator, Platform, Animated, Modal} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKYCStore } from '../store';
 import { 
@@ -23,6 +23,7 @@ import {
   QrCode
 } from 'lucide-react-native';
 import { MotiView } from 'moti';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 let DateTimePicker: any = null;
 if (Platform.OS !== 'web') {
@@ -434,7 +435,7 @@ export default function KYCScreen() {
 
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       className="flex-1 bg-[#0B001A]" 
       style={{ paddingTop: Platform.OS === 'ios' ? 60 : 40 }}
     >

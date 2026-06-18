@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Image, ScrollView, Pressable, Dimensions, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Image, ScrollView, Pressable, DimensionsPlatform, ActivityIndicator } from 'react-native';
 import { Search, QrCode, TrendingUp, Compass, Award, ShieldAlert, Sparkles, Zap, Users, Trophy, ChevronLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useFeedStore, useAuthStore } from '../../store';
@@ -7,6 +7,7 @@ import { useChallengeStore } from '../../store/challengeStore';
 import { apiClient } from '../../api/client';
 import { formatSocialCount } from '../../utils';
 import { MotiView } from 'moti';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 const { width } = Dimensions.get('window');
 
@@ -58,7 +59,7 @@ export default function DiscoverScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-background-plum pt-12">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-background-plum pt-12">
       <View className="px-4 pb-6">
         <View className="flex-row items-center gap-2">
           {searchQuery.length > 0 && (

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Image, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Switch, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, ImagePlatform, ScrollView, ActivityIndicator, Switch, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, IndianRupee, Gift } from 'lucide-react-native';
 import { useAuthStore } from '../../store';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function ShareScreen() {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function ShareScreen() {
 
   return (
     <View className="flex-1 bg-[#12081E]">
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+      <KeyboardAvoidingView behavior="padding" className="flex-1">
         
         {/* Header */}
         <View className="flex-row items-center px-4 pt-14 pb-4 border-b border-white/5 relative">

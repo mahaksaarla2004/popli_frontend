@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, PressablePlatform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Lock, Eye, EyeOff, CheckCircle2, ShieldCheck, XCircle } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function CreateNewPasswordScreen() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export default function CreateNewPasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       className="flex-1 bg-[#0B001A]"
     >
       {/* 1. Header completely isolated outside main body container for zIndex safety */}

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal, FlatList, Switch } from 'react-native';
+import { View, Text, Image, TextInput, PressablePlatform, ScrollView, ActivityIndicator, Modal, FlatList, Switch } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, MapPin, Users, Music, ChevronRight, Check, Search, X, IndianRupee } from 'lucide-react-native';
 import { useFeedStore, useAuthStore } from '../../store';
 import { apiClient } from '../../api/client';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 const CITIES = ['Bengaluru', 'Mumbai', 'Delhi', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune', 'Ahmedabad', 'Jaipur', 'Lucknow'];
 const MUSIC_TRACKS = ['Trending Track 1', 'Bollywood Mashup', 'Lo-Fi Chill', 'Gym Motivation', 'Romantic Hits', 'Aesthetic Vibes', 'Viral Audio 2026'];
@@ -91,7 +92,7 @@ export default function PostEditorScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-12">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-[#12081E] pt-12">
       {/* Header */}
       <View className="flex-row items-center px-4 pb-4 border-b border-white/10">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">

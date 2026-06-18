@@ -47,8 +47,7 @@ interface AuthState {
   toggleNotifications: () => void;
   toggleFollow: (creatorId: string) => void;
   logout: () => void;
-  mockRegisteredUsers: string[];
-  registerMockUser: (identifier: string) => void;
+
   token: string | null;
   setToken: (token: string | null) => void;
   blockedUsers: Creator[];
@@ -89,10 +88,7 @@ export const useAuthStore = create<AuthState>()(
       language: 'English',
       notificationsEnabled: true,
       isFirstLogin: true,
-      mockRegisteredUsers: [],
-      registerMockUser: (identifier) => set((state) => ({ 
-        mockRegisteredUsers: [...state.mockRegisteredUsers, identifier.toLowerCase()] 
-      })),
+
       setToken: (token) => set({ token }),
       setLogin: (status) => set({ isLoggedIn: status }),
       setOnboardingComplete: (status) => set({ isOnboarded: status }),

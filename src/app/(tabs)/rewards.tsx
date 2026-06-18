@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, Dimensions, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Dimensions, ActivityIndicator, TextInputPlatform, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ChevronLeft, Landmark, Coins, Clock, CheckCircle2, History } from 'lucide-react-native';
 import RechargeCoinsSheet from '../../components/RechargeCoinsSheet';
 import { apiClient } from '../../api/client';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 const { width } = Dimensions.get('window');
 
@@ -100,7 +101,7 @@ export default function RewardsScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-[#12081E]">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-[#12081E]">
       <ScrollView className="flex-1 pt-14" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         
         {/* HEADER */}

@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, PressablePlatform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { X, Radio, Settings, Users, ArrowRight } from 'lucide-react-native';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function LiveSetupScreen() {
   const router = useRouter();
   const [title, setTitle] = useState('');
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black pt-12 relative">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-black pt-12 relative">
       
       {/* Fake Camera Preview Background */}
       <View className="absolute inset-0 bg-[#1D1037]" />

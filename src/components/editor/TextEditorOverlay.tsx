@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, PressablePlatform, ScrollView, Image } from 'react-native';
 import { AlignLeft, AlignCenter, AlignRight, Type } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 interface TextEditorOverlayProps {
   initialText?: string;
@@ -125,7 +126,7 @@ export default function TextEditorOverlay({ initialText = '', onComplete }: Text
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="absolute inset-0 bg-black/80 z-50">
+    <KeyboardAvoidingView behavior="padding" className="absolute inset-0 bg-black/80 z-50">
       
       {/* Top Controls */}
       <View className="flex-row justify-between items-center px-4 pt-16 pb-4">

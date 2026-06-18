@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, Image , ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollViewPlatform, Image , ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { ChevronLeft, Camera, Sparkles, Globe, ChevronRight } from 'lucide-react-native';
@@ -7,6 +7,7 @@ import { MotiView } from 'moti';
 import * as ImagePicker from 'expo-image-picker';
 import { apiClient } from '../../api/client';
 import axios from 'axios';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop',
@@ -101,7 +102,7 @@ export default function ProfileSetupScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       className="flex-1 bg-[#0B001A]"
     >
       <ScrollView

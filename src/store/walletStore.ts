@@ -62,7 +62,8 @@ export const useWalletStore = create<WalletState>()(
       transactions: [],
       rechargeCoins: async (coins) => {
         try {
-          await apiClient.post('/wallet/recharge', { amount: coins, paymentReference: 'MOCK_TXN_' + Date.now() });
+          console.warn("Using Sandbox Payment Gateway. Real integration (Razorpay/Stripe) is pending.");
+          await apiClient.post('/wallet/recharge', { amount: coins, paymentReference: 'SANDBOX_TXN_' + Date.now() });
           get().fetchWallet(); 
           return true;
         } catch (e: any) {

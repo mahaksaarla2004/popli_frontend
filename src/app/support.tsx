@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, AlertPlatform, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, MessageCircle, AlertTriangle, ChevronDown, ChevronUp, Sparkles, Send } from 'lucide-react-native';
 import { FAQ_LIST } from '../constants/staticData';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function SupportScreen() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function SupportScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-background-plum pt-12">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-background-plum pt-12">
       {/* Header bar */}
       <View className="flex-row items-center justify-between px-4 pb-3 border-b border-white/5 bg-background-card/15">
         <View className="flex-row items-center space-x-3">

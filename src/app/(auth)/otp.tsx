@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Pressable, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, PressablePlatform, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 // (assuming we can just replace Pressable with TouchableOpacity inside renderOtpBoxes)
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore, useKYCStore } from '../../store';
@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '../../api/client';
 import { sendFirebaseOTP, verifyFirebaseOTP } from '../../lib/firebase';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function OTPScreen() {
   const router = useRouter();
@@ -259,7 +260,7 @@ export default function OTPScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       className="flex-1 bg-[#0B001A]"
     >
       {/* 1. Header completely isolated outside main body container for zIndex safety */}

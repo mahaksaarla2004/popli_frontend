@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Image, Pressable, TextInput, KeyboardAvoidingView, Platform, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, Image, Pressable, TextInputPlatform, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
   ArrowLeft, Edit, Search, MessageSquare, Bell, 
@@ -8,6 +8,7 @@ import {
 import { apiClient } from '../../api/client';
 import { useAuthStore, useChatStore } from '../../store';
 import StoryRing from '../../components/StoryRing';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function InboxScreen() {
   const router = useRouter();
@@ -86,7 +87,7 @@ export default function InboxScreen() {
   }));
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-[#12081E] pt-14">
       {/* HEADER */}
       <View className="flex-row items-center justify-between px-4 pb-6">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
@@ -189,7 +190,7 @@ export default function InboxScreen() {
 
       {/* New Message Modal */}
       <Modal visible={isNewMessageModalVisible} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
+        <KeyboardAvoidingView behavior="padding" className="flex-1 bg-[#12081E] pt-14">
           <View className="flex-row items-center justify-between px-4 pb-4 border-b border-white/10">
             <Text className="text-white font-bold text-base">New Message</Text>
             <Pressable onPress={() => setIsNewMessageModalVisible(false)} className="p-2 -mr-2">

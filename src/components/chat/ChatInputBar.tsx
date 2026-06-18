@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, Pressable, Platform, Keyboard } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring, interpolate } from 'react-native-reanimated';
-import { Plus, Camera, Image as ImageIcon, Mic, Send, X } from 'lucide-react-native';
+import { Plus, Camera, Image as ImageIcon, Mic, Send, X, Smile, Square } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadToCloudinary } from '../../api/upload';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Audio } = require('expo-audio'); // fallback if needed, or we just mock voice for now
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -64,9 +65,15 @@ export default function ChatInputBar({
     }
 
     if (!result.canceled && result.assets[0]) {
-      // In a real app, upload this to Cloudinary/S3 and get the URL
-      // Mocking the upload process with the local URI
-      onSend('', result.assets[0].uri);
+      try {
+        const fileUri = result.assets[0].uri;
+        const type = result.assets[0].type === 'video' ? 'video' : 'image';
+        const uploadedUrl = await uploadToCloudinary(fileUri, type, 'chats');
+        onSend('', uploadedUrl);
+      } catch (err) {
+        console.error("Upload failed", err);
+        // Fallback or error handling can be added here
+      }
     }
   };
 

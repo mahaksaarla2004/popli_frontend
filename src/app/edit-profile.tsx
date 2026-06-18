@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, AlertPlatform, Image, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, AtSign, Link as LinkIcon, UserPlus, Check } from 'lucide-react-native';
 import { useAuthStore, useFeedStore } from '../store';
 import * as ImagePicker from 'expo-image-picker';
 import { getDefaultAvatar } from '../utils';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 const InputField = ({ 
   label, 
@@ -114,7 +115,7 @@ export default function EditProfileScreen() {
 
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#12081E] pt-14">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-[#12081E] pt-14">
       {/* Header */}
       <View className="flex-row items-center px-4 pb-4">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
