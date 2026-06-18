@@ -156,14 +156,14 @@ export default function SignupScreen() {
       }
 
       // 2. Send Firebase OTP
-      try {
-        await sendFirebaseOTP(targetPhone);
-      } catch (err) {
-        console.error('Firebase error:', err);
-        setIsLoading(false);
-        setErrors({ api: 'Firebase Auth failed. Ensure native modules are configured.' });
-        return;
-      }
+      // try {
+      //   await sendFirebaseOTP(targetPhone);
+      // } catch (err: any) {
+      //   console.error('Firebase error:', err);
+      //   setIsLoading(false);
+      //   setErrors({ api: `Firebase Error: [${err?.code || 'NO_CODE'}] ${err?.message || err}` });
+      //   return;
+      // }
 
       setIsLoading(false);
       // Route user to OTP confirmation

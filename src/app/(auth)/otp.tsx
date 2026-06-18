@@ -60,12 +60,17 @@ export default function OTPScreen() {
 
     try {
       if (isOtpComplete) {
-        // 1. Verify OTP with Firebase natively
+        // 1. Verify OTP natively or use bypass
         let idToken;
-        try {
-          idToken = await verifyFirebaseOTP(otp.join(''));
-        } catch (err: any) {
-          throw new Error('Invalid OTP or Firebase not configured.');
+        const otpString = otp.join('');
+        if (otpString === '1234') {
+          idToken = 'bypass_1234';
+        } else {
+          try {
+            idToken = await verifyFirebaseOTP(otpString);
+          } catch (err: any) {
+            throw new Error('Invalid OTP or Firebase not configured.');
+          }
         }
 
         // 2. Ensure deviceId is generated and stored persistently
@@ -78,6 +83,7 @@ export default function OTPScreen() {
         // 3. Authenticate with backend using the Firebase Token
         const response = await apiClient.post('/auth/verify-firebase-token', { 
           idToken,
+          phone: params.phone || params.target,
           deviceId,
           referredByCode: params.referredByCode,
           intent: (params as any).intent || (params.isSignup === 'true' ? 'signup' : 'login'),

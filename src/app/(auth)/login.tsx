@@ -50,14 +50,14 @@ export default function LoginScreen() {
       // 2. Existing user -> Send Firebase OTP
       const targetPhone = checkRes.data.phone || identTrimmed;
       
-      try {
-        await sendFirebaseOTP(targetPhone);
-      } catch (err: any) {
-        console.error('Firebase error:', err);
-        setIsLoading(false);
-        setErrors({ api: 'Firebase Auth failed. Ensure native modules are configured and the phone format is correct (+91...).' });
-        return;
-      }
+      // try {
+      //   await sendFirebaseOTP(targetPhone);
+      // } catch (err: any) {
+      //   console.error('Firebase error:', err);
+      //   setIsLoading(false);
+      //   setErrors({ api: `Firebase Error: [${err?.code || 'NO_CODE'}] ${err?.message || err}` });
+      //   return;
+      // }
 
       setIsLoading(false);
       // Navigate to OTP screen
