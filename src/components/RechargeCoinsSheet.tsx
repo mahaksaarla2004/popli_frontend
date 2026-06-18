@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, Dimensions, Alert } from 'react-native';
-import { X, Lock, Check } from 'lucide-react-native';
+import { X, Lock, CheckCircle2, Zap, Coins } from 'lucide-react-native';
 
 interface RechargeCoinsSheetProps {
   visible: boolean;
@@ -14,12 +14,12 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null);
 
   const packs = [
-    { id: '1', coins: 50, price: 5.00 },
-    { id: '2', coins: 250, price: 20.00 },
-    { id: '3', coins: 600, price: 45.00, popular: true },
-    { id: '4', coins: 1500, price: 100.00 },
-    { id: '5', coins: 3000, price: 190.00 },
-    { id: '6', coins: 5000, price: 300.00 },
+    { id: '1', coins: 50, price: 5, tag: null, tagColor: null },
+    { id: '2', coins: 250, price: 20, tag: '20% off', tagColor: 'bg-purple-100 text-purple-600' },
+    { id: '3', coins: 600, price: 45, tag: '25% off', tagColor: 'bg-purple-100 text-purple-600', badge: 'Popular' },
+    { id: '4', coins: 1500, price: 100, tag: '33% off', tagColor: 'bg-purple-100 text-purple-600', bonus: '+100 bonus', bonusCoins: 100 },
+    { id: '5', coins: 3500, price: 200, tag: 'Best value', tagColor: 'bg-green-100 text-green-600', bonus: '+350 bonus', bonusCoins: 350 },
+    { id: '6', coins: 10000, price: 500, tag: '🔥 Max value', tagColor: 'bg-green-100 text-green-600', bonus: '+1,500 bonus', bonusCoins: 1500 },
   ];
 
   return (
@@ -29,93 +29,117 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View className="flex-1 justify-end bg-black/50">
+      <View className="flex-1 justify-end bg-black/40">
         <Pressable className="flex-1" onPress={onClose} />
         
-        <View className="bg-[#1D1037] rounded-t-3xl pt-2 pb-8 px-4 border-t border-[#3E2B5C]">
+        <View className="bg-white rounded-t-[32px] pt-3 pb-8 shadow-2xl">
           {/* Handle */}
-          <View className="w-12 h-1.5 bg-[#3E2B5C] rounded-full self-center mb-6" />
+          <View className="w-10 h-1 bg-gray-300 rounded-full self-center mb-4" />
           
           {/* Header */}
-          <View className="flex-row justify-between items-start mb-6">
-            <View>
-              <Text className="text-white font-bold text-xl mb-1">Recharge Coins</Text>
-              <Text className="text-[#FCD34D] font-bold text-sm">Current Balance: 3,289</Text>
+          <View className="flex-row justify-between items-center px-5 mb-2">
+            <View className="flex-row items-center gap-2">
+              <View className="bg-yellow-100 p-1.5 rounded-full">
+                <Coins size={16} color="#EAB308" fill="#EAB308" />
+              </View>
+              <Text className="text-gray-900 font-extrabold text-lg">Recharge Coins</Text>
             </View>
-            <Pressable onPress={onClose} className="p-2 -mr-2 bg-[#2D1B4E] rounded-full active:opacity-70">
-              <X size={20} color="white" />
+            <Pressable onPress={onClose} className="p-1.5 bg-gray-100 rounded-full active:scale-95">
+              <X size={18} color="#6B7280" />
             </Pressable>
           </View>
 
+          <Text className="text-gray-500 text-xs px-5 mb-4">
+            Use coins to send gifts to your favourite creators
+          </Text>
+
           {/* Grid */}
-          <View className="flex-row flex-wrap justify-between gap-y-4 mb-6">
+          <View className="flex-row flex-wrap px-4 justify-between gap-y-3">
             {packs.map((pack) => {
               const isSelected = selectedPackId === pack.id;
               return (
                 <Pressable
                   key={pack.id}
                   onPress={() => setSelectedPackId(pack.id)}
-                  style={{ width: (width - 48) / 2 }}
-                  className={`rounded-2xl p-4 border relative ${isSelected ? 'border-[#FCD34D] bg-[#F59E0B]/10' : 'border-[#3E2B5C] bg-[#0D0518]'}`}
+                  style={{ width: '48%' }}
+                  className="bg-white rounded-2xl p-4 items-center border relative active:scale-95 transition-all"
+                  style={[{ borderColor: isSelected ? '#A855F7' : '#F3F4F6' }, { width: '48%' }]}
                 >
-                  {pack.popular && (
-                    <View className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#EF4444] px-2 py-0.5 rounded-full z-10">
-                      <Text className="text-white font-bold text-[10px]">Popular</Text>
-                    </View>
-                  )}
                   {isSelected && (
-                    <View className="absolute top-2 right-2 bg-[#FCD34D] rounded-full p-0.5">
-                      <Check size={12} color="black" />
+                    <View className="absolute top-2 left-2">
+                      <CheckCircle2 size={18} color="#EAB308" fill="#FEF08A" />
                     </View>
                   )}
-                  <View className="items-center">
-                    <Text className="text-white font-black text-2xl mb-1">{pack.coins}</Text>
-                    <Text className="text-[#FCD34D] text-xs font-bold mb-3">Coins</Text>
-                    <View className={`px-4 py-1.5 rounded-full ${isSelected ? 'bg-[#FCD34D]' : 'bg-[#2D1B4E]'}`}>
-                      <Text className={`font-bold text-sm ${isSelected ? 'text-black' : 'text-white'}`}>
-                        ₹{pack.price.toFixed(2)}
-                      </Text>
+                  {pack.badge && (
+                    <View className="absolute -top-2 right-2 bg-[#8B5CF6] px-2 py-0.5 rounded flex-row items-center gap-1">
+                      <Text className="text-white text-[8px] font-bold">✨ {pack.badge}</Text>
                     </View>
+                  )}
+                  
+                  <View className="bg-yellow-50 w-10 h-10 rounded-full items-center justify-center mb-2">
+                    <Coins size={20} color="#EAB308" fill="#EAB308" />
                   </View>
+                  
+                  <Text className="text-gray-900 font-black text-lg mb-1">{pack.coins.toLocaleString()}</Text>
+                  
+                  {pack.bonus && (
+                    <Text className="text-green-500 text-[9px] font-bold mb-1">{pack.bonus}</Text>
+                  )}
+                  
+                  <Text className="text-[#A855F7] font-bold text-base mb-2">₹{pack.price}</Text>
+                  
+                  {pack.tag && (
+                    <View className={`px-2 py-0.5 rounded-sm ${pack.tagColor}`}>
+                      <Text className="text-[9px] font-bold">{pack.tag}</Text>
+                    </View>
+                  )}
                 </Pressable>
               );
             })}
           </View>
 
           {/* Footer */}
-          <View className="flex-row justify-center items-center gap-2 mb-4">
-            <Lock size={14} color="#9CA3AF" />
-            <Text className="text-gray-400 font-bold text-xs">Secured via Razorpay</Text>
-          </View>
+          <View className="px-5 pt-6 pb-2">
+            <View className="flex-row items-center justify-between gap-2 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <Text className="text-gray-500 text-xs">
+                🔒 Secured via Razorpay · PCI-DSS compliant
+              </Text>
+              <Zap size={14} color="#6B7280" />
+            </View>
 
-          <Pressable 
-            disabled={!selectedPackId}
-            onPress={() => {
-              const pack = packs.find(p => p.id === selectedPackId);
-              if (!pack) return;
+            <Pressable 
+              disabled={!selectedPackId}
+              onPress={() => {
+                const pack = packs.find(p => p.id === selectedPackId);
+                if (!pack) return;
 
-              Alert.alert(
-                'Razorpay Checkout',
-                `Confirm payment of ₹${pack.price.toFixed(2)}?`,
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { 
-                    text: 'Pay', 
-                    onPress: () => {
-                      Alert.alert('Payment Successful!', `₹${pack.price.toFixed(2)} paid successfully. ${pack.coins} Coins added to your wallet!`);
-                      if (onSuccess) onSuccess(pack.coins);
-                      onClose();
+                Alert.alert(
+                  'Razorpay Checkout',
+                  `Confirm payment of ₹${pack.price.toFixed(2)}?`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { 
+                      text: 'Pay', 
+                      onPress: () => {
+                        const totalCoins = pack.coins + (pack.bonusCoins || 0);
+                        Alert.alert('Payment Successful!', `₹${pack.price.toFixed(2)} paid successfully. ${totalCoins.toLocaleString()} Coins added to your wallet!`);
+                        if (onSuccess) onSuccess(totalCoins);
+                        onClose();
+                      }
                     }
-                  }
-                ]
-              );
-            }}
-            className={`py-4 rounded-full flex-row justify-center items-center ${selectedPackId ? 'bg-[#A855F7]' : 'bg-[#3E2B5C]'}`}
-          >
-            <Text className={`font-bold text-lg ${selectedPackId ? 'text-white' : 'text-gray-400'}`}>
-              {selectedPackId ? 'Continue to Pay' : 'Select a Pack'}
-            </Text>
-          </Pressable>
+                  ]
+                );
+              }}
+              className={`w-full py-4 rounded-xl items-center justify-center active:scale-95 transition-all ${selectedPackId ? 'bg-[#F97316]' : 'bg-[#FBBF24]/50'}`}
+            >
+              <Text className={`font-bold text-sm ${selectedPackId ? 'text-black' : 'text-white'}`}>
+                {selectedPackId 
+                  ? `Pay ₹${packs.find(p => p.id === selectedPackId)?.price} · Get ${(packs.find(p => p.id === selectedPackId)!.coins + (packs.find(p => p.id === selectedPackId)!.bonusCoins || 0)).toLocaleString()} Coins`
+                  : 'Select a Pack'
+                }
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </Modal>

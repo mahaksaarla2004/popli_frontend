@@ -46,7 +46,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
             text: c.text,
             createdAt: new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             likesCount: c.likesCount,
-            isLiked: false, // In a real app, backend would send this
+            isLiked: c.isLiked, // Mapped from backend
             parentId: c.parentId,
             replies: c.replies ? c.replies.map(mapComment) : []
           });
@@ -228,15 +228,13 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
         <View className="flex-row items-center gap-4 pt-1">
           <Pressable 
             onPress={() => setReplyingTo({ id: isReply ? comment.parentId! : comment.id, username: comment.user?.username || 'user' })}
-            hitSlop={{ top: 15, bottom: 15, left: 10, right: 10 }}
-            className="py-1"
+            className="py-2 pr-3"
           >
             <Text className="text-neutral-grey text-[10px] font-semibold">Reply</Text>
           </Pressable>
           <Pressable 
             onPress={() => handleLike(comment.id)} 
-            hitSlop={{ top: 15, bottom: 15, left: 10, right: 10 }}
-            className="flex-row items-center gap-1 py-1"
+            className="flex-row items-center gap-1 py-2 px-2"
           >
             <Heart size={12} color={comment.isLiked ? "#D946EF" : "#9CA3AF"} fill={comment.isLiked ? "#D946EF" : "transparent"} />
             <Text className="text-neutral-grey text-[10px]">
@@ -261,7 +259,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
   return (
     <Modal visible={isOpen} transparent animationType="none" onRequestClose={onClose}>
       <KeyboardAvoidingView 
-        behavior="padding" 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
         style={{ flex: 1 }}
       >
         <View className="flex-1 justify-end">

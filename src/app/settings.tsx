@@ -129,7 +129,7 @@ export default function SettingsScreen() {
 
           <View className="flex-row justify-between mb-2 gap-4">
             <Pressable 
-              onPress={() => router.push('/(creator)/payouts')}
+              onPress={() => router.push('/withdraw')}
               className="flex-1 bg-[#1A0E2C] border border-white/5 rounded-2xl p-4 justify-between shadow-sm min-h-[96px]"
             >
               <View className="mb-2">

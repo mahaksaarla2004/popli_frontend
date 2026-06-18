@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, Dimensions, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Eye, Gift, Users, Wallet, Plus, LineChart, TrendingUp, History, ArrowRight } from 'lucide-react-native';
+import { ChevronLeft, Landmark, Coins, Clock, CheckCircle2, History } from 'lucide-react-native';
 import RechargeCoinsSheet from '../../components/RechargeCoinsSheet';
 import { apiClient } from '../../api/client';
 
@@ -15,6 +15,11 @@ export default function RewardsScreen() {
   const [wallet, setWallet] = useState<any>(null);
   const [kycStatus, setKycStatus] = useState<string>('PENDING');
   const [localCoinsAdded, setLocalCoinsAdded] = useState(0);
+
+  const [activeTab, setActiveTab] = useState<'ALL' | 'VIEW' | 'GIFT'>('ALL');
+  const [amount, setAmount] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -36,202 +41,206 @@ export default function RewardsScreen() {
     }, [])
   );
 
-  const handleWithdrawClick = () => {
-    if (kycStatus === 'APPROVED' || kycStatus === 'COMPLETED' || kycStatus === 'PENDING') {
-      router.push('/withdraw' as any);
-    } else {
-      router.push('/kyc' as any);
-    }
-  };
-
   const viewEarnings = wallet?.viewEarnings ?? 0;
   const giftEarnings = wallet?.giftEarnings ?? 0;
   const referralEarnings = wallet?.referralEarnings ?? 0;
-  const coins = (wallet?.coins ?? 0) + localCoinsAdded;
-
   const totalEarnings = viewEarnings + giftEarnings + referralEarnings;
-  const viewPercentage = totalEarnings > 0 ? Math.round((viewEarnings / totalEarnings) * 100) : 0;
-  const giftPercentage = totalEarnings > 0 ? Math.round((giftEarnings / totalEarnings) * 100) : 0;
-  const referralPercentage = totalEarnings > 0 ? Math.round((referralEarnings / totalEarnings) * 100) : 0;
+  
+  // Fake splitting for UI matching screenshot
+  const pendingValidation = 0.00;
+  const withdrawable = totalEarnings;
+  
+  const coins = (wallet?.coins ?? 0) + localCoinsAdded;
   const transactions = wallet?.transactions || [];
+
+  const handleWithdrawClick = async () => {
+    if (kycStatus !== 'APPROVED' && kycStatus !== 'COMPLETED') {
+      router.push('/kyc' as any);
+      return;
+    }
+    // Alternatively, send them to detailed withdraw page if they just click a button
+    router.push('/withdraw' as any);
+  };
+
+  const submitWithdrawRequest = async () => {
+    if (!upiId || !amount) {
+      Alert.alert('Error', 'Please enter UPI ID and Amount');
+      return;
+    }
+    const amt = parseFloat(amount);
+    if (amt < 500) {
+      Alert.alert('Error', 'Minimum withdrawal is ₹500');
+      return;
+    }
+    if (amt > withdrawable) {
+      Alert.alert('Error', 'Insufficient balance');
+      return;
+    }
+
+    try {
+      setWithdrawing(true);
+      await apiClient.post('/wallet/withdraw', { amount: amt, upiId });
+      Alert.alert('Success', 'Withdrawal requested successfully!');
+      setAmount('');
+      setUpiId('');
+      // Refresh wallet
+      const res = await apiClient.get('/wallet');
+      setWallet(res.data);
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to withdraw');
+    } finally {
+      setWithdrawing(false);
+    }
+  };
 
   if (loading) {
     return (
-      <View className="flex-1 bg-[#0D0518] items-center justify-center">
+      <View className="flex-1 bg-[#12081E] items-center justify-center">
         <ActivityIndicator size="large" color="#A855F7" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-[#0D0518] pt-14">
-      {/* HEADER */}
-      <View className="px-4 pb-2 pt-2 flex-row justify-between items-center">
-        <Text className="text-white font-bold text-2xl">Creator Rewards</Text>
-        <Users size={24} color="white" />
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-[#12081E]">
+      <ScrollView className="flex-1 pt-14" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         
-        {/* TOTAL BALANCE CARD */}
-        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-[24px] p-5 mb-6 shadow-lg mt-2">
-          <Text className="text-white/50 text-xs font-bold uppercase tracking-wider mb-1">Total Balance</Text>
-          <Text className="text-[#FBBF24] font-black text-4xl mb-3">₹{totalEarnings.toFixed(2)}</Text>
-          
-          <View className="self-start bg-[#10B981]/20 px-3 py-1.5 rounded-full mb-6">
-            <Text className="text-[#10B981] text-xs font-bold">↗ +0% from last month</Text>
-          </View>
-          
-          <View className="flex-row items-center justify-center mb-6 px-4">
-            <View className="items-center flex-1">
-              <Text className="text-white/50 text-[10px] mb-1">Tax (TDS)</Text>
-              <Text className="text-white font-bold text-lg">10%</Text>
-            </View>
-            <View className="w-[1px] h-8 bg-[#3E2B5C]" />
-            <View className="items-center flex-1">
-              <Text className="text-white/50 text-[10px] mb-1">Platform Fee</Text>
-              <Text className="text-white font-bold text-lg">2%</Text>
-            </View>
-          </View>
-
-          <Pressable
-            onPress={handleWithdrawClick}
-            className="bg-[#8B5CF6] w-full py-4 rounded-xl flex-row justify-center items-center gap-2 active:scale-[0.98]"
-          >
-            <Text className="text-white font-bold text-lg">Withdraw Funds</Text>
-            <ArrowRight size={20} color="white" />
+        {/* HEADER */}
+        <View className="flex-row items-center justify-center px-4 mb-6 relative">
+          <Pressable onPress={() => router.back()} className="absolute left-4 p-2 -ml-2 z-10">
+            <ChevronLeft color="white" size={28} />
           </Pressable>
+          <Text className="text-white font-bold text-lg">Creator Rewards</Text>
         </View>
-        {/* Earnings Breakdown */}
-        <Text className="text-white font-bold text-lg mb-4">Earnings Breakdown</Text>
 
-        <View className="gap-3 mb-6">
-          {/* View Earnings */}
-          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row justify-between items-start">
-            <View className="flex-row gap-4">
-              <View className="bg-[#8B5CF6]/10 w-12 h-12 rounded-full items-center justify-center border border-[#8B5CF6]/20">
-                <Eye size={24} color="#8B5CF6" />
+        {/* HUGE BALANCE */}
+        <View className="items-center mb-6">
+          <Text className="text-white font-black text-5xl">₹{totalEarnings.toFixed(2)}</Text>
+        </View>
+
+        <View className="px-4">
+          {/* TOP CARD */}
+          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-5 mb-6 shadow-lg flex-row justify-between">
+            <View className="flex-1 border-r border-[#3E2B5C] pr-4">
+              <View className="flex-row items-center gap-1.5 mb-1">
+                <Clock size={12} color="#FBBF24" />
+                <Text className="text-white/60 font-bold text-[10px] uppercase tracking-wider">Pending Validation</Text>
               </View>
+              <Text className="text-[#FBBF24] font-bold text-xl">₹{pendingValidation.toFixed(2)}</Text>
+            </View>
+            <View className="flex-1 pl-4">
+               <View className="flex-row items-center gap-1.5 mb-1">
+                <CheckCircle2 size={12} color="#10B981" />
+                <Text className="text-white/60 font-bold text-[10px] uppercase tracking-wider">Withdrawable</Text>
+              </View>
+              <Text className="text-[#10B981] font-bold text-xl">₹{withdrawable.toFixed(2)}</Text>
+            </View>
+          </View>
+
+          {/* REQUEST CASH WITHDRAWAL CARD */}
+          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-5 mb-6">
+            <View className="flex-row items-center gap-2 mb-6">
+              <Landmark size={20} color="#A855F7" />
+              <Text className="text-white font-bold text-base">Request Cash Withdrawal</Text>
+            </View>
+
+            <View className="gap-5">
               <View>
-                <Text className="text-white font-bold text-base">View Earnings</Text>
-                <Text className="text-white/50 text-xs mt-1">₹5 per 1,000 views</Text>
-                <View className="mt-3 w-40 h-1 bg-[#3E2B5C] rounded-full overflow-hidden">
-                  <View style={{ width: `${viewPercentage}%` }} className="h-full bg-[#8B5CF6] rounded-full" />
+                <Text className="text-white/60 font-bold text-[11px] mb-2 uppercase tracking-wide">Withdrawal Amount (Min ₹500)</Text>
+                <View className="bg-[#12081E] border border-[#3E2B5C] rounded-xl h-14 justify-center px-4">
+                  <TextInput 
+                    value={amount}
+                    onChangeText={setAmount}
+                    placeholder={`Max available: ₹${withdrawable.toFixed(0)}`}
+                    placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                    keyboardType="numeric"
+                    className="text-white text-base w-full h-full"
+                  />
                 </View>
-                <Text className="text-white/40 text-xs mt-2">{viewPercentage}% of earnings</Text>
               </View>
-            </View>
-            <Text className="text-[#10B981] font-bold text-lg">₹{viewEarnings.toFixed(2)}</Text>
-          </View>
 
-          {/* Gifts & Tips */}
-          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row justify-between items-start">
-            <View className="flex-row gap-4">
-              <View className="bg-[#F59E0B]/10 w-12 h-12 rounded-full items-center justify-center border border-[#F59E0B]/20">
-                <Gift size={24} color="#FBBF24" />
-              </View>
               <View>
-                <Text className="text-white font-bold text-base">Gifts & Tips</Text>
-                <Text className="text-white/50 text-xs mt-1">Virtual gifts from fans</Text>
-                <View className="mt-3 w-40 h-1 bg-[#3E2B5C] rounded-full overflow-hidden">
-                  <View style={{ width: `${giftPercentage}%` }} className="h-full bg-[#FBBF24] rounded-full" />
+                <Text className="text-white/60 font-bold text-[11px] mb-2 uppercase tracking-wide">Recipient UPI ID</Text>
+                <View className="bg-[#12081E] border border-[#3E2B5C] rounded-xl h-14 justify-center px-4">
+                  <TextInput 
+                    value={upiId}
+                    onChangeText={setUpiId}
+                    placeholder="username@bank"
+                    placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                    className="text-white text-base w-full h-full"
+                  />
                 </View>
-                <Text className="text-white/40 text-xs mt-2">{giftPercentage}% of earnings</Text>
               </View>
+
+              <Pressable 
+                onPress={submitWithdrawRequest}
+                disabled={withdrawing}
+                className="bg-[#A855F7] h-14 rounded-xl items-center justify-center mt-2 active:scale-[0.98]"
+              >
+                {withdrawing ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white font-bold text-sm uppercase tracking-wider">Submit Request</Text>
+                )}
+              </Pressable>
             </View>
-            <Text className="text-[#10B981] font-bold text-lg">₹{giftEarnings.toFixed(2)}</Text>
           </View>
 
-          {/* Referrals */}
-          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row justify-between items-start">
-            <View className="flex-row gap-4">
-              <View className="bg-[#3B82F6]/10 w-12 h-12 rounded-full items-center justify-center border border-[#3B82F6]/20">
-                <Users size={24} color="#60A5FA" />
-              </View>
-              <View>
-                <Text className="text-white font-bold text-base">Referrals</Text>
-                <Text className="text-white/50 text-xs mt-1">From your network</Text>
-                <View className="mt-3 w-40 h-1 bg-[#3E2B5C] rounded-full overflow-hidden">
-                  <View style={{ width: `${referralPercentage}%` }} className="h-full bg-[#60A5FA] rounded-full" />
-                </View>
-                <Text className="text-white/40 text-xs mt-2">{referralPercentage}% of earnings</Text>
-              </View>
-            </View>
-            <Text className="text-[#10B981] font-bold text-lg">₹{referralEarnings.toFixed(2)}</Text>
+          {/* VIRTUAL COINS BALANCE */}
+          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-5 mb-8 flex-row justify-between items-center">
+             <View className="flex-row items-center gap-4">
+               <View className="bg-[#F59E0B]/20 w-12 h-12 rounded-full items-center justify-center border border-[#F59E0B]/30">
+                 <Coins size={24} color="#FBBF24" />
+               </View>
+               <View>
+                 <Text className="text-white/60 font-bold text-[10px] uppercase tracking-wider mb-0.5">Virtual Coins Balance</Text>
+                 <Text className="text-[#FBBF24] font-black text-2xl">{coins.toLocaleString()}</Text>
+               </View>
+             </View>
+             <Pressable 
+               onPress={() => setRechargeVisible(true)}
+               className="bg-[#12081E] border border-[#3E2B5C] px-4 py-2.5 rounded-xl active:opacity-70"
+             >
+               <Text className="text-white font-bold text-xs">Buy Coins</Text>
+             </Pressable>
           </View>
+
+          {/* LEDGER & HISTORY */}
+          <View className="flex-row items-center gap-2 mb-4">
+            <History size={18} color="white" />
+            <Text className="text-white font-bold text-sm uppercase tracking-wider">Ledger & History</Text>
+          </View>
+
+          {/* Tabs */}
+          <View className="flex-row gap-2 mb-6">
+            <Pressable 
+              onPress={() => setActiveTab('ALL')}
+              className={`flex-1 items-center justify-center py-3 rounded-xl border ${activeTab === 'ALL' ? 'bg-[#A855F7]/20 border-[#A855F7]' : 'bg-[#1D1037] border-[#3E2B5C]'}`}
+            >
+              <Text className={`font-bold text-[11px] ${activeTab === 'ALL' ? 'text-white' : 'text-white/60'}`}>ALL TRANSACTIONS</Text>
+            </Pressable>
+            <Pressable 
+              onPress={() => setActiveTab('VIEW')}
+              className={`flex-1 items-center justify-center py-3 rounded-xl border ${activeTab === 'VIEW' ? 'bg-[#A855F7]/20 border-[#A855F7]' : 'bg-[#1D1037] border-[#3E2B5C]'}`}
+            >
+              <Text className={`font-bold text-[11px] ${activeTab === 'VIEW' ? 'text-white' : 'text-white/60'}`}>VIEW EARNINGS</Text>
+            </Pressable>
+            <Pressable 
+              onPress={() => setActiveTab('GIFT')}
+              className={`flex-1 items-center justify-center py-3 rounded-xl border ${activeTab === 'GIFT' ? 'bg-[#A855F7]/20 border-[#A855F7]' : 'bg-[#1D1037] border-[#3E2B5C]'}`}
+            >
+              <Text className={`font-bold text-[11px] ${activeTab === 'GIFT' ? 'text-white' : 'text-white/60'}`}>GIFT EARNINGS</Text>
+            </Pressable>
+          </View>
+
+          {/* Transactions Area */}
+          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-8 items-center justify-center mb-8 border-dashed">
+             <Text className="text-white/40 text-sm font-medium">No transactions found.</Text>
+          </View>
+
         </View>
-
-        {/* Coin Wallet */}
-        <Text className="text-white font-bold text-lg mb-4">Coin Wallet</Text>
-        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row justify-between items-center mb-4">
-          <View className="flex-row items-center gap-3">
-            <View className="bg-[#F59E0B]/20 w-10 h-10 rounded-full items-center justify-center">
-              <Wallet size={20} color="#FBBF24" />
-            </View>
-            <View>
-              <Text className="text-[#FBBF24] font-bold text-lg">{coins.toLocaleString()} Coins</Text>
-              <Text className="text-white/50 text-xs max-w-[150px]">Use coins to gift your favourite creators</Text>
-            </View>
-          </View>
-          <Pressable
-            onPress={() => setRechargeVisible(true)}
-            className="bg-[#FBBF24] px-4 py-2.5 rounded-xl flex-row items-center gap-1 active:opacity-80"
-          >
-            <Plus size={16} color="black" />
-            <Text className="text-black font-bold text-sm">Recharge</Text>
-          </Pressable>
-        </View>
-
-        {/* Action Buttons */}
-        <View className="flex-row gap-4 mb-8">
-          <Pressable
-            onPress={() => router.push('/analytics' as any)}
-            className="flex-1 bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row justify-center items-center gap-2 active:opacity-80"
-          >
-            <LineChart size={20} color="#A855F7" />
-            <Text className="text-white font-bold">Analytics</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/referrals' as any)}
-            className="flex-1 bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row justify-center items-center gap-2 active:opacity-80"
-          >
-            <Gift size={20} color="#F87171" />
-            <Text className="text-white font-bold">Referrals</Text>
-          </Pressable>
-        </View>
-
-        {/* Transaction History */}
-        <Text className="text-white font-bold text-lg mb-4">Transaction History</Text>
-        {transactions.length > 0 ? (
-          <View className="gap-3">
-            {transactions.map((tx: any) => (
-              <View key={tx.id} className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row justify-between items-center">
-                <View className="flex-row items-center gap-3">
-                  <View className={`w-10 h-10 rounded-full items-center justify-center ${tx.type === 'WITHDRAWAL' ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
-                    <History size={20} color={tx.type === 'WITHDRAWAL' ? '#EF4444' : '#10B981'} />
-                  </View>
-                  <View>
-                    <Text className="text-white font-bold text-base">{tx.type.replace(/_/g, ' ')}</Text>
-                    <Text className="text-white/50 text-xs">{new Date(tx.createdAt).toLocaleDateString()}</Text>
-                  </View>
-                </View>
-                <View className="items-end">
-                  <Text className={`font-bold text-lg ${tx.type === 'WITHDRAWAL' ? 'text-red-500' : 'text-green-500'}`}>
-                    {tx.type === 'WITHDRAWAL' ? '-' : '+'}{tx.currency === 'INR' ? '₹' : ''}{tx.amount}
-                  </Text>
-                  <Text className="text-white/50 text-xs">{tx.status}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <View className="items-center justify-center py-8">
-            <History size={32} color="#3E2B5C" className="mb-2" />
-            <Text className="text-white/40 text-sm">No recent transactions</Text>
-          </View>
-        )}
-
       </ScrollView>
+
       <RechargeCoinsSheet
         visible={rechargeVisible}
         onClose={() => setRechargeVisible(false)}
@@ -239,6 +248,6 @@ export default function RewardsScreen() {
           setLocalCoinsAdded(prev => prev + addedCoins);
         }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }

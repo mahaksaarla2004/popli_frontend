@@ -1,5 +1,5 @@
-import React from 'react';
-import { Redirect, useRootNavigationState } from 'expo-router';
+import React, { useEffect } from 'react';
+import { router, useRootNavigationState } from 'expo-router';
 import { useAuthStore } from '../store';
 
 export default function EntryRedirectScreen() {
@@ -8,11 +8,17 @@ export default function EntryRedirectScreen() {
 
   if (!rootNavigationState?.key) return null;
 
-  if (!isOnboarded) {
-    return <Redirect href="/(auth)/onboarding" />;
-  } else if (!isLoggedIn) {
-    return <Redirect href="/(auth)/login" />;
-  } else {
-    return <Redirect href="/(tabs)" />;
-  }
+  useEffect(() => {
+    if (!rootNavigationState?.key) return;
+
+    if (!isOnboarded) {
+      router.replace('/(auth)/onboarding');
+    } else if (!isLoggedIn) {
+      router.replace('/(auth)/login');
+    } else {
+      router.replace('/(tabs)');
+    }
+  }, [rootNavigationState?.key, isOnboarded, isLoggedIn]);
+
+  return null;
 }

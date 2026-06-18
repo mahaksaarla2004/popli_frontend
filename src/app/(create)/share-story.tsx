@@ -9,7 +9,7 @@ import * as FileSystem from 'expo-file-system';
 
 export default function ShareStoryScreen() {
   const router = useRouter();
-  const { uri, type, text, target, mode, speed, effect, musicId, musicTitle, musicArtist, musicUrl, targetUserIds, originalStoryId, originalOwnerId, originalOwnerUsername, isStory, city, taggedUserIds, isMonetized, returnTo, challengeId, isVideoMuted } = useLocalSearchParams<{ 
+  const { uri, type, text, target, mode, speed, effect, musicId, musicTitle, musicArtist, musicUrl, targetUserIds, originalStoryId, originalOwnerId, originalOwnerUsername, isStory, city, taggedUserIds, isMonetized, returnTo, challengeId, isVideoMuted, category, allowGifting, visibility, allowComments, allowDuet } = useLocalSearchParams<{ 
     uri: string; 
     type: 'photo' | 'video'; 
     text?: string; 
@@ -32,6 +32,11 @@ export default function ShareStoryScreen() {
     returnTo?: string;
     challengeId?: string;
     isVideoMuted?: string;
+    category?: string;
+    allowGifting?: string;
+    visibility?: string;
+    allowComments?: string;
+    allowDuet?: string;
   }>();
   const { addStory } = useStoryStore();
   const { fetchReels, addLocalReel } = useFeedStore();
@@ -131,12 +136,16 @@ export default function ShareStoryScreen() {
             mediaUrl: finalUrl,
             thumbnailUrl: finalUrl.replace(/\.[^/.]+$/, ".jpg"), // auto-generate thumbnail from video via cloudinary
             mediaType: type === 'video' ? 'VIDEO' : 'PHOTO',
-            description: text || 'New post!',
-            category: 'comedy', // default for now
+            description: text || '',
+            category: category || 'comedy', // Use selected category or default
             musicName: musicTitle || (musicId ? `Track ${musicId}` : undefined),
             city,
             challengeId,
             isMonetized: isMonetized === 'true',
+            allowGifting: allowGifting === 'true',
+            privacy: visibility || 'Public',
+            allowComments: allowComments === 'true',
+            allowDuet: allowDuet === 'true',
             taggedUserIds: taggedUserIds ? JSON.parse(taggedUserIds) : undefined,
             layersData: JSON.stringify(metadata)
           });

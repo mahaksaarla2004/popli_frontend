@@ -201,26 +201,29 @@ export default function HomeFeedScreen() {
     setTimeout(() => setBurstGift({ visible: false, icon: '' }), 1500);
   };
 
-  const renderItem = useCallback(({ item, index }: { item: Reel; index: number }) => {
-    const activeIndex = filteredReels.findIndex(r => r.id === activeReelId);
-    // CRITICAL FIX: Android hardware decoder limit. Keep ONLY current and next video loaded to prevent black screens.
-    // ADDED isFocused check: Unmount ALL videos when user goes to Profile/Create tab to completely prevent OutOfMemoryError crashes!
-    const isAdjacent = isFocused && (index === activeIndex || index === activeIndex + 1);
+  const renderItem = useCallback(({ item, index, extraData }: { item: Reel; index: number, extraData?: any }) => {
+    // CRITICAL FIX: FlashList requires using extraData instead of closure variables to trigger re-renders!
+    const currentActiveId = extraData?.activeReelId || activeReelId;
+    const currentIsFocused = extraData?.isFocused ?? isFocused;
+    
+    const activeIndex = filteredReels.findIndex(r => r.id === currentActiveId);
+    // Keep ONLY current and next video loaded to prevent OOM
+    const isAdjacent = currentIsFocused && (index === activeIndex || index === activeIndex + 1);
 
     return (
       <ReelItem
         item={item}
-        isActive={isFocused && item.id === activeReelId}
+        isActive={currentIsFocused && item.id === currentActiveId}
         isAdjacent={isAdjacent}
         onOpenComments={handleOpenComments}
         onOpenSend={handleOpenSend}
         onOpenGifts={handleOpenGifts}
         onOpenProfile={handleOpenProfile}
-        windowWidth={width}
-        windowHeight={listHeight}
+        windowWidth={extraData?.width || width}
+        windowHeight={extraData?.listHeight || listHeight}
       />
     );
-  }, [isFocused, activeReelId, filteredReels, handleOpenComments, handleOpenSend, handleOpenGifts, handleOpenProfile, width, listHeight]);
+  }, [filteredReels, handleOpenComments, handleOpenSend, handleOpenGifts, handleOpenProfile]);
 
   const [refreshCount, setRefreshCount] = useState(0);
 

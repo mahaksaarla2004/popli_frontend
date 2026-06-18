@@ -5,6 +5,7 @@ import { View, Platform } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore, useKYCStore } from '../store';
 import { useFCM } from '../hooks/useFCM';
@@ -119,31 +120,33 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#0B001A' }} edges={['top', 'bottom', 'left', 'right']}>
-          <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: '#0B001A' },
-            animation: 'fade',
-          }}
-        >
-          {/* Main Route Groups */}
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          
-          {/* Main stack sub-pages */}
-          <Stack.Screen name="kyc" />
-          <Stack.Screen name="chat/[id]" />
-          <Stack.Screen name="wallet" />
-          <Stack.Screen name="notifications" />
-          <Stack.Screen name="settings" />
-          <Stack.Screen name="support" />
-        </Stack>
-      </SafeAreaView>
-    </SafeAreaProvider>
-  </GestureHandlerRootView>
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <SafeAreaView style={{ flex: 1, backgroundColor: '#0B001A' }} edges={['top', 'bottom', 'left', 'right']}>
+            <StatusBar style="light" />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: '#0B001A' },
+              animation: 'fade',
+            }}
+          >
+            {/* Main Route Groups */}
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            
+            {/* Main stack sub-pages */}
+            <Stack.Screen name="kyc" />
+            <Stack.Screen name="chat/[id]" />
+            <Stack.Screen name="wallet" />
+            <Stack.Screen name="notifications" />
+            <Stack.Screen name="settings" />
+            <Stack.Screen name="support" />
+          </Stack>
+        </SafeAreaView>
+      </SafeAreaProvider>
+      </KeyboardProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -17,11 +17,11 @@ export default function OTPScreen() {
   
   const isResetMode = params.mode === 'reset';
   const isEmailType = params.type === 'email';
-  const otpLength = 6;
+  const otpLength = 4;
   const targetLabel = params.target || '+91 987 xxx xxxx';
 
   const { setOnboardingComplete, setLogin } = useAuthStore();
-  const [otpArray, setOtpArray] = useState<string[]>(() => Array(6).fill(''));
+  const [otpArray, setOtpArray] = useState<string[]>(() => Array(4).fill(''));
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
   const [timerSeconds, setTimerSeconds] = useState<number>(300);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);

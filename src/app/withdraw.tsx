@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, Dimensions, TextInput, ActivityIndicator, Animated, PanResponder, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Building2, Smartphone, Check, ChevronRight, Clock, CheckCircle2, RefreshCw } from 'lucide-react-native';
+import { ChevronLeft, Building2, Smartphone, Check, ChevronRight, Clock, RefreshCw, Gift, Eye } from 'lucide-react-native';
 import { apiClient } from '../api/client';
 
 const { width } = Dimensions.get('window');
@@ -19,7 +19,9 @@ export default function WithdrawScreen() {
   const [pan] = useState(() => new Animated.ValueXY());
   const maxSwipe = width - 32 - 40 - 16; // container width minus padding and button size
 
-  const availableBalance = (wallet?.viewEarnings ?? 0) + (wallet?.giftEarnings ?? 0) + (wallet?.referralEarnings ?? 0);
+  const viewEarnings = wallet?.viewEarnings ?? 0;
+  const giftEarnings = wallet?.giftEarnings ?? 0;
+  const availableBalance = viewEarnings + giftEarnings + (wallet?.referralEarnings ?? 0);
 
   const handleWithdrawSubmit = async () => {
     if (!upiId || !amount) {
@@ -87,102 +89,134 @@ export default function WithdrawScreen() {
   
   if (loading) {
     return (
-      <View className="flex-1 bg-[#0D0518] items-center justify-center">
+      <View className="flex-1 bg-[#12081E] items-center justify-center">
         <ActivityIndicator size="large" color="#A855F7" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-[#0D0518] pt-14">
+    <View className="flex-1 bg-[#12081E] pt-14">
       {/* Header */}
       <View className="flex-row items-center px-4 pb-4">
         <Pressable onPress={() => router.back()} className="mr-4 active:opacity-70 p-2 -ml-2">
-          <ChevronLeft color="white" size={28} />
+          <ChevronLeft color="white" size={24} />
         </Pressable>
-        <Text className="text-white font-bold text-xl">Withdraw Funds</Text>
+        <Text className="text-white font-bold text-lg">Withdraw Funds</Text>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
-        <View className="bg-gradient-to-r from-[#A855F7] to-[#8B5CF6] rounded-[24px] p-6 mb-6">
-           <Text className="text-white/80 text-sm mb-2">Total Balance</Text>
-           <Text className="text-white font-black text-5xl mb-4">₹{availableBalance.toFixed(2)}</Text>
-           <Text className="text-white/70 text-xs">Gifts & Tips + View Earnings · minimum ₹500</Text>
+        
+        {/* Earnings Breakdown Card */}
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-5 mb-8">
+          <Text className="text-white font-bold text-base mb-4">Earnings Breakdown</Text>
+          
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row items-center gap-3">
+              <View className="bg-[#F59E0B]/20 w-8 h-8 rounded-full items-center justify-center">
+                <Gift size={16} color="#FBBF24" />
+              </View>
+              <Text className="text-white/80 font-medium text-sm">Gift Earnings</Text>
+            </View>
+            <Text className="text-white font-bold">₹{giftEarnings.toFixed(2)}</Text>
+          </View>
+
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row items-center gap-3">
+              <View className="bg-[#8B5CF6]/20 w-8 h-8 rounded-full items-center justify-center">
+                <Eye size={16} color="#8B5CF6" />
+              </View>
+              <Text className="text-white/80 font-medium text-sm">View Earnings</Text>
+            </View>
+            <Text className="text-white font-bold">₹{viewEarnings.toFixed(2)}</Text>
+          </View>
+
+          <View className="h-[1px] bg-[#3E2B5C] w-full mb-4" />
+          
+          <View className="flex-row justify-between items-center">
+            <Text className="text-white/60 font-medium text-sm">Total Available</Text>
+            <Text className="text-[#10B981] font-black text-xl">₹{availableBalance.toFixed(2)}</Text>
+          </View>
         </View>
 
-        <Text className="text-white font-bold text-lg mb-4">Select Withdrawal Method</Text>
+        <Text className="text-white font-bold text-sm mb-4">Select Withdrawal Method</Text>
 
         {/* Methods */}
         <View className="flex-row gap-4 mb-6">
           <Pressable 
             onPress={() => setMethod('upi')}
-            className={`flex-1 rounded-2xl p-6 border ${method === 'upi' ? 'border-[#A855F7] bg-[#1D1037]' : 'border-[#3E2B5C] bg-[#1D1037]'} items-center justify-center relative`}
+            className={`flex-1 rounded-2xl p-6 border ${method === 'upi' ? 'border-[#A855F7]' : 'border-[#3E2B5C]'} bg-[#1D1037] items-center justify-center relative`}
           >
             {method === 'upi' && (
               <View className="absolute top-3 right-3 bg-[#A855F7] rounded-full p-0.5">
-                <Check size={14} color="white" />
+                <Check size={12} color="white" strokeWidth={3} />
               </View>
             )}
             <View className="w-12 h-12 rounded-full bg-[#8B5CF6]/10 items-center justify-center mb-3">
                <Smartphone size={24} color="#A855F7" />
             </View>
-            <Text className={`font-bold mb-1 ${method === 'upi' ? 'text-white' : 'text-gray-400'}`}>UPI</Text>
-            <Text className="text-gray-500 text-xs">Instant transfer</Text>
+            <Text className={`font-bold text-sm mb-1 ${method === 'upi' ? 'text-white' : 'text-white/60'}`}>UPI</Text>
+            <Text className="text-white/40 text-[10px]">Instant transfer</Text>
           </Pressable>
 
           <Pressable 
             onPress={() => setMethod('bank')}
-            className={`flex-1 rounded-2xl p-6 border ${method === 'bank' ? 'border-[#A855F7] bg-[#1D1037]' : 'border-[#3E2B5C] bg-[#1D1037]'} items-center justify-center relative`}
+            className={`flex-1 rounded-2xl p-6 border ${method === 'bank' ? 'border-[#A855F7]' : 'border-[#3E2B5C]'} bg-[#1D1037] items-center justify-center relative`}
           >
             {method === 'bank' && (
               <View className="absolute top-3 right-3 bg-[#A855F7] rounded-full p-0.5">
-                <Check size={14} color="white" />
+                <Check size={12} color="white" strokeWidth={3} />
               </View>
             )}
             <View className="w-12 h-12 rounded-full bg-[#8B5CF6]/10 items-center justify-center mb-3">
               <Building2 size={24} color="#A855F7" />
             </View>
-            <Text className={`font-bold mb-1 ${method === 'bank' ? 'text-white' : 'text-gray-400'}`}>Bank Transfer</Text>
-            <Text className="text-gray-500 text-xs">2-24 hours</Text>
+            <Text className={`font-bold text-sm mb-1 ${method === 'bank' ? 'text-white' : 'text-white/60'}`}>Bank Transfer</Text>
+            <Text className="text-white/40 text-[10px]">2-24 hours</Text>
           </Pressable>
         </View>
 
         {/* Form */}
-        <View className="gap-4 mb-8">
+        <View className="gap-6 mb-8">
           <View>
-            <Text className="text-white/80 font-bold mb-2">UPI ID</Text>
-            <TextInput 
-              value={upiId}
-              onChangeText={setUpiId}
-              placeholder="e.g. yourname@upi"
-              placeholderTextColor="rgba(255, 255, 255, 0.3)"
-              className="bg-[#1D1037] border border-[#3E2B5C] rounded-xl px-4 h-14 text-white"
-            />
+            <Text className="text-white font-semibold text-sm mb-2">UPI ID</Text>
+            <View className="relative justify-center">
+              <TextInput 
+                value={upiId}
+                onChangeText={setUpiId}
+                placeholder="e.g. yourname@upi"
+                placeholderTextColor="rgba(255, 255, 255, 0.2)"
+                className="bg-[#1D1037] border border-[#3E2B5C] rounded-xl px-4 h-14 text-white"
+              />
+              <View className="absolute right-4 w-8 h-8 bg-white/5 rounded-full items-center justify-center">
+                <View className="w-3.5 h-3.5 rounded-full bg-white/20 border-2 border-white/40" />
+              </View>
+            </View>
           </View>
 
           <View>
-            <Text className="text-white/80 font-bold mb-2">Enter Amount</Text>
+            <Text className="text-white font-semibold text-sm mb-2">Enter Amount</Text>
             <View className="flex-row items-center bg-[#1D1037] border border-[#3E2B5C] rounded-xl px-4 h-14">
               <Text className="text-white text-lg mr-2 font-bold">₹</Text>
               <TextInput 
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="0.00"
-                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                placeholderTextColor="rgba(255, 255, 255, 0.2)"
                 keyboardType="numeric"
                 className="flex-1 text-white text-lg"
               />
               <Pressable onPress={() => setAmount(availableBalance.toString())} className="bg-[#3E2B5C] px-3 py-1.5 rounded-lg">
-                <Text className="text-[#A855F7] font-bold text-xs">MAX</Text>
+                <Text className="text-white/60 font-bold text-[10px]">MAX</Text>
               </Pressable>
             </View>
-            <Text className="text-white/50 text-xs mt-2">Available: ₹{availableBalance.toFixed(2)}</Text>
+            <Text className="text-white/40 text-[10px] mt-2">Available: ₹{availableBalance.toFixed(2)}</Text>
           </View>
         </View>
 
         {/* Swipe Button */}
-        <View className="bg-[#8B5CF6] h-14 rounded-full flex-row items-center px-2 mb-10 overflow-hidden relative">
-          <Text className="text-white font-bold text-lg absolute w-full text-center z-0">
+        <View className="bg-[#A855F7] h-14 rounded-full flex-row items-center px-2 mb-10 overflow-hidden relative">
+          <Text className="text-white font-bold text-sm absolute w-full text-center z-0">
             {withdrawing ? 'Processing...' : 'Swipe to Withdraw'}
           </Text>
           <Animated.View 
@@ -190,25 +224,24 @@ export default function WithdrawScreen() {
             style={{ transform: [{ translateX: pan.x }] }}
             className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm z-10"
           >
-            <ChevronRight size={24} color="#8B5CF6" />
+            <ChevronRight size={20} color="#A855F7" strokeWidth={3} />
           </Animated.View>
-          {/* Faded right side styling */}
           <View className="absolute right-4 w-6 h-6 items-center justify-center opacity-30 z-0">
-             <ChevronRight size={24} color="white" />
+             <ChevronRight size={20} color="white" />
           </View>
         </View>
 
         {/* History */}
         <View className="flex-row items-center gap-2 mb-4">
-          <Clock size={20} color="white" className="opacity-60" />
-          <Text className="text-white font-bold text-lg">My Withdrawal Requests</Text>
+          <Clock size={16} color="white" />
+          <Text className="text-white font-bold text-sm">My Withdrawal Requests</Text>
         </View>
 
-        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-8 items-center justify-center">
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-8 items-center justify-center mb-10">
           <View className="opacity-40 mb-3">
-             <RefreshCw size={28} color="white" />
+             <RefreshCw size={24} color="white" />
           </View>
-          <Text className="text-white/60 text-sm">No withdrawal requests yet</Text>
+          <Text className="text-white/60 text-xs">No withdrawal requests yet</Text>
         </View>
         
       </ScrollView>

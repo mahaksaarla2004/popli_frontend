@@ -13,9 +13,9 @@ import Svg, { Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
-type CameraMode = 'POST' | 'STORY' | 'REEL' | 'LIVE';
+type CameraMode = 'POST' | 'STORY' | 'REEL';
 
-const MODES: CameraMode[] = ['POST', 'STORY', 'REEL', 'LIVE'];
+const MODES: CameraMode[] = ['POST', 'STORY', 'REEL'];
 
 export default function CreateScreen() {
   const router = useRouter();
@@ -381,19 +381,13 @@ export default function CreateScreen() {
             )}
 
             <Pressable 
-              onPress={activeMode === 'LIVE' ? () => router.push('/(create)/live-setup') : handleCapture} 
-              onLongPress={activeMode !== 'LIVE' ? startRecording : undefined}
-              onPressOut={activeMode !== 'LIVE' ? stopRecording : undefined}
+              onPress={handleCapture} 
+              onLongPress={startRecording}
+              onPressOut={stopRecording}
               delayLongPress={300}
               className="items-center justify-center"
             >
-              {activeMode === 'LIVE' ? (
-                <View className="w-20 h-20 rounded-full border-4 border-[#EC4899] items-center justify-center p-1 bg-black/20">
-                  <View className="w-full h-full rounded-full bg-[#EC4899] items-center justify-center flex-row">
-                    <MonitorPlay size={20} color="white" />
-                  </View>
-                </View>
-              ) : activeMode === 'REEL' ? (
+              {activeMode === 'REEL' ? (
                 <View className="w-20 h-20 items-center justify-center relative">
                   {/* Background border */}
                   <View className="absolute inset-0 rounded-full border-4 border-white/30" />

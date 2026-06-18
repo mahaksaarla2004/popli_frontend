@@ -76,8 +76,8 @@ export default function InboxScreen() {
     );
   };
 
-  // Map active friends from existing chats (fallback logic until real presence is added)
-  const activeFriends = visibleChats.slice(0, 5).map((chat) => ({
+  // Map recent friends from existing chats
+  const activeFriends = visibleChats.slice(0, 15).map((chat) => ({
     id: chat?.id || ('active-' + (chat?.creatorId || 'unknown')), // Use chat.id for unique React key
     userId: chat?.creatorId || 'unknown',
     name: chat?.creatorName ? chat.creatorName.split(' ')[0] : 'Unknown',
@@ -122,9 +122,9 @@ export default function InboxScreen() {
               </View>
             </View>
 
-            {/* Active Friends Horizontal List */}
+            {/* Recent Friends Horizontal List */}
             <View className="mb-6">
-              <Text className="text-white/60 text-[10px] font-bold uppercase tracking-widest px-4 mb-4">Active Friends</Text>
+              <Text className="text-white/60 text-[10px] font-bold uppercase tracking-widest px-4 mb-4">Recent</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
                 {activeFriends.map((friend) => (
                   <View key={friend.id} className="items-center">

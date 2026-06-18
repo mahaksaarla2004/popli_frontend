@@ -25,6 +25,8 @@ interface ChatState {
   markChatRead: (chatId: string) => void;
   deleteChat: (chatId: string) => Promise<void>;
   deleteMessage: (chatId: string, messageId: string) => Promise<void>;
+  markMessageSeen: (chatId: string, messageId: string) => Promise<void>;
+  reactToMessage: (chatId: string, messageId: string, emoji: string) => Promise<void>;
   markNotificationsRead: () => Promise<void>;
   connectSocket: () => void;
   disconnectSocket: () => void;
@@ -86,8 +88,11 @@ export const useChatStore = create<ChatState>()(
               mediaUrl: message.mediaUrl,
               type: message.type,
               storyId: message.storyId,
+              replyToId: message.replyToId,
+              replyToText: message.replyToText,
+              reactions: message.reactions || {},
               timestamp: formatRelativeTime(message.createdAt || new Date().toISOString()),
-              status: 'seen'
+              status: message.status || 'delivered'
             };
 
             const isChatActive = state.messages.some(m => m.chatId === message.chatId);
@@ -97,7 +102,7 @@ export const useChatStore = create<ChatState>()(
               if (c.id === message.chatId) {
                 return {
                   ...c,
-                  lastMessage: message.text || 'Sent media',
+                  lastMessage: message.text || (message.type === 'VOICE' ? 'Voice message' : 'Sent media'),
                   lastMessageTime: formatRelativeTime(new Date().toISOString()),
                   unreadCount: c.unreadCount + 1
                 };
@@ -107,6 +112,33 @@ export const useChatStore = create<ChatState>()(
 
             return { messages: updatedMessages, chats: updatedChats };
           });
+        });
+
+        socket.on('message_seen', (data: { chatId: string, messageId: string }) => {
+          set((state) => ({
+            messages: state.messages.map(m => 
+              (m.id === data.messageId && m.chatId === data.chatId) 
+                ? { ...m, status: 'seen' } 
+                : m
+            )
+          }));
+        });
+
+        socket.on('message_reaction', (data: { chatId: string, messageId: string, userId: string, emoji: string }) => {
+          set((state) => ({
+            messages: state.messages.map(m => {
+              if (m.id === data.messageId && m.chatId === data.chatId) {
+                const newReactions = { ...(m.reactions || {}) };
+                if (data.emoji) {
+                  newReactions[data.userId] = data.emoji;
+                } else {
+                  delete newReactions[data.userId];
+                }
+                return { ...m, reactions: newReactions };
+              }
+              return m;
+            })
+          }));
         });
 
         socket.on('typing', (data: { chatId: string, isTyping: boolean, userId: string }) => {
@@ -131,21 +163,30 @@ export const useChatStore = create<ChatState>()(
           socket = null;
         }
       },
-      sendMessage: async (chatId, text, mediaUrl) => {
+      sendMessage: async (chatId, text, mediaUrl, options?: { type?: 'TEXT'|'VOICE', replyToId?: string, replyToText?: string }) => {
         try {
-          const res = await apiClient.post(`/chats/${chatId}/messages`, { text: text || 'Sent media', mediaUrl });
+          const res = await apiClient.post(`/chats/${chatId}/messages`, { 
+            text: text || (options?.type === 'VOICE' ? 'Voice message' : 'Sent media'), 
+            mediaUrl,
+            type: options?.type || 'TEXT',
+            replyToId: options?.replyToId,
+            replyToText: options?.replyToText
+          });
           const rawMsg = res.data;
           
           const newMsg = {
-            id: rawMsg.id,
-            chatId: rawMsg.chatId,
-            senderId: rawMsg.senderId,
-            text: rawMsg.text,
-            mediaUrl: rawMsg.mediaUrl,
-            type: rawMsg.type,
+            id: rawMsg.id || Date.now().toString(),
+            chatId: rawMsg.chatId || chatId,
+            senderId: rawMsg.senderId || 'me',
+            text: rawMsg.text || text,
+            mediaUrl: rawMsg.mediaUrl || mediaUrl,
+            type: rawMsg.type || options?.type || 'TEXT',
             storyId: rawMsg.storyId,
+            replyToId: rawMsg.replyToId || options?.replyToId,
+            replyToText: rawMsg.replyToText || options?.replyToText,
+            reactions: {},
             timestamp: formatRelativeTime(rawMsg.createdAt || new Date().toISOString()),
-            status: 'seen'
+            status: 'sent'
           };
           
           set((state) => {
@@ -156,7 +197,7 @@ export const useChatStore = create<ChatState>()(
               if (c.id === chatId) {
                 return {
                   ...c,
-                  lastMessage: text || 'Sent media',
+                  lastMessage: text || (options?.type === 'VOICE' ? 'Voice message' : 'Sent media'),
                   lastMessageTime: formatRelativeTime(new Date().toISOString())
                 };
               }
@@ -216,6 +257,53 @@ export const useChatStore = create<ChatState>()(
           console.error('Error deleting message:', e);
         }
       },
+      markMessageSeen: async (chatId, messageId) => {
+        set((state) => ({
+          messages: state.messages.map((m) => 
+            m.id === messageId ? { ...m, status: 'seen' } : m
+          )
+        }));
+        try {
+          await apiClient.post(`/chats/${chatId}/messages/${messageId}/read`);
+          if (socket) {
+            socket.emit('message_seen', { chatId, messageId });
+          }
+        } catch (error) {
+          console.error("Failed to mark message seen", error);
+        }
+      },
+      reactToMessage: async (chatId, messageId, emoji) => {
+        // Optimistic update
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { useAuthStore } = require('./authStore');
+        const userId = useAuthStore.getState().userProfile?.id;
+        
+        if (userId) {
+          set((state) => ({
+            messages: state.messages.map((m) => {
+              if (m.id === messageId) {
+                const newReactions = { ...(m.reactions || {}) };
+                if (emoji) {
+                  newReactions[userId] = emoji;
+                } else {
+                  delete newReactions[userId];
+                }
+                return { ...m, reactions: newReactions };
+              }
+              return m;
+            })
+          }));
+        }
+        
+        try {
+          await apiClient.post(`/chats/${chatId}/messages/${messageId}/react`, { emoji });
+          if (socket && userId) {
+            socket.emit('message_reaction', { chatId, messageId, userId, emoji });
+          }
+        } catch (error) {
+          console.error("Failed to react to message", error);
+        }
+      },
       markNotificationsRead: async () => {
         set((state) => ({
           notifications: state.notifications.map((n) => ({ ...n, isRead: true }))
@@ -261,8 +349,11 @@ export const useChatStore = create<ChatState>()(
             mediaUrl: m.mediaUrl,
             type: m.type,
             storyId: m.storyId,
+            replyToId: m.replyToId,
+            replyToText: m.replyToText,
+            reactions: m.reactions || {},
             timestamp: formatRelativeTime(m.createdAt),
-            status: 'seen'
+            status: m.status || 'delivered'
           }));
           set({ messages: fetchedMessages });
           

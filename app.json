@@ -21,6 +21,7 @@
         "foregroundImage": "./assets/images/popli_logo.png"
       },
       "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize",
       "package": "com.mahak2004.popliapp",
       "googleServicesFile": "./google-services.json",
       "permissions": [

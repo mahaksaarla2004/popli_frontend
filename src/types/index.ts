@@ -102,9 +102,12 @@ export interface Message {
   text: string;
   timestamp: string; // e.g. "9:41 AM"
   status: 'sent' | 'delivered' | 'seen';
-  type?: 'TEXT' | 'STORY_MENTION';
+  type?: 'TEXT' | 'STORY_MENTION' | 'VOICE';
   storyId?: string;
   mediaUrl?: string;
+  replyToId?: string;
+  replyToText?: string;
+  reactions?: Record<string, string>; // userId -> emoji
 }
 
 export interface Chat {
