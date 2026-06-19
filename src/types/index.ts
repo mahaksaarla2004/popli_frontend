@@ -101,7 +101,7 @@ export interface Message {
   senderId: string;
   text: string;
   timestamp: string; // e.g. "9:41 AM"
-  status: 'sent' | 'delivered' | 'seen';
+  status: 'sending' | 'sent' | 'delivered' | 'seen' | 'failed';
   type?: 'TEXT' | 'STORY_MENTION' | 'VOICE';
   storyId?: string;
   mediaUrl?: string;

@@ -168,11 +168,11 @@ export default function ReelViewerScreen() {
         keyExtractor={(item) => item.id}
         pagingEnabled
         showsVerticalScrollIndicator={false}
-        bounces={false}
-        initialScrollIndex={initialIndex >= 0 ? initialIndex : 0}
+        // @ts-ignore
+        estimatedItemSize={height}
+        initialScrollIndex={initialIndex > 0 ? initialIndex : 0}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        estimatedItemSize={height}
         extraData={{ activeReelId }}
         contentContainerStyle={{ backgroundColor: '#000' }}
       />

@@ -14,7 +14,7 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function OTPScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ mode?: string; type?: string; target?: string; isSignup?: string; referredByCode?: string; }>();
+  const params = useLocalSearchParams<{ mode?: string; type?: string; target?: string; isSignup?: string; referredByCode?: string; phone?: string; intent?: string; name?: string; username?: string; email?: string; dob?: string; }>();
   
   const isResetMode = params.mode === 'reset';
   const isEmailType = params.type === 'email';

@@ -135,13 +135,10 @@ export default function ChatScreen() {
       </View>
 
       <View className="flex-1 px-4">
-        {/* @ts-ignore */}
-        <FlashList
+        <FlatList
           data={formattedMessages}
-          {...{ inverted: true }}
+          inverted={true}
           showsVerticalScrollIndicator={false}
-          // @ts-ignore
-          estimatedItemSize={80}
           onViewableItemsChanged={onViewableItemsChanged.current}
           viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
           contentContainerStyle={{ paddingHorizontal: 0, paddingBottom: 20, paddingTop: 10 }}
