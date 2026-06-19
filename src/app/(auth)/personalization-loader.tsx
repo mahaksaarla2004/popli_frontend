@@ -39,6 +39,7 @@ export default function PersonalizationLoaderScreen() {
     const redirectionTimeout = setTimeout(() => {
       // Set authenticated session status to true
       setLogin(true);
+      useAuthStore.getState().updateProfile({ isProfileComplete: true });
 
       // Instantly replace navigation route to tabs reels feed
       router.replace('/(tabs)');
