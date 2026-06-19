@@ -186,6 +186,7 @@ export const useFeedStore = create<FeedState>()(
               createdAt: 'Just now',
               user: savedComment.user,
               parentId: savedComment.parentId,
+              isLiked: false,
               replies: [],
             };
 

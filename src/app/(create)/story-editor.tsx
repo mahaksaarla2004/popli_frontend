@@ -388,6 +388,43 @@ export default function StoryEditorScreen() {
                   <Text className="text-white font-bold text-3xl">84°F</Text>
                 </View>
               )}
+              {layer.type === 'interactive' && layer.content && layer.content.type === 'time' && (
+                <View className="bg-transparent border-4 border-white px-6 py-2 rounded-full items-center justify-center">
+                  <Text className="text-white font-bold text-3xl">{layer.content.text}</Text>
+                </View>
+              )}
+              {layer.type === 'interactive' && layer.content && layer.content.type === 'poll' && (
+                <View className="w-72 bg-white rounded-2xl overflow-hidden shadow-2xl p-4">
+                  <Text className="text-black font-bold text-xl text-center mb-4">{layer.content.text}</Text>
+                  <View className="flex-row gap-2">
+                    <View className="flex-1 p-3 rounded-xl border bg-gray-50 border-gray-200">
+                      <Text className="text-center font-bold text-black">{layer.content.options?.[0] || 'YES'}</Text>
+                    </View>
+                    <View className="flex-1 p-3 rounded-xl border bg-gray-50 border-gray-200">
+                      <Text className="text-center font-bold text-black">{layer.content.options?.[1] || 'NO'}</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+              {layer.type === 'interactive' && layer.content && layer.content.type === 'reaction' && (
+                <View className="w-64 bg-white rounded-2xl p-4 shadow-2xl items-center">
+                  <Text className="text-black font-bold text-lg text-center mb-2">{layer.content.text}</Text>
+                  <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center border border-gray-200 shadow-sm">
+                    <Text className="text-4xl">{layer.content.emoji || '😍'}</Text>
+                  </View>
+                </View>
+              )}
+              {layer.type === 'interactive' && layer.content && layer.content.type === 'add_yours' && (
+                <View className="w-72 bg-white rounded-2xl overflow-hidden shadow-2xl">
+                  <View className="bg-black p-3 items-center flex-row justify-center gap-2">
+                    <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/685/685655.png'}} style={{width:20, height:20, tintColor:'white'}} />
+                    <Text className="text-white font-bold text-sm tracking-widest">ADD YOURS</Text>
+                  </View>
+                  <View className="p-5 items-center">
+                    <Text className="text-black font-bold text-lg text-center">{layer.content.text}</Text>
+                  </View>
+                </View>
+              )}
               {layer.type === 'music' && layer.content && (
                 layer.content.style === 'cover' ? (
                   <View className="bg-white/10 backdrop-blur-md rounded-2xl p-4 items-center w-48 border border-white/20 shadow-2xl">

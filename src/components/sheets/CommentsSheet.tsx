@@ -143,6 +143,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
       text: textToPost,
       createdAt: 'Just now',
       likesCount: 0,
+      isLiked: false,
       parentId,
       replies: []
     };
@@ -399,12 +400,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
               style={{ maxHeight: 80, minHeight: 36 }}
               multiline
             />
-            <View className="ml-2 flex-row items-center gap-2 opacity-60">
-              <Smile size={18} color="#D1D5DB" />
-              <View className="bg-white/10 rounded px-1 py-0.5">
-                <Text className="text-white text-[9px] font-bold">GIF</Text>
-              </View>
-            </View>
+
           </View>
 
           <Pressable onPress={handlePostComment} className="px-2 py-2">
