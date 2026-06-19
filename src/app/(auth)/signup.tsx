@@ -155,38 +155,25 @@ export default function SignupScreen() {
         return;
       }
 
-      // 2. Send Firebase OTP
-      try {
-        await sendFirebaseOTP(targetPhone);
-      } catch (error: any) {
+      // BYPASS FIREBASE FOR CLIENT DEMO
+      setTimeout(() => {
         setIsLoading(false);
-        console.error('Firebase OTP Error:', error);
-        let errorMsg = 'Failed to send OTP. Please try again.';
-        if (error?.code === 'auth/invalid-phone-number') {
-          errorMsg = 'Invalid phone number format.';
-        } else if (error?.code === 'auth/too-many-requests') {
-          errorMsg = 'Too many requests. Please try again later.';
-        }
-        setErrors({ api: errorMsg });
-        return;
-      }
-
-      setIsLoading(false);
-      // Route user to OTP confirmation
-      router.push({
-        pathname: '/(auth)/otp',
-        params: { 
-          target: targetPhone, 
-          isSignup: 'true',
-          name: nameTrimmed,
-          username: usernameTrimmed,
-          email: emailTrimmed,
-          phone: targetPhone,
-          dob: dob,
-          referredByCode: referralCode.trim(),
-          intent: 'signup'
-        }
-      });
+        // Route user to OTP confirmation
+        router.push({
+          pathname: '/(auth)/otp',
+          params: { 
+            target: targetPhone, 
+            isSignup: 'true',
+            name: nameTrimmed,
+            username: usernameTrimmed,
+            email: emailTrimmed,
+            phone: targetPhone,
+            dob: dob,
+            referredByCode: referralCode.trim(),
+            intent: 'signup'
+          }
+        });
+      }, 500);
     } catch (error: any) {
       setIsLoading(false);
       console.error('Check User Error:', error);
