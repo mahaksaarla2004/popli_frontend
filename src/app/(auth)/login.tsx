@@ -124,7 +124,6 @@ export default function LoginScreen() {
               {errors.identifier && (
                 <Text className="text-red-500 text-[10px] pl-1 mt-1 font-semibold">{errors.identifier}</Text>
               )}
-              {errors.api && (
             </View>
           </View>
 
