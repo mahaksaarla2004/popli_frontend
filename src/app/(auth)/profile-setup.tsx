@@ -57,7 +57,8 @@ export default function ProfileSetupScreen() {
         }
 
         const res = await apiClient.post('/auth/check-user', { username: currentUsername });
-        if (res.data.exists) {
+        const currentUserId = useAuthStore.getState().userProfile?.id;
+        if (res.data.exists && res.data.userId !== currentUserId) {
           setUsernameStatus('taken');
         } else {
           setUsernameStatus('available');

@@ -86,11 +86,12 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e1c05e5b-2493-4812-ac85-4e08a24d88a2"
+        "projectId": "f933dfd0-5bd2-44cc-abf0-1e02c580c90b"
       }
     },
     "assetBundlePatterns": [
       "**/*"
-    ]
+    ],
+    "owner": "kanha_meena04"
   }
 }
