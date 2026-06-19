@@ -58,6 +58,14 @@ export default function ShareScreen() {
     });
   };
 
+  const handleCategorySelect = (cat: string) => {
+    setSelectedCategory(cat);
+    const tag = `#${cat.toLowerCase()}`;
+    if (!caption.includes(tag)) {
+      setCaption(prev => prev.length > 0 ? `${prev} ${tag}` : tag);
+    }
+  };
+
   return (
     <View className="flex-1 bg-[#12081E]">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
@@ -104,7 +112,7 @@ export default function ShareScreen() {
           {/* HASHTAGS */}
           <View className="p-4 border-b border-white/5">
             <Text className="text-[#9CA3AF] text-xs font-bold tracking-wider mb-3 uppercase">Hashtags</Text>
-            <View className="flex-row items-center gap-2">
+            <View className="flex-row items-center gap-2 mb-3">
               <TextInput
                 className="flex-1 bg-[#1A0E2C] text-white px-4 py-3 rounded-lg border border-white/5"
                 placeholder="#trending"
@@ -120,6 +128,21 @@ export default function ShareScreen() {
                 <Text className="text-[#A855F7] font-bold text-base">Add</Text>
               </Pressable>
             </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+              {['#trending', '#foryou', '#viral', '#dance', '#comedy', '#music'].map(tag => (
+                <Pressable 
+                  key={tag}
+                  onPress={() => {
+                    if (!caption.includes(tag)) {
+                      setCaption(prev => prev.length > 0 ? `${prev} ${tag}` : tag);
+                    }
+                  }}
+                  className="mr-2 px-4 py-1.5 rounded-full bg-white/10"
+                >
+                  <Text className="text-white/80">{tag}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
           </View>
 
           {/* CATEGORY */}
@@ -129,7 +152,7 @@ export default function ShareScreen() {
               {CATEGORIES.map(cat => (
                 <Pressable 
                   key={cat}
-                  onPress={() => setSelectedCategory(cat)}
+                  onPress={() => handleCategorySelect(cat)}
                   className={`mr-3 px-5 py-2 rounded-full border ${selectedCategory === cat ? 'bg-[#3E2B5C] border-[#A855F7]' : 'bg-transparent border-white/10'}`}
                 >
                   <Text className={selectedCategory === cat ? 'text-[#A855F7] font-bold' : 'text-white/70'}>{cat}</Text>

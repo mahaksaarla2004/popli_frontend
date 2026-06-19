@@ -85,6 +85,7 @@ export default function ChatScreen() {
   const formattedMessages = messages.map(m => {
     return {
       ...m,
+      isStoryMention: m.type === 'STORY_MENTION',
       type: m.senderId === userProfile?.id ? 'sent' : 'received',
       time: formatRelativeTime(m.timestamp),
       senderAvatar: m.senderId === userProfile?.id ? userProfile?.avatar : displayAvatar,

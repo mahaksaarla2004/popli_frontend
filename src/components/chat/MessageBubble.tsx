@@ -68,6 +68,29 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
   };
 
   const renderContent = () => {
+    if (msg.isStoryMention) {
+      return (
+        <Pressable 
+          onPress={() => router.push(`/user/${userProfile?.username}`)} // Ideally should go to story, but simple fallback
+          className="relative rounded-xl overflow-hidden"
+          style={{ width: 180, backgroundColor: 'rgba(0,0,0,0.3)' }}
+        >
+          {msg.attachment ? (
+             <Image source={{ uri: getThumbnailUrl(msg.attachment) }} style={{ width: 180, height: 240, opacity: 0.8 }} resizeMode="cover" />
+          ) : (
+             <View style={{ width: 180, height: 240, backgroundColor: '#2D1B4E', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 40 }}>📱</Text>
+             </View>
+          )}
+          <View className="absolute bottom-0 left-0 right-0 p-3 bg-black/60">
+            <Text className="text-white text-xs font-bold text-center" numberOfLines={2}>
+              {msg.text || 'Mentioned you in their story'}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    }
+
     if (msg.attachment && !msg.isStoryMention) {
       return (
         <Pressable onPress={() => onImagePress && onImagePress(msg.attachment)} className="relative rounded-xl overflow-hidden">
