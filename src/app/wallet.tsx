@@ -25,7 +25,7 @@ const TABS = [
 
 export default function WalletScreen() {
   const router = useRouter();
-  const { coinBalance, pendingBalance, withdrawableBalance, totalEarnings, totalWithdrawn, ledgers, withdrawalRequests, rechargeCoins, withdrawEarnings } = useWalletStore();
+  const { coinBalance, pendingBalance, withdrawableBalance, totalEarnings, totalWithdrawn, ledgers, withdrawalRequests, transactions, rechargeCoins, withdrawEarnings } = useWalletStore();
   const { kycCompleted, upiId } = useKYCStore();
 
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -181,13 +181,45 @@ export default function WalletScreen() {
           </ScrollView>
 
           <View className="gap-3 mt-2">
-            {filteredLedgers.length === 0 ? (
-              <View className="py-8 items-center justify-center border border-white/5 rounded-2xl border-dashed">
-                <Text className="text-white/40 text-xs font-semibold">No transactions found.</Text>
-              </View>
-            ) : filteredLedgers.map((tx) => {
+            {(() => {
+              const allHistory = [
+                ...ledgers.map(l => ({
+                  id: l.id,
+                  source: l.source,
+                  description: l.description || l.source.replace('_', ' '),
+                  credit: l.credit,
+                  debit: l.debit,
+                  balanceAfter: l.balanceAfter,
+                  createdAt: l.createdAt,
+                  type: 'LEDGER'
+                })),
+                ...transactions.filter((t: any) => t.status === 'SUCCESS' || t.status === 'success').map((t: any) => ({
+                  id: t.id,
+                  source: t.type,
+                  description: t.description || 'Coin Recharge',
+                  credit: t.amount,
+                  debit: 0,
+                  balanceAfter: null,
+                  createdAt: t.timestamp || t.createdAt,
+                  type: 'COIN_TX'
+                }))
+              ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+              const filteredHistory = allHistory.filter(item => activeTab === 'ALL' || item.source === activeTab);
+
+              if (filteredHistory.length === 0) {
+                return (
+                  <View className="py-8 items-center justify-center border border-white/5 rounded-2xl border-dashed">
+                    <Text className="text-white/40 text-xs font-semibold">No transactions found.</Text>
+                  </View>
+                );
+              }
+
+              return filteredHistory.map((tx) => {
               const isIncome = tx.credit > 0;
               const amount = isIncome ? tx.credit : tx.debit;
+              const isCoin = tx.type === 'COIN_TX';
+
               return (
                 <View 
                   key={tx.id}
@@ -213,14 +245,17 @@ export default function WalletScreen() {
                   </View>
 
                   <View className="items-end">
-                    <Text className={`font-black text-xs ${isIncome ? 'text-accent-green' : 'text-red-400'}`}>
-                      {isIncome ? '+' : '-'}₹{amount.toFixed(2)}
+                    <Text className={`font-black text-xs flex-row items-center ${isIncome ? 'text-accent-green' : 'text-red-400'}`}>
+                      {isIncome ? '+' : '-'}{isCoin ? '' : '₹'}{amount.toFixed(isCoin ? 0 : 2)} {isCoin ? '🪙' : ''}
                     </Text>
-                    <Text className="text-neutral-grey text-[8px] font-semibold uppercase mt-0.5">Bal: ₹{tx.balanceAfter.toFixed(2)}</Text>
+                    {tx.balanceAfter !== null && (
+                      <Text className="text-neutral-grey text-[8px] font-semibold uppercase mt-0.5">Bal: ₹{tx.balanceAfter.toFixed(2)}</Text>
+                    )}
                   </View>
                 </View>
               );
-            })}
+            });
+            })()}
           </View>
         </View>
 

@@ -9,6 +9,7 @@ import { FlashList } from '@shopify/flash-list';
 import MessageBubble from '../../components/chat/MessageBubble';
 import ChatInputBar from '../../components/chat/ChatInputBar';
 import { apiClient } from '../../api/client';
+import { formatRelativeTime } from '../../utils';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -85,7 +86,7 @@ export default function ChatScreen() {
     return {
       ...m,
       type: m.senderId === userProfile?.id ? 'sent' : 'received',
-      time: m.timestamp,
+      time: formatRelativeTime(m.timestamp),
       senderAvatar: m.senderId === userProfile?.id ? userProfile?.avatar : displayAvatar,
       attachment: m.mediaUrl,
       isVideo: m.mediaUrl?.endsWith('.mp4') || m.mediaUrl?.includes('/video/'),

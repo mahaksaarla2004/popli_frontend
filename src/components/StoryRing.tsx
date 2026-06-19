@@ -23,7 +23,7 @@ export default function StoryRing({ userId, avatarUrl, size = 64, showName = fal
   const [showOptions, setShowOptions] = useState(false);
 
   // Find stories for this user
-  const userStories = stories.filter(s => s.creatorId === userId);
+  const userStories = stories.filter(s => s.creatorId === userId).reverse();
   const hasStory = userStories.length > 0;
   
   // Check if all stories are viewed by the current logged-in user

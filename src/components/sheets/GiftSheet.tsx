@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Platform, StyleSheet, ActivityIndicator, ScrollView, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, StyleSheet, ActivityIndicator, ScrollView, Modal, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { X, Award, Coins, Gift, Heart, Crown, Gem, Rocket, PartyPopper, Sparkles, Star, Flower2, Zap, CheckCircle2 } from 'lucide-react-native';
-import { useWalletStore } from '../../store';
+import { useWalletStore, useKYCStore } from '../../store';
 import { GIFT_CATALOG } from '../../constants/staticData';
 import { Reel } from '../../types';
 import { MotiView } from 'moti';
@@ -41,6 +41,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { coinBalance, sendGiftCoins, rechargeCoins } = useWalletStore();
+  const { kycCompleted } = useKYCStore();
 
   const selectedGift = GIFT_CATALOG.find((g) => g.id === selectedGiftId)!;
 
@@ -66,6 +67,22 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
 
   const handleRecharge = () => {
     if (!selectedRechargePack) return;
+
+    if (!kycCompleted) {
+      Alert.alert(
+        'KYC Required',
+        'Please complete your KYC verification to recharge coins.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Verify Now', onPress: () => {
+            onClose();
+            router.push('/kyc');
+          }}
+        ]
+      );
+      return;
+    }
+
     rechargeCoins(selectedRechargePack);
     setShowSuccessModal(true);
     setTimeout(() => {
@@ -275,12 +292,11 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
             <TouchableOpacity 
               onPress={() => {
                 setShowInsufficientModal(false);
-                onClose();
-                router.push('/wallet');
+                setViewMode('recharge');
               }}
               className="bg-[#A855F7] w-full py-4 rounded-full items-center active:scale-95 transition-all mb-3"
             >
-              <Text className="text-white font-bold text-sm">Go to Wallet</Text>
+              <Text className="text-white font-bold text-sm">Recharge Coins</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={() => setShowInsufficientModal(false)}

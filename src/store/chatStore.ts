@@ -92,7 +92,7 @@ export const useChatStore = create<ChatState>()(
               replyToId: message.replyToId,
               replyToText: message.replyToText,
               reactions: message.reactions || {},
-              timestamp: formatRelativeTime(message.createdAt || new Date().toISOString()),
+              timestamp: message.createdAt || new Date().toISOString(),
               status: message.status || 'delivered'
             };
 
@@ -166,6 +166,7 @@ export const useChatStore = create<ChatState>()(
       },
       sendMessage: async (chatId, text, mediaUrl, options?: { type?: 'TEXT'|'VOICE', replyToId?: string, replyToText?: string }) => {
         const tempId = `temp-${Date.now()}`;
+        const { useAuthStore } = require('./authStore');
         const { userProfile } = useAuthStore.getState();
         
         const tempMsg = {
@@ -219,7 +220,7 @@ export const useChatStore = create<ChatState>()(
             replyToId: rawMsg.replyToId || options?.replyToId,
             replyToText: rawMsg.replyToText || options?.replyToText,
             reactions: {},
-            timestamp: formatRelativeTime(rawMsg.createdAt || new Date().toISOString()),
+            timestamp: rawMsg.createdAt || new Date().toISOString(),
             status: 'sent'
           };
           
@@ -397,7 +398,7 @@ export const useChatStore = create<ChatState>()(
             replyToId: m.replyToId,
             replyToText: m.replyToText,
             reactions: m.reactions || {},
-            timestamp: formatRelativeTime(m.createdAt),
+            timestamp: m.createdAt,
             status: m.status || 'delivered'
           }));
           set({ messages: fetchedMessages });

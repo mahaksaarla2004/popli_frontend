@@ -6,7 +6,7 @@ import {
   Heart, Award, ShieldAlert, Sparkles, ChevronRight, Video, X, User, Trash2
 } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
-import { useAuthStore, useChatStore } from '../../store';
+import { useAuthStore, useChatStore, useStoryStore } from '../../store';
 import StoryRing from '../../components/StoryRing';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
@@ -78,13 +78,64 @@ export default function InboxScreen() {
   };
 
   // Map recent friends from existing chats
-  const activeFriends = visibleChats.slice(0, 15).map((chat) => ({
-    id: chat?.id || ('active-' + (chat?.creatorId || 'unknown')), // Use chat.id for unique React key
-    userId: chat?.creatorId || 'unknown',
-    name: chat?.creatorName ? chat.creatorName.split(' ')[0] : 'Unknown',
-    avatar: chat?.creatorAvatar || 'https://i.pravatar.cc/150',
-    active: (chat?.creatorName ? chat.creatorName.length : 0) % 2 === 0 // Simulated online status
-  }));
+  const activeFriendsMap = new Map();
+
+  // First, add all active chats
+  visibleChats.slice(0, 15).forEach((chat) => {
+    if (!chat || !chat.creatorId) return;
+    activeFriendsMap.set(chat.creatorId, {
+      id: chat.id,
+      userId: chat.creatorId,
+      name: chat.creatorName ? chat.creatorName.split(' ')[0] : 'Unknown',
+      avatar: chat.creatorAvatar || 'https://i.pravatar.cc/150',
+      active: (chat.creatorName ? chat.creatorName.length : 0) % 2 === 0, // Simulated online status
+      hasStory: false // Will be updated if they have a story
+    });
+  });
+
+  // Then, add users with active stories (who might not be in chats)
+  // Ensure "Your Story" is at the front if the current user has a story
+  const { stories } = useStoryStore();
+  stories.forEach((story: any) => {
+    const storyUsername = story.creatorId; // frontend stores username here
+    if (blockedIds.includes(storyUsername)) return;
+    
+    if (activeFriendsMap.has(storyUsername)) {
+      // Existing chat friend has a story
+      activeFriendsMap.get(storyUsername).hasStory = true;
+    } else {
+      // Followed user has a story but no chat
+      activeFriendsMap.set(storyUsername, {
+        id: 'story-' + storyUsername,
+        userId: storyUsername,
+        name: storyUsername, // Fallback to username
+        avatar: story.creatorAvatar || 'https://i.pravatar.cc/150',
+        active: false,
+        hasStory: true
+      });
+    }
+  });
+
+  // Add the current user at the beginning always (for 'Your Story')
+  let activeFriendsList = [];
+  if (userProfile) {
+    const hasOwnStory = stories.some((s: any) => s.creatorId === userProfile.username);
+    activeFriendsMap.delete(userProfile.username); // Remove if existed to push to front
+    activeFriendsList = [
+      {
+        id: 'self-' + userProfile.id,
+        userId: userProfile.username,
+        name: 'Your Story',
+        avatar: userProfile.avatar || 'https://i.pravatar.cc/150',
+        active: false,
+        hasStory: hasOwnStory
+      },
+      ...Array.from(activeFriendsMap.values())
+    ];
+  } else {
+    activeFriendsList = Array.from(activeFriendsMap.values());
+  }
+  const activeFriends = activeFriendsList;
 
   // Format the last message preview to hide raw data tags like [STORY:uuid]
   const formatMessagePreview = (msg: string) => {

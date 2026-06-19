@@ -14,7 +14,7 @@ const { width } = Dimensions.get('window');
 export default function DiscoverScreen() {
   const router = useRouter();
   const { creators, reels, fetchCreators } = useFeedStore();
-  const { followingIds, toggleFollow } = useAuthStore();
+  const { followingIds, toggleFollow, userProfile } = useAuthStore();
   const { activeChallenges, fetchActiveChallenges } = useChallengeStore();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -120,14 +120,16 @@ export default function DiscoverScreen() {
                             <Text className="text-white/50 text-xs">@{user.username}</Text>
                           </View>
                         </View>
-                        <Pressable
-                          onPress={() => toggleFollow(user.id)}
-                          className={`px-4 py-1.5 rounded-full border ${followingIds.includes(user.id) ? 'border-white/20 bg-transparent' : 'border-transparent bg-[#8B5CF6]'}`}
-                        >
-                          <Text className={`text-xs font-bold ${followingIds.includes(user.id) ? 'text-white' : 'text-white'}`}>
-                            {followingIds.includes(user.id) ? 'Following' : 'Follow'}
-                          </Text>
-                        </Pressable>
+                        {userProfile?.id !== user.id && (
+                          <Pressable
+                            onPress={() => toggleFollow(user.id)}
+                            className={`px-4 py-1.5 rounded-full border ${followingIds.includes(user.id) ? 'border-white/20 bg-transparent' : 'border-transparent bg-[#8B5CF6]'}`}
+                          >
+                            <Text className={`text-xs font-bold ${followingIds.includes(user.id) ? 'text-white' : 'text-white'}`}>
+                              {followingIds.includes(user.id) ? 'Following' : 'Follow'}
+                            </Text>
+                          </Pressable>
+                        )}
                       </Pressable>
                     ))}
                   </View>
@@ -260,14 +262,16 @@ export default function DiscoverScreen() {
                         {(creator as any).city || 'Global Creator'}
                       </Text>
 
-                      <Pressable
-                        onPress={() => toggleFollow(creator.id)}
-                        className="w-full py-2 rounded-lg mt-4 items-center justify-center bg-[#1D1037] border border-[#8B5CF6]/30"
-                      >
-                        <Text className="text-[#8B5CF6] text-[10px] font-bold">
-                          {isFollowing ? 'Following' : 'Follow'}
-                        </Text>
-                      </Pressable>
+                      {userProfile?.id !== creator.id && (
+                        <Pressable
+                          onPress={() => toggleFollow(creator.id)}
+                          className="w-full py-2 rounded-lg mt-4 items-center justify-center bg-[#1D1037] border border-[#8B5CF6]/30"
+                        >
+                          <Text className="text-[#8B5CF6] text-[10px] font-bold">
+                            {isFollowing ? 'Following' : 'Follow'}
+                          </Text>
+                        </Pressable>
+                      )}
                     </Pressable>
                   );
                 })}

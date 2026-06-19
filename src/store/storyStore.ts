@@ -52,7 +52,7 @@ export const useStoryStore = create<StoryState>()(
         // Optimistic UI Update
         set((state) => ({
           stories: state.stories.map(s => 
-            s.id === storyId && !s.viewers.includes(viewerId)
+            s.id === storyId && !s.viewers.includes(viewerId) && s.creatorId !== viewerId
               ? { ...s, viewers: [...s.viewers, viewerId] }
               : s
           )

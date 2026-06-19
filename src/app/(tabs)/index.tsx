@@ -58,7 +58,7 @@ export default function HomeFeedScreen() {
   const [burstGift, setBurstGift] = useState<{ visible: boolean; icon: string }>({ visible: false, icon: '' });
 
   const { chats, notifications } = useChatStore();
-  const unreadChatsCount = chats.reduce((acc, chat) => acc + (chat.unreadCount || 0), 0);
+  const unreadChatsCount = chats.filter((chat) => (chat.unreadCount || 0) > 0).length;
   const hasUnreadNotifications = notifications.some(n => !n.isRead);
 
   useEffect(() => {

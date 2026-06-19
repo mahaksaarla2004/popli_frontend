@@ -991,6 +991,7 @@ export default function KYCScreen() {
                   <Text className="text-white/50 text-[10px] font-bold uppercase pl-1">IFSC Code</Text>
                   <TextInput
                     value={kyc.ifscCode}
+                    autoCapitalize="characters"
                     onChangeText={(val) => {
                       const upper = val.toUpperCase();
                       kyc.updateKYCField({ ifscCode: upper });

@@ -69,6 +69,7 @@ export const useHashtagStore = create<HashtagState>((set, get) => ({
         isFollowed: false, 
         category: backendReel.category || 'comedy',
         isMonetized: backendReel.isMonetized !== undefined ? backendReel.isMonetized : true,
+        layersData: backendReel.layersData,
       }));
 
       set((state) => ({

@@ -9,7 +9,7 @@ export default function ViewAllScreen() {
   const router = useRouter();
   const { type } = useLocalSearchParams<{ type: string }>();
   const { creators, reels } = useFeedStore();
-  const { followingIds, toggleFollow } = useAuthStore();
+  const { followingIds, toggleFollow, userProfile } = useAuthStore();
 
   let title = 'View All';
   let content = null;
@@ -39,14 +39,16 @@ export default function ViewAllScreen() {
                   </Text>
                 </View>
               </View>
-              <Pressable
-                onPress={() => toggleFollow(creator.id)}
-                className={`px-5 py-2 rounded-full border ${isFollowing ? 'border-white/20 bg-transparent' : 'border-transparent bg-[#8B5CF6]'}`}
-              >
-                <Text className={`text-xs font-bold ${isFollowing ? 'text-white' : 'text-white'}`}>
-                  {isFollowing ? 'Following' : 'Follow'}
-                </Text>
-              </Pressable>
+              {userProfile?.id !== creator.id && (
+                <Pressable
+                  onPress={() => toggleFollow(creator.id)}
+                  className={`px-5 py-2 rounded-full border ${isFollowing ? 'border-white/20 bg-transparent' : 'border-transparent bg-[#8B5CF6]'}`}
+                >
+                  <Text className={`text-xs font-bold ${isFollowing ? 'text-white' : 'text-white'}`}>
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </Text>
+                </Pressable>
+              )}
             </Pressable>
           );
         })}

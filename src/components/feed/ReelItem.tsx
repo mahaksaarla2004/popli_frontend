@@ -234,7 +234,7 @@ export const ReelItem = React.memo(({
   const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDoubleTap = useCallback((e: any) => {
-    const DOUBLE_PRESS_DELAY = 300;
+    const DOUBLE_PRESS_DELAY = 450;
     
     // Extract coordinates safely
     const locationX = e.nativeEvent?.locationX || width / 2;
@@ -338,7 +338,7 @@ export const ReelItem = React.memo(({
       <Pressable 
         onPress={handleDoubleTap}
         onLongPress={() => setIsHeldPaused(true)}
-        delayLongPress={200}
+        delayLongPress={400}
         onPressOut={() => setIsHeldPaused(false)}
         style={StyleSheet.absoluteFill}
       >
@@ -442,7 +442,7 @@ export const ReelItem = React.memo(({
                   { rotate: `${layer.rotation || 0}rad` }
                 ];
                 return (
-                  <Animated.View key={layer.id} style={{ position: 'absolute', left: 0, top: 0, transform }} pointerEvents={layer.type === 'interactive' ? 'auto' : 'none'}>
+                  <Animated.View key={layer.id} style={{ position: 'absolute', alignSelf: 'center', top: '50%', transform }} pointerEvents={layer.type === 'interactive' ? 'auto' : 'none'}>
                     {layer.type === 'text' && layer.content && typeof layer.content === 'object' && (
                       <View style={{
                         backgroundColor: layer.content.backgroundColor,
@@ -532,7 +532,7 @@ export const ReelItem = React.memo(({
         <View className="items-center mb-6">
           <Eye size={28} color="#FFFFFF" />
           <Text className="text-white text-xs font-semibold mt-1">
-            {formatSocialCount(item.viewsCount || (item.likesCount * 4))}
+            {formatSocialCount(item.viewsCount ?? 0)}
           </Text>
         </View>
 

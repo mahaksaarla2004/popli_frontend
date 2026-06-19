@@ -155,7 +155,7 @@ export default function StoryViewerScreen() {
     }
   };
 
-  const userStories = stories.filter(s => s.creatorId === id);
+  const userStories = stories.filter(s => s.creatorId === id).reverse();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [replyText, setReplyText] = useState('');
   const [isPaused, setIsPaused] = useState(false);
@@ -258,7 +258,7 @@ export default function StoryViewerScreen() {
 
     // Mark current story as viewed
     const currentStory = userStories[currentIndex];
-    if (currentStory && !currentStory.viewers.includes(userProfile.username)) {
+    if (currentStory && !currentStory.viewers.includes(userProfile.username) && currentStory.creatorId !== userProfile.username) {
       markStoryViewed(currentStory.id, userProfile.username);
     }
 
@@ -409,8 +409,8 @@ export default function StoryViewerScreen() {
                     key={layer.id} 
                     style={{
                       position: 'absolute',
-                      left: layer.x || 0,
-                      top: layer.y || 0,
+                      alignSelf: 'center',
+                      top: '50%',
                       transform
                     }}
                     pointerEvents={['interactive', 'music'].includes(layer.type) ? 'box-none' : 'none'}
