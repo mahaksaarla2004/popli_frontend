@@ -225,9 +225,13 @@ export const useChatStore = create<ChatState>()(
           };
           
           set((state) => {
-            // Replace temp message with the real one
+            // Check if the socket already received this exact message while we were waiting for the API response
+            const socketMsgExists = state.messages.some(m => m.id === newMsg.id);
+
             return {
-              messages: state.messages.map(m => m.id === tempId ? newMsg as any : m),
+              messages: socketMsgExists 
+                ? state.messages.filter(m => m.id !== tempId) // Remove temp since socket added the real one
+                : state.messages.map(m => m.id === tempId ? newMsg as any : m), // Replace temp with API result
               chats: state.chats.map((c) => {
                 if (c.id === chatId) {
                   return { ...c, lastMessageTime: newMsg.timestamp };
@@ -284,23 +288,27 @@ export const useChatStore = create<ChatState>()(
         }
       },
       deleteChat: async (chatId) => {
+        const backupChats = get().chats;
+        set(state => ({
+          chats: state.chats.filter(c => c.id !== chatId)
+        }));
         try {
           await apiClient.delete(`/chats/${chatId}`);
-          set(state => ({
-            chats: state.chats.filter(c => c.id !== chatId)
-          }));
         } catch (e) {
-          console.error('Error deleting chat:', e);
+          console.error('Error deleting chat, rolling back:', e);
+          set({ chats: backupChats });
         }
       },
       deleteMessage: async (chatId, messageId) => {
+        const backupMessages = get().messages;
+        set(state => ({
+          messages: state.messages.filter(m => m.id !== messageId)
+        }));
         try {
           await apiClient.delete(`/chats/${chatId}/messages/${messageId}`);
-          set(state => ({
-            messages: state.messages.filter(m => m.id !== messageId)
-          }));
         } catch (e) {
-          console.error('Error deleting message:', e);
+          console.error('Error deleting message, rolling back:', e);
+          set({ messages: backupMessages });
         }
       },
       markMessageSeen: async (chatId, messageId) => {
@@ -323,6 +331,8 @@ export const useChatStore = create<ChatState>()(
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { useAuthStore } = require('./authStore');
         const userId = useAuthStore.getState().userProfile?.id;
+        
+        const backupMessages = get().messages;
         
         if (userId) {
           set((state) => ({
@@ -347,7 +357,8 @@ export const useChatStore = create<ChatState>()(
             socket.emit('message_reaction', { chatId, messageId, userId, emoji });
           }
         } catch (error) {
-          console.error("Failed to react to message", error);
+          console.error("Failed to react to message, rolling back:", error);
+          set({ messages: backupMessages });
         }
       },
       markNotificationsRead: async () => {

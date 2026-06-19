@@ -86,9 +86,11 @@ export default function ChatScreen() {
     return {
       ...m,
       isStoryMention: m.type === 'STORY_MENTION',
+      isReelShare: m.text?.includes('check out this Reel! 🎥') && m.text?.includes('/reels/'),
       type: m.senderId === userProfile?.id ? 'sent' : 'received',
       time: formatRelativeTime(m.timestamp),
       senderAvatar: m.senderId === userProfile?.id ? userProfile?.avatar : displayAvatar,
+      senderUsername: m.sender?.username || (m.senderId === userProfile?.id ? userProfile?.username : displayUsername),
       attachment: m.mediaUrl,
       isVideo: m.mediaUrl?.endsWith('.mp4') || m.mediaUrl?.includes('/video/'),
       isLatestSent: m.id === latestSentMsgId

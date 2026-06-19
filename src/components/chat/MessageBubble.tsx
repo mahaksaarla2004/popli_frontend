@@ -71,7 +71,7 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
     if (msg.isStoryMention) {
       return (
         <Pressable 
-          onPress={() => router.push(`/user/${userProfile?.username}`)} // Ideally should go to story, but simple fallback
+          onPress={() => router.push(`/story-viewer/${msg.senderUsername}?storyId=${msg.storyId || ''}`)}
           className="relative rounded-xl overflow-hidden"
           style={{ width: 180, backgroundColor: 'rgba(0,0,0,0.3)' }}
         >
@@ -85,6 +85,33 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
           <View className="absolute bottom-0 left-0 right-0 p-3 bg-black/60">
             <Text className="text-white text-xs font-bold text-center" numberOfLines={2}>
               {msg.text || 'Mentioned you in their story'}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    }
+
+    if (msg.isReelShare) {
+      const reelIdMatch = msg.text?.match(/\/reels\/([a-zA-Z0-9-]+)/);
+      const sharedReelId = reelIdMatch ? reelIdMatch[1] : null;
+      
+      return (
+        <Pressable 
+          onPress={() => sharedReelId ? router.push(`/reel/${sharedReelId}`) : null}
+          className="relative rounded-xl overflow-hidden"
+          style={{ width: 180, backgroundColor: 'rgba(0,0,0,0.3)' }}
+        >
+          {msg.attachment ? (
+             <Image source={{ uri: getThumbnailUrl(msg.attachment) }} style={{ width: 180, height: 240, opacity: 0.8 }} resizeMode="cover" />
+          ) : (
+             <View style={{ width: 180, height: 240, backgroundColor: '#2D1B4E', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 40 }}>🎬</Text>
+             </View>
+          )}
+          <View className="absolute bottom-0 left-0 right-0 p-3 bg-black/60 flex-row items-center justify-center gap-1">
+            <Play size={14} color="white" />
+            <Text className="text-white text-xs font-bold text-center" numberOfLines={1}>
+              Shared a Reel
             </Text>
           </View>
         </Pressable>

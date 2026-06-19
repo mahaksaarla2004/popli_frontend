@@ -37,6 +37,38 @@ export default function ProfileSetupScreen() {
   const [category, setCategory] = useState<string>('comedy');
   const [selectedLang, setSelectedLang] = useState<'English' | 'Hindi' | 'Bengali' | 'Tamil'>('English');
   const [isUploading, setIsUploading] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'error'>('idle');
+
+  React.useEffect(() => {
+    const currentUsername = userProfile?.username || '';
+    if (currentUsername.length < 3) {
+      setUsernameStatus('idle');
+      return;
+    }
+
+    setUsernameStatus('checking');
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        // Front-end reserved word check
+        const reservedUsernames = ['admin', 'support', 'official', 'popli', 'team', 'help', 'security', 'moderator', 'root', 'system'];
+        if (reservedUsernames.includes(currentUsername.toLowerCase())) {
+          setUsernameStatus('taken');
+          return;
+        }
+
+        const res = await apiClient.post('/auth/check-user', { username: currentUsername });
+        if (res.data.exists) {
+          setUsernameStatus('taken');
+        } else {
+          setUsernameStatus('available');
+        }
+      } catch (err) {
+        setUsernameStatus('error');
+      }
+    }, 600);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [userProfile?.username]);
 
   const pickImage = async () => {
     try {
@@ -87,13 +119,42 @@ export default function ProfileSetupScreen() {
     }
   };
 
-  const handleNext = () => {
-    // Persist current profiling data to global auth state store
-    updateProfile({
+  const handleNext = async () => {
+    const currentName = userProfile?.name?.trim();
+    const currentUsername = userProfile?.username?.trim();
+
+    if (!currentName || currentName.length < 2) {
+      alert("Please enter a valid full name (at least 2 characters).");
+      return;
+    }
+
+    if (!currentUsername || currentUsername.length < 3) {
+      alert("Please enter a username (at least 3 characters).");
+      return;
+    }
+
+    if (usernameStatus === 'taken') {
+      alert("Please choose an available username.");
+      return;
+    }
+
+    // Attempt to persist everything directly to backend
+    // Since updateProfile is asynchronous and calls the API, we can catch username conflicts here
+    setIsUploading(true);
+    const result = await updateProfile({
+      name: currentName,
+      username: currentUsername,
       avatar,
       bio: bio.trim() || 'Indian video creator 🚀',
       category,
     });
+    setIsUploading(false);
+
+    if (result && !result.success) {
+      alert(result.error || "Failed to update profile. Username might be taken.");
+      return;
+    }
+
     setLanguage(selectedLang);
 
     // Slide smoothly into interest selection
@@ -174,8 +235,44 @@ export default function ProfileSetupScreen() {
             </View>
           </View>
 
-          {/* Bio input Card */}
+          {/* Name input */}
           <View className="gap-2">
+            <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Your Full Name</Text>
+            <View className="bg-[#190C2C] border border-white/5 rounded-2xl px-4 py-3">
+              <TextInput
+                value={userProfile?.name || ''}
+                onChangeText={(val) => updateProfile({ name: val })}
+                placeholder="Enter your full name"
+                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                className="text-white text-sm"
+              />
+            </View>
+          </View>
+
+          {/* Username input */}
+          <View className="gap-2">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Choose a Username</Text>
+              {usernameStatus === 'checking' && <ActivityIndicator size="small" color="#A78BFA" />}
+              {usernameStatus === 'available' && <Text className="text-green-400 text-xs font-bold">✓ Available</Text>}
+              {usernameStatus === 'taken' && <Text className="text-red-400 text-xs font-bold">✗ Taken</Text>}
+              {usernameStatus === 'error' && <Text className="text-red-400 text-xs font-bold">Error checking</Text>}
+            </View>
+            <View className={`bg-[#190C2C] border rounded-2xl px-4 py-3 ${usernameStatus === 'taken' ? 'border-red-500' : usernameStatus === 'available' ? 'border-green-500' : 'border-white/5'}`}>
+              <TextInput
+                value={userProfile?.username || ''}
+                onChangeText={(val) => updateProfile({ username: val.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                placeholder="e.g. popli_creator_01"
+                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                autoCapitalize="none"
+                className="text-white text-sm"
+              />
+            </View>
+            <Text className="text-white/40 text-[10px]">Only lowercase letters, numbers, and underscores allowed.</Text>
+          </View>
+
+          {/* Bio input Card */}
+          <View className="gap-2 mt-2">
             <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Your Bio</Text>
             <View className="bg-[#190C2C] border border-white/5 rounded-2xl p-4">
               <TextInput

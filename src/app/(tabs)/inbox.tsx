@@ -225,7 +225,7 @@ export default function InboxScreen() {
                     className="flex-row items-center justify-between active:scale-[0.99]"
                   >
                     <View className="flex-row items-center gap-3 flex-1 pr-4">
-                      <StoryRing userId={chat.creatorId} avatarUrl={chat.creatorAvatar} size={48} />
+                      <StoryRing userId={chat.creatorUsername || chat.creatorId} avatarUrl={chat.creatorAvatar} size={48} />
                       
                       <View className="flex-1 justify-center gap-1">
                         <Text className="text-white font-bold text-sm" numberOfLines={1}>

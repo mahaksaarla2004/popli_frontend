@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Stack, router, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Platform } from 'react-native';
+import { View, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
@@ -53,11 +53,85 @@ export default function RootLayout() {
         }
       } catch (error: any) {
         console.warn(`❌ [STARTUP WARNING] API Unreachable at ${BASE_URL}`);
-        console.warn(`Error details: ${error.message}`);
-        console.warn(`Please check if your backend is running or update EXPO_PUBLIC_API_URL in .env`);
       }
     };
     verifyApiConnection();
+  }, []);
+
+  const [isRestoringSession, setIsRestoringSession] = React.useState(true);
+
+  // Fallback timeout to prevent infinite loader if Firebase hangs
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      if (isRestoringSession) {
+        setIsRestoringSession(false);
+      }
+    }, 5000);
+    return () => clearTimeout(fallbackTimer);
+  }, [isRestoringSession]);
+
+  // Sync Firebase Auth State
+  useEffect(() => {
+    let isMounted = true;
+    const { firebaseAuth } = require('../lib/firebase');
+    const subscriber = firebaseAuth.onAuthStateChanged(async (user: any) => {
+      if (!isMounted) return;
+      
+      const authState = useAuthStore.getState();
+
+      if (user) {
+        // Firebase user is logged in
+        if (!authState.isLoggedIn || !authState.token) {
+          // Local state lost token, but Firebase is alive. We need to fetch the backend token silently.
+          try {
+            const idToken = await user.getIdToken(true);
+            const SecureStore = require('expo-secure-store');
+            let deviceId = await SecureStore.getItemAsync('deviceId');
+            if (!deviceId) {
+              deviceId = `device_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
+              await SecureStore.setItemAsync('deviceId', deviceId);
+            }
+            
+            const response = await apiClient.post('/auth/verify-firebase-token', { 
+              idToken,
+              phone: user.phoneNumber,
+              deviceId,
+              intent: 'login' // Just standard login intent
+            });
+
+            if (response.data.accessToken) {
+              authState.setToken(response.data.accessToken);
+              if (response.data.refreshToken) {
+                await SecureStore.setItemAsync('refreshToken', response.data.refreshToken);
+              }
+              
+              if (response.data.user) {
+                authState.updateProfile(response.data.user);
+              }
+              authState.setLogin(true);
+            } else {
+              authState.logout();
+            }
+          } catch (error) {
+            console.error('Failed to restore backend session:', error);
+            authState.logout();
+          }
+        }
+      } else {
+        // Firebase user is null
+        if (authState.isLoggedIn) {
+          console.log('Firebase user missing, logging out locally');
+          authState.logout();
+        }
+      }
+
+      setIsRestoringSession(false);
+    });
+    
+    return () => {
+      isMounted = false;
+      subscriber();
+    }
   }, []);
 
   // Root Navigation Guard: Ensures absolute route safety across groups
@@ -92,10 +166,21 @@ export default function RootLayout() {
       return;
     }
 
-    // 4. Protect Main tabs for logged in sessions
+    // 4. Protect Main tabs for logged in sessions and enforce profile completion
     if (isLoggedIn) {
+      const isProfileComplete = useAuthStore.getState().userProfile?.isProfileComplete;
+
+      // ENFORCEMENT: Block incomplete profiles from Feed/Chats
+      if (!isProfileComplete) {
+        const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions'];
+        if (!inAuthGroup || !allowedAuthRoutes.includes(segments[1] as string)) {
+          setTimeout(() => router.replace('/(auth)/profile-setup'), 0);
+        }
+        return; // Stop further navigation checks
+      }
+
+      // Profile is complete. Keep them out of auth (login/signup) pages
       if (inAuthGroup) {
-        // Allow logged in users to access profile completion pages
         const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions'];
         if (!allowedAuthRoutes.includes(segments[1] as string)) {
           if (useAuthStore.getState().isFirstLogin) {
@@ -117,6 +202,14 @@ export default function RootLayout() {
       }, 500); 
     }
   }, [rootNavigationState?.key]);
+
+  if (isRestoringSession) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0B001A', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#A855F7" />
+      </View>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

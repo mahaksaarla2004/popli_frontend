@@ -121,11 +121,13 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       updatePreferences: async (prefs) => {
+        const backupPrefs = get().preferences;
         set((state) => ({ preferences: { ...state.preferences, ...prefs } }));
         try {
           await apiClient.put('/users/me/preferences', prefs);
         } catch (e: any) {
-          console.error("Failed to update preferences:", e.response?.data || e.message);
+          console.error("Failed to update preferences, rolling back:", e.response?.data || e.message);
+          set({ preferences: backupPrefs });
         }
       },
       fetchBlockedUsers: async () => {
@@ -171,6 +173,13 @@ export const useAuthStore = create<AuthState>()(
       toggleNotifications: () => set((state) => ({ notificationsEnabled: !state.notificationsEnabled })),
       toggleFollow: async (creatorId) => {
         const state = useAuthStore.getState();
+        
+        // Prevent concurrent identical requests
+        if ((state as any)._inFlightFollows?.has(creatorId)) return;
+        const newInFlight = new Set((state as any)._inFlightFollows || []);
+        newInFlight.add(creatorId);
+        set({ _inFlightFollows: newInFlight } as any);
+
         const isFollowing = state.followingIds.includes(creatorId);
         
         // Optimistic UI update
@@ -201,10 +210,18 @@ export const useAuthStore = create<AuthState>()(
               followingCount: state.userProfile.followingCount // Restore original
             }
           });
+        } finally {
+          const currentInFlight = new Set((useAuthStore.getState() as any)._inFlightFollows || []);
+          currentInFlight.delete(creatorId);
+          set({ _inFlightFollows: currentInFlight } as any);
         }
       },
       logout: async () => {
         try {
+          // Sign out from Firebase
+          const { firebaseAuth } = require('../lib/firebase');
+          await firebaseAuth.signOut().catch(() => {});
+
           const SecureStore = require('expo-secure-store');
           const refreshToken = await SecureStore.getItemAsync('refreshToken');
           if (refreshToken) {

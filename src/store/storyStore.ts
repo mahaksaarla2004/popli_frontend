@@ -49,6 +49,7 @@ export const useStoryStore = create<StoryState>()(
       clearCache: () => set({ stories: [], storyArchive: [], isFetchingStories: false }),
       addStory: (story) => set((state) => ({ stories: [story, ...state.stories] })),
       markStoryViewed: async (storyId, viewerId) => {
+        const backupStories = get().stories;
         // Optimistic UI Update
         set((state) => ({
           stories: state.stories.map(s => 
@@ -61,10 +62,12 @@ export const useStoryStore = create<StoryState>()(
         try {
           await apiClient.post(`/stories/${storyId}/view`);
         } catch (e) {
-          console.error("Failed to mark story as viewed:", e);
+          console.error("Failed to mark story as viewed, rolling back:", e);
+          set({ stories: backupStories });
         }
       },
       addReaction: async (storyId, viewerId, emoji) => {
+        const backupStories = get().stories;
         // Optimistic UI Update
         set((state) => ({
           stories: state.stories.map(s => {
@@ -85,7 +88,8 @@ export const useStoryStore = create<StoryState>()(
         try {
           await apiClient.post(`/stories/${storyId}/react`, { reaction: emoji });
         } catch (e) {
-          console.error("Failed to react to story:", e);
+          console.error("Failed to react to story, rolling back:", e);
+          set({ stories: backupStories });
         }
       },
       fetchStories: async () => {
@@ -120,13 +124,15 @@ export const useStoryStore = create<StoryState>()(
         }
       },
       deleteStory: async (storyId) => {
+        const backupStories = get().stories;
+        set((state) => ({
+          stories: state.stories.filter(s => s.id !== storyId)
+        }));
         try {
           await apiClient.delete(`/stories/${storyId}`);
-          set((state) => ({
-            stories: state.stories.filter(s => s.id !== storyId)
-          }));
         } catch (error) {
-          console.error("Failed to delete story:", error);
+          console.error("Failed to delete story, rolling back:", error);
+          set({ stories: backupStories });
         }
       }
     }),

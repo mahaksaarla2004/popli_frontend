@@ -110,22 +110,38 @@ export const useFeedStore = create<FeedState>()(
         if (inFlightLikes.has(reelId)) return;
         inFlightLikes.add(reelId);
 
-        let previousReels = get().reels;
+        const backupReels = get().reels;
+        const backupUserReels = get().userReels;
+        const backupLikedReels = get().likedReels;
+        const backupWatchHistory = get().watchHistory;
+        const backupProfileReels = get().profileReels;
+
+        const updateReelArray = (arr: Reel[]) => arr.map(r => {
+          if (r.id === reelId) {
+            const newLiked = !r.isLiked;
+            return {
+              ...r,
+              isLiked: newLiked,
+              likesCount: Math.max(0, r.likesCount + (newLiked ? 1 : -1))
+            };
+          }
+          return r;
+        });
 
         // Optimistic UI update
         set((state) => {
-          const updatedReels = state.reels.map((r) => {
-            if (r.id === reelId) {
-              const newLiked = !r.isLiked;
-              return {
-                ...r,
-                isLiked: newLiked,
-                likesCount: Math.max(0, r.likesCount + (newLiked ? 1 : -1))
-              };
-            }
-            return r;
+          const newProfileReels: Record<string, Reel[]> = {};
+          Object.keys(state.profileReels).forEach(key => {
+            newProfileReels[key] = updateReelArray(state.profileReels[key]);
           });
-          return { reels: updatedReels };
+
+          return { 
+            reels: updateReelArray(state.reels),
+            userReels: updateReelArray(state.userReels),
+            likedReels: updateReelArray(state.likedReels),
+            watchHistory: updateReelArray(state.watchHistory),
+            profileReels: newProfileReels
+          };
         });
 
         // Backend sync
@@ -133,34 +149,64 @@ export const useFeedStore = create<FeedState>()(
           await apiClient.post(`/reels/${reelId}/like`);
         } catch (e) {
           console.error("Failed to toggle like, rolling back:", e);
-          // Rollback
-          set({ reels: previousReels });
+          set({ 
+            reels: backupReels,
+            userReels: backupUserReels,
+            likedReels: backupLikedReels,
+            watchHistory: backupWatchHistory,
+            profileReels: backupProfileReels
+          });
         } finally {
           inFlightLikes.delete(reelId);
         }
       },
       toggleSaveReel: async (reelId) => {
+        const backupReels = get().reels;
+        const backupUserReels = get().userReels;
+        const backupLikedReels = get().likedReels;
+        const backupWatchHistory = get().watchHistory;
+        const backupProfileReels = get().profileReels;
+
+        const updateReelArray = (arr: Reel[]) => arr.map(r => {
+          if (r.id === reelId) {
+            const newSaved = !r.isSaved;
+            return {
+              ...r,
+              isSaved: newSaved,
+              savesCount: Math.max(0, r.savesCount + (newSaved ? 1 : -1))
+            };
+          }
+          return r;
+        });
+
         // Optimistic UI update
         set((state) => {
-          const updatedReels = state.reels.map((r) => {
-            if (r.id === reelId) {
-              const newSaved = !r.isSaved;
-              return {
-                ...r,
-                isSaved: newSaved,
-                savesCount: r.savesCount + (newSaved ? 1 : -1)
-              };
-            }
-            return r;
+          const newProfileReels: Record<string, Reel[]> = {};
+          Object.keys(state.profileReels).forEach(key => {
+            newProfileReels[key] = updateReelArray(state.profileReels[key]);
           });
-          return { reels: updatedReels };
+
+          return { 
+            reels: updateReelArray(state.reels),
+            userReels: updateReelArray(state.userReels),
+            likedReels: updateReelArray(state.likedReels),
+            watchHistory: updateReelArray(state.watchHistory),
+            profileReels: newProfileReels
+          };
         });
 
         // Backend sync
         try {
           await apiClient.post(`/reels/${reelId}/save`);
         } catch (e) {
-          console.error("Failed to toggle save:", e);
+          console.error("Failed to toggle save, rolling back:", e);
+          set({ 
+            reels: backupReels,
+            userReels: backupUserReels,
+            likedReels: backupLikedReels,
+            watchHistory: backupWatchHistory,
+            profileReels: backupProfileReels
+          });
         }
       },
       addLocalReel: (reel) =>
@@ -169,6 +215,13 @@ export const useFeedStore = create<FeedState>()(
           userReels: [reel, ...state.userReels]
         })),
       addComment: async (comment) => {
+        const lockKey = `${comment.reelId}-${comment.text}`;
+        if ((get() as any)._inFlightComments?.has(lockKey)) return;
+        
+        set((state: any) => ({
+          _inFlightComments: new Set(state._inFlightComments || []).add(lockKey)
+        }));
+
         // Backend sync first to get the actual ID
         try {
           const payload: any = { text: comment.text };
@@ -216,6 +269,8 @@ export const useFeedStore = create<FeedState>()(
         }
       },
       toggleCommentLike: async (commentId) => {
+        const backupComments = get().comments;
+
         set((state) => {
           // Recursive function to toggle like in potentially nested comments
           const toggleInComments = (commentsList: Comment[]): Comment[] => {
@@ -225,7 +280,7 @@ export const useFeedStore = create<FeedState>()(
                 return {
                   ...c,
                   isLiked: newLiked,
-                  likesCount: c.likesCount + (newLiked ? 1 : -1)
+                  likesCount: Math.max(0, c.likesCount + (newLiked ? 1 : -1))
                 };
               }
               if (c.replies && c.replies.length > 0) {
@@ -243,7 +298,8 @@ export const useFeedStore = create<FeedState>()(
           try {
             await apiClient.post(`/reels/comments/${commentId}/like`);
           } catch (e) {
-            console.error("Failed to toggle comment like:", e);
+            console.error("Failed to toggle comment like, rolling back:", e);
+            set({ comments: backupComments });
           }
         }
       },

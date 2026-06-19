@@ -50,11 +50,18 @@ export const SendSheet = ({ reelId, isOpen, onClose }: SendSheetProps) => {
 
   const handleSend = (friend: any) => {
     setSentTo(prev => [...prev, friend.id]);
-    // The mediaUrl is technically not the direct video file unless we fetch the Reel,
-    // but we can just send the text link for now since we don't have the mediaUrl in this context,
-    // OR we could pass mediaUrl to SendSheetProps! 
-    // The user's goal is sharing the reel, so sending the link is standard.
-    sendDirectMessage(friend, `Hey, check out this Reel! 🎥 ${BASE_URL.replace('/api', '')}/reels/${reelId}`);
+    
+    // Find reel to get thumbnail
+    const store = require('../../store').useFeedStore.getState();
+    const reel = store.reels.find((r: any) => r.id === reelId) 
+      || store.userReels.find((r: any) => r.id === reelId)
+      || Object.values(store.profileReels).flat().find((r: any) => r.id === reelId)
+      || store.likedReels.find((r: any) => r.id === reelId)
+      || store.watchHistory.find((r: any) => r.id === reelId);
+      
+    const thumbnailUrl = reel?.thumbnailUrl || reel?.videoUrl;
+
+    sendDirectMessage(friend, `Hey, check out this Reel! 🎥 ${BASE_URL.replace('/api', '')}/reels/${reelId}`, thumbnailUrl);
   };
 
   if (!isOpen) return null;

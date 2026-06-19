@@ -156,14 +156,20 @@ export default function SignupScreen() {
       }
 
       // 2. Send Firebase OTP
-      // try {
-      //   await sendFirebaseOTP(targetPhone);
-      // } catch (err: any) {
-      //   console.error('Firebase error:', err);
-      //   setIsLoading(false);
-      //   setErrors({ api: `Firebase Error: [${err?.code || 'NO_CODE'}] ${err?.message || err}` });
-      //   return;
-      // }
+      try {
+        await sendFirebaseOTP(targetPhone);
+      } catch (error: any) {
+        setIsLoading(false);
+        console.error('Firebase OTP Error:', error);
+        let errorMsg = 'Failed to send OTP. Please try again.';
+        if (error?.code === 'auth/invalid-phone-number') {
+          errorMsg = 'Invalid phone number format.';
+        } else if (error?.code === 'auth/too-many-requests') {
+          errorMsg = 'Too many requests. Please try again later.';
+        }
+        setErrors({ api: errorMsg });
+        return;
+      }
 
       setIsLoading(false);
       // Route user to OTP confirmation

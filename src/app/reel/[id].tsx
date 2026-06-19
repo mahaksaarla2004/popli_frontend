@@ -96,7 +96,7 @@ export default function ReelViewerScreen() {
       };
       fetchReel();
     }
-  }, [id, mainReels, hashtagReels, source, hashtagName]);
+  }, [id, mainReels, hashtagReels, userReels, profileReels, likedReels, source, hashtagName, profileUsername]);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].isViewable) {

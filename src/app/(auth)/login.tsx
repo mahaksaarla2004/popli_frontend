@@ -22,9 +22,18 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     const newErrors: typeof errors = {};
 
-    const identTrimmed = identifier.trim();
+    let identTrimmed = identifier.trim();
     if (!identTrimmed) {
       newErrors.identifier = 'Please enter your phone number.';
+    } else {
+      // Simple phone format validation
+      const phoneRegex = /^\+?[0-9]{10,15}$/;
+      if (!phoneRegex.test(identTrimmed)) {
+        newErrors.identifier = 'Please enter a valid phone number.';
+      } else if (!identTrimmed.startsWith('+')) {
+        // Auto-prepend +91 for Indian numbers if no country code provided
+        identTrimmed = `+91${identTrimmed}`;
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -33,42 +42,27 @@ export default function LoginScreen() {
     }
 
     setErrors({});
-    setAccountNotFound(false);
     setIsLoading(true);
 
     try {
-      // 1. Check if user exists
-      const checkRes = await apiClient.post('/auth/check-user', { identifier: identTrimmed });
-      
-      if (!checkRes.data.exists) {
-        // User not found -> Direct them to signup
-        setIsLoading(false);
-        setAccountNotFound(true);
-        return;
-      }
-
-      // 2. Existing user -> Send Firebase OTP
-      const targetPhone = checkRes.data.phone || identTrimmed;
-      
-      // try {
-      //   await sendFirebaseOTP(targetPhone);
-      // } catch (err: any) {
-      //   console.error('Firebase error:', err);
-      //   setIsLoading(false);
-      //   setErrors({ api: `Firebase Error: [${err?.code || 'NO_CODE'}] ${err?.message || err}` });
-      //   return;
-      // }
+      await sendFirebaseOTP(identTrimmed);
 
       setIsLoading(false);
       // Navigate to OTP screen
       router.push({
         pathname: '/(auth)/otp',
-        params: { target: targetPhone, type: identTrimmed.includes('@') ? 'email' : 'phone', phone: targetPhone, isSignup: 'false', intent: 'login' }
+        params: { target: identTrimmed, type: 'phone', phone: identTrimmed, intent: 'login' }
       });
     } catch (error: any) {
       setIsLoading(false);
-      console.error('Check User Error:', error);
-      setErrors({ api: error?.response?.data?.message || 'Failed to connect to server. Please try again.' });
+      console.error('Firebase OTP Error:', error);
+      let errorMsg = 'Failed to send OTP. Please try again.';
+      if (error?.code === 'auth/invalid-phone-number') {
+        errorMsg = 'Invalid phone number format.';
+      } else if (error?.code === 'auth/too-many-requests') {
+        errorMsg = 'Too many requests. Please try again later.';
+      }
+      setErrors({ api: errorMsg });
     }
   };
 
@@ -131,27 +125,16 @@ export default function LoginScreen() {
                 <Text className="text-red-500 text-[10px] pl-1 mt-1 font-semibold">{errors.identifier}</Text>
               )}
               {errors.api && (
-                <Text className="text-red-500 text-[12px] pl-1 mt-2 font-bold">{errors.api}</Text>
-              )}
             </View>
           </View>
 
-          {/* Account Not Found Error Prompt */}
-          {accountNotFound && (
-            <MotiView 
+          {errors.api && (
+            <MotiView
               from={{ opacity: 0, translateY: -10 }}
               animate={{ opacity: 1, translateY: 0 }}
-              className="bg-red-500/10 border border-red-500/30 p-4 rounded-2xl flex-col items-center mt-2"
+              className="mb-6 p-4 bg-red-500/10 rounded-2xl border border-red-500/20"
             >
-              <Text className="text-red-400 font-bold text-sm text-center mb-3">
-                Account not found. Please try again with valid credentials or Sign up to create a new account.
-              </Text>
-              <Pressable
-                onPress={() => router.push('/(auth)/signup')}
-                className="bg-primary-pink py-3 px-6 rounded-xl w-full items-center active:scale-[0.98]"
-              >
-                <Text className="text-white font-black">Try again with Sign Up</Text>
-              </Pressable>
+              <Text className="text-red-400 text-center font-outfit">{errors.api}</Text>
             </MotiView>
           )}
 
