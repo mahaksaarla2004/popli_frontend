@@ -104,7 +104,8 @@ export default function OTPScreen() {
                 followersCount: fullProfile.followersCount || 0,
                 followingCount: fullProfile.followingCount || 0,
                 giftsReceivedCount: fullProfile.giftsReceivedCount || 0,
-                isVerified: fullProfile.isVerified || false
+                isVerified: fullProfile.isVerified || false,
+                isProfileComplete: true
               });
             } catch (err) {
               updateProfile({
@@ -112,6 +113,7 @@ export default function OTPScreen() {
                 name: userFromBackend.name || 'Popli User',
                 username: userFromBackend.username,
                 avatar: userFromBackend.avatar || getDefaultAvatar(userFromBackend.username),
+                isProfileComplete: true
               });
             }
             
@@ -131,6 +133,7 @@ export default function OTPScreen() {
               id: userFromBackend.id,
               name: userFromBackend.name || 'Popli User',
               username: userFromBackend.username,
+              isProfileComplete: false
             });
 
             setIsVerifying(false);

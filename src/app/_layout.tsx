@@ -129,7 +129,10 @@ export default function RootLayout() {
       // Profile is complete. Keep them out of auth (login/signup) pages
       if (inAuthGroup) {
         const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions'];
-        if (!allowedAuthRoutes.includes(segments[1] as string)) {
+        if (allowedAuthRoutes.includes(segments[1] as string)) {
+          // They are on a setup page but profile is complete, kick them out to tabs!
+          setTimeout(() => router.replace('/(tabs)'), 0);
+        } else if (!allowedAuthRoutes.includes(segments[1] as string)) {
           if (useAuthStore.getState().isFirstLogin) {
             useAuthStore.getState().setFirstLogin(false);
             setTimeout(() => router.replace('/kyc'), 0);
