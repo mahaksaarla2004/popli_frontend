@@ -44,26 +44,15 @@ export default function LoginScreen() {
     setErrors({});
     setIsLoading(true);
 
-    try {
-      await sendFirebaseOTP(identTrimmed);
-
+    // BYPASS FIREBASE FOR CLIENT DEMO
+    setTimeout(() => {
       setIsLoading(false);
-      // Navigate to OTP screen
+      // Navigate directly to OTP screen
       router.push({
         pathname: '/(auth)/otp',
         params: { target: identTrimmed, type: 'phone', phone: identTrimmed, intent: 'login' }
       });
-    } catch (error: any) {
-      setIsLoading(false);
-      console.error('Firebase OTP Error:', error);
-      let errorMsg = 'Failed to send OTP. Please try again.';
-      if (error?.code === 'auth/invalid-phone-number') {
-        errorMsg = 'Invalid phone number format.';
-      } else if (error?.code === 'auth/too-many-requests') {
-        errorMsg = 'Too many requests. Please try again later.';
-      }
-      setErrors({ api: errorMsg });
-    }
+    }, 500);
   };
 
   return (

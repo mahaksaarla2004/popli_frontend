@@ -72,66 +72,13 @@ export default function RootLayout() {
 
   // Sync Firebase Auth State
   useEffect(() => {
-    let isMounted = true;
-    const { firebaseAuth } = require('../lib/firebase');
-    const subscriber = firebaseAuth.onAuthStateChanged(async (user: any) => {
-      if (!isMounted) return;
-      
-      const authState = useAuthStore.getState();
-
-      if (user) {
-        // Firebase user is logged in
-        if (!authState.isLoggedIn || !authState.token) {
-          // Local state lost token, but Firebase is alive. We need to fetch the backend token silently.
-          try {
-            const idToken = await user.getIdToken(true);
-            const SecureStore = require('expo-secure-store');
-            let deviceId = await SecureStore.getItemAsync('deviceId');
-            if (!deviceId) {
-              deviceId = `device_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
-              await SecureStore.setItemAsync('deviceId', deviceId);
-            }
-            
-            const response = await apiClient.post('/auth/verify-firebase-token', { 
-              idToken,
-              phone: user.phoneNumber,
-              deviceId,
-              intent: 'login' // Just standard login intent
-            });
-
-            if (response.data.accessToken) {
-              authState.setToken(response.data.accessToken);
-              if (response.data.refreshToken) {
-                await SecureStore.setItemAsync('refreshToken', response.data.refreshToken);
-              }
-              
-              if (response.data.user) {
-                authState.updateProfile(response.data.user);
-              }
-              authState.setLogin(true);
-            } else {
-              authState.logout();
-            }
-          } catch (error) {
-            console.error('Failed to restore backend session:', error);
-            authState.logout();
-          }
-        }
-      } else {
-        // Firebase user is null
-        if (authState.isLoggedIn) {
-          console.log('Firebase user missing, logging out locally');
-          authState.logout();
-        }
-      }
-
-      setIsRestoringSession(false);
-    });
+    // BYPASS FIREBASE: Instantly stop restoring session
+    setIsRestoringSession(false);
     
-    return () => {
-      isMounted = false;
-      subscriber();
-    }
+    // let isMounted = true;
+    // const { firebaseAuth } = require('../lib/firebase');
+    // const subscriber = firebaseAuth.onAuthStateChanged(async (user: any) => { ... });
+    // return () => { isMounted = false; subscriber(); }
   }, []);
 
   // Root Navigation Guard: Ensures absolute route safety across groups
