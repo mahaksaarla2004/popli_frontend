@@ -119,7 +119,7 @@ export default function RootLayout() {
 
       // ENFORCEMENT: Block incomplete profiles from Feed/Chats
       if (!isProfileComplete) {
-        const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions'];
+        const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions', 'personalization-loader'];
         if (!inAuthGroup || !allowedAuthRoutes.includes(segments[1] as string)) {
           setTimeout(() => router.replace('/(auth)/profile-setup'), 0);
         }
@@ -128,7 +128,7 @@ export default function RootLayout() {
 
       // Profile is complete. Keep them out of auth (login/signup) pages
       if (inAuthGroup) {
-        const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions'];
+        const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions', 'personalization-loader'];
         if (allowedAuthRoutes.includes(segments[1] as string)) {
           // They are on a setup page but profile is complete, kick them out to tabs!
           setTimeout(() => router.replace('/(tabs)'), 0);
