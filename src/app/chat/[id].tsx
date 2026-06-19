@@ -90,7 +90,7 @@ export default function ChatScreen() {
       type: m.senderId === userProfile?.id ? 'sent' : 'received',
       time: formatRelativeTime(m.timestamp),
       senderAvatar: m.senderId === userProfile?.id ? userProfile?.avatar : displayAvatar,
-      senderUsername: m.sender?.username || (m.senderId === userProfile?.id ? userProfile?.username : displayUsername),
+      senderUsername: (m as any).sender?.username || (m.senderId === userProfile?.id ? userProfile?.username : displayUsername),
       attachment: m.mediaUrl,
       isVideo: m.mediaUrl?.endsWith('.mp4') || m.mediaUrl?.includes('/video/'),
       isLatestSent: m.id === latestSentMsgId

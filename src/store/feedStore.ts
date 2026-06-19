@@ -52,6 +52,7 @@ interface FeedState {
   exploreNextCursor: string | null;
   isFetchingFeed: boolean;
   clearCache: () => void;
+  _inFlightComments?: Set<string>;
 }
 const inFlightLikes = new Set<string>();
 
