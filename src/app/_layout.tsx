@@ -35,7 +35,7 @@ configureReanimatedLogger({
 });
 
 export default function RootLayout() {
-  const { isLoggedIn, isOnboarded } = useAuthStore();
+  const { isLoggedIn, isOnboarded, userProfile } = useAuthStore();
   const segments = useSegments();
   const rootNavigationState = useRootNavigationState();
 
@@ -142,7 +142,7 @@ export default function RootLayout() {
         }
       }
     }
-  }, [isLoggedIn, isOnboarded, segments, rootNavigationState?.key]);
+  }, [isLoggedIn, isOnboarded, segments, rootNavigationState?.key, userProfile?.isProfileComplete]);
 
   // Handle Splash Screen Removal
   useEffect(() => {

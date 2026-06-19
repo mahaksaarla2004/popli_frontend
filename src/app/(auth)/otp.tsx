@@ -15,7 +15,7 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 export default function OTPScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string; type?: string; target?: string; isSignup?: string; referredByCode?: string; phone?: string; intent?: string; name?: string; username?: string; email?: string; dob?: string; }>();
-  
+
   const isResetMode = params.mode === 'reset';
   const isEmailType = params.type === 'email';
   const otpLength = 4;
@@ -27,7 +27,7 @@ export default function OTPScreen() {
   const [timerSeconds, setTimerSeconds] = useState<number>(300);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
-  
+
   const hiddenInputRef = useRef<TextInput>(null);
 
   // Initialize otpArray size dynamically on mount or parameter changes
@@ -62,7 +62,7 @@ export default function OTPScreen() {
       if (isOtpComplete) {
         // 1. Verify OTP natively or use bypass
         const otpString = otp.join('');
-        
+
         // 2. Ensure deviceId is generated and stored persistently
         let deviceId = await SecureStore.getItemAsync('deviceId');
         if (!deviceId) {
@@ -71,7 +71,7 @@ export default function OTPScreen() {
         }
 
         // 3. Authenticate with backend using the bypass
-        const response = await apiClient.post('/auth/demo-login', { 
+        const response = await apiClient.post('/auth/demo-login', {
           otp: otpString,
           phone: params.phone || params.target,
         });
@@ -116,7 +116,7 @@ export default function OTPScreen() {
                 isProfileComplete: true
               });
             }
-            
+
             setIsVerifying(false);
             setIsSuccess(true);
             setTimeout(() => {
@@ -154,8 +154,8 @@ export default function OTPScreen() {
     } catch (e: any) {
       setIsVerifying(false);
       console.error('OTP Verification Error:', e.response?.data || e.message);
-      const errorMessage = typeof e.response?.data?.message === 'string' 
-        ? e.response.data.message 
+      const errorMessage = typeof e.response?.data?.message === 'string'
+        ? e.response.data.message
         : (e.response?.data?.message?.[0] || e.message || 'Invalid OTP. Please try again.');
       alert(errorMessage);
     }
@@ -191,7 +191,7 @@ export default function OTPScreen() {
   // Single text change handler
   const handleTextChange = (text: string) => {
     const cleanText = text.replace(/[^0-9]/g, '').slice(0, otpLength);
-    
+
     const nextOtp = Array(otpLength).fill('');
     for (let i = 0; i < cleanText.length; i++) {
       nextOtp[i] = cleanText[i];
@@ -210,7 +210,7 @@ export default function OTPScreen() {
       boxes.push(
         <View
           key={i}
-          style={{ 
+          style={{
             flex: 1,
             marginHorizontal: 4,
             height: 56,
@@ -256,15 +256,15 @@ export default function OTPScreen() {
       className="flex-1 bg-[#0B001A]"
     >
       {/* 1. Header completely isolated outside main body container for zIndex safety */}
-      <View 
+      <View
         className="absolute top-12 left-6 right-6 h-12 flex-row items-center justify-between"
         style={{ zIndex: 999, elevation: 999 }}
         pointerEvents="box-none"
       >
-        <Pressable 
+        <Pressable
           onPress={handleBack}
           hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-          style={({ pressed }) => ({ 
+          style={({ pressed }) => ({
             opacity: pressed ? 0.6 : 1,
             transform: [{ scale: pressed ? 0.95 : 1 }]
           })}
@@ -280,7 +280,7 @@ export default function OTPScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32, paddingTop: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        
+
         {/* Center Verification Card */}
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
@@ -289,7 +289,7 @@ export default function OTPScreen() {
           className="flex-1 justify-center gap-8"
         >
           {isSuccess ? (
-            <MotiView 
+            <MotiView
               from={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="items-center gap-4"
@@ -309,35 +309,35 @@ export default function OTPScreen() {
                   {isResetMode && isEmailType ? 'Enter Reset Code' : 'Enter OTP'}
                 </Text>
                 <Text className="text-white/60 text-[14px] mt-1">
-                  {isEmailType 
+                  {isEmailType
                     ? `Verify the code sent to your email ${targetLabel}`
                     : `Verify your number ${targetLabel}`
                   }
                 </Text>
               </View>
 
-                {/* Passcode Box Grid Layout */}
-                <View className="gap-6">
-                  {renderOtpBoxes()}
+              {/* Passcode Box Grid Layout */}
+              <View className="gap-6">
+                {renderOtpBoxes()}
 
                 {/* Centered purple timer below OTP grid */}
                 <View className="items-center mt-4">
-                  <Pressable 
-                    onPress={handleResendOTP} 
+                  <Pressable
+                    onPress={handleResendOTP}
                     disabled={timerSeconds > 0}
                     style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   >
                     <Text className={`text-[13px] font-bold ${timerSeconds > 0 ? 'text-[#A78BFA]' : 'text-[#A78BFA] hover:underline'}`}>
-                      {timerSeconds > 0 
-                        ? `Resend OTP in ${Math.floor(timerSeconds / 60)}:${(timerSeconds % 60).toString().padStart(2, '0')}` 
+                      {timerSeconds > 0
+                        ? `Resend OTP in ${Math.floor(timerSeconds / 60)}:${(timerSeconds % 60).toString().padStart(2, '0')}`
                         : 'Resend Verification Code'
                       }
                     </Text>
                   </Pressable>
                 </View>
               </View>
-              
+
               {/* Footer Next Button */}
               <View className="w-full mt-8" pointerEvents="box-none">
                 <Pressable
