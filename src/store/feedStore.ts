@@ -266,6 +266,13 @@ export const useFeedStore = create<FeedState>()(
         } catch (e) {
           console.error("Failed to add comment to backend:", e);
           throw e;
+        } finally {
+          const lockKey = `${comment.reelId}-${comment.text}`;
+          set((state: any) => {
+            const currentInFlight = new Set(state._inFlightComments || []);
+            currentInFlight.delete(lockKey);
+            return { _inFlightComments: currentInFlight };
+          });
         }
       },
       toggleCommentLike: async (commentId) => {
