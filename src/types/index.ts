@@ -124,17 +124,25 @@ export interface Chat {
 
 export interface NotificationItem {
   id: string;
-  type: 'like' | 'comment' | 'follow' | 'gift' | 'viral_alert' | 'nearby_trend' | 'milestone' | 'mention' | 'story_mention' | 'reply' | 'comment_like';
-  senderName?: string;
-  senderAvatar?: string;
-  title: string;
-  body: string;
-  timestamp: string;
-  isRead: boolean;
-  coinsCount?: number; // for gift notifications
+  type: string;
+  actorId?: string;
+  actorName?: string;
+  actorAvatar?: string;
+  targetType?: string;
+  reelId?: string;
+  reelThumbnail?: string;
   postId?: string;
+  postThumbnail?: string;
+  storyId?: string;
+  storyThumbnail?: string;
   commentId?: string;
-  replyId?: string;
+  commentText?: string;
+  giftId?: string;
+  giftType?: string;
+  giftAmount?: number;
+  createdAt: string;
+  isRead: boolean;
+  aggregatedCount?: number;
 }
 
 export interface TransactionItem {

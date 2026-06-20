@@ -57,9 +57,9 @@ export default function HomeFeedScreen() {
   // Success Burst Haptic overlay
   const [burstGift, setBurstGift] = useState<{ visible: boolean; icon: string }>({ visible: false, icon: '' });
 
-  const { chats, notifications } = useChatStore();
+  const { chats, unreadNotificationsCount } = useChatStore();
   const unreadChatsCount = chats.filter((chat) => (chat.unreadCount || 0) > 0).length;
-  const hasUnreadNotifications = notifications.some(n => !n.isRead);
+  const hasUnreadNotifications = unreadNotificationsCount > 0;
 
   useEffect(() => {
     async function initLocation() {

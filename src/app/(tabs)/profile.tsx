@@ -230,7 +230,7 @@ export default function ProfileScreen() {
                 key={reel.id}
                 onPress={() => {
                   router.push({
-                    pathname: `/reel/${reel.id}`,
+                    pathname: `/reel/${reel.id}` as any,
                     params: { source: activeTab === 'reels' ? 'userReels' : 'likedReels' }
                   });
                 }}

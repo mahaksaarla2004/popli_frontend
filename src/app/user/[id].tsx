@@ -220,7 +220,7 @@ export default function PublicProfileScreen() {
               </>
             ) : (
               <Pressable 
-                onPress={() => router.push('/(tabs)/profile')}
+                onPress={() => router.push('/(tabs)/profile' as any)}
                 className="flex-1 py-2.5 rounded-lg items-center justify-center bg-white/10"
               >
                 <Text className="font-bold text-sm text-white">Edit Profile</Text>
@@ -264,7 +264,7 @@ export default function PublicProfileScreen() {
                       key={reel.id} 
                       onPress={() => {
                         router.push({
-                          pathname: `/reel/${reel.id}`,
+                          pathname: `/reel/${reel.id}` as any,
                           params: { source: 'profile', profileUsername: profile.username }
                         });
                       }}

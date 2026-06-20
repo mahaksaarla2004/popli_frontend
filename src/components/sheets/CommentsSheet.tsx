@@ -191,7 +191,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
   const handleLike = (commentId: string | number) => {
     if (String(commentId).startsWith('temp-')) return; // Cannot like a temporary comment
     
-    toggleCommentLike(commentId);
+    toggleCommentLike(String(commentId));
     
     // Optimistic local update
     const toggleInList = (list: Comment[]): Comment[] => {
@@ -238,7 +238,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
   };
 
   const renderCommentRow = (comment: Comment, isReply = false) => {
-    const isHighlighted = comment.id === highlightedCommentId;
+    const isHighlighted = String(comment.id) === String(highlightedCommentId);
     return (
       <View key={comment.id} className={`flex-row items-start py-3.5 px-4 gap-3 border-b border-white/5 ${isReply ? 'ml-10 border-b-0 py-2 px-0' : ''} ${isHighlighted ? 'bg-[#D946EF]/20 rounded-lg' : ''}`}>
         <Image 

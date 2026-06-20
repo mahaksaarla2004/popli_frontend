@@ -191,7 +191,7 @@ export default function AnalyticsScreen() {
                 </View>
                 <View className="flex-1">
                   <View className="flex-row items-center">
-                    <Text className="text-white font-bold text-base mb-1" numberOfLines={1}>{post.title}</Text>
+                    <Text className="text-white font-bold text-base mb-1 shrink" numberOfLines={1}>{post.title}</Text>
                     {post.isMonetized && post.views > 0 && (
                       <View className="bg-[#10B981]/20 px-1.5 py-0.5 rounded ml-2 mb-1">
                          <Text className="text-[#10B981] text-[8px] font-bold uppercase">Active</Text>

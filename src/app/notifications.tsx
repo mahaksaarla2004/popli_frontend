@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Award, Gift, Megaphone, Heart, MessageCircle, AtSign } from 'lucide-react-native';
-import { useChatStore } from '../store';
+import { ArrowLeft, Gift, Heart, MessageCircle, AtSign, UserPlus } from 'lucide-react-native';
+import { useChatStore, useAuthStore } from '../store';
 import { NotificationItem } from '../types';
 import { FlashList } from '@shopify/flash-list';
+import { apiClient } from '../api/client';
 
 type ListItem = 
   | { type: 'header'; title: string; id: string }
@@ -13,12 +14,22 @@ type ListItem =
 export default function NotificationsScreen() {
   const router = useRouter();
   const { notifications, fetchNotifications, fetchNextNotifications, markNotificationsRead, hasMoreNotifications } = useChatStore();
+  const { userProfile, followingIds, toggleFollow } = useAuthStore();
   const [loadingMore, setLoadingMore] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchNotifications();
+    setIsRefreshing(false);
+  };
 
   useEffect(() => {
     fetchNotifications();
     return () => {
       markNotificationsRead();
+      // Inform backend too
+      apiClient.patch('/notifications/read-all').catch(() => {});
     };
   }, []);
 
@@ -32,7 +43,7 @@ export default function NotificationsScreen() {
     const msInDay = 24 * 60 * 60 * 1000;
 
     notifications.forEach(n => {
-      const nDate = new Date(n.timestamp);
+      const nDate = new Date(n.createdAt || Date.now());
       const diffMs = now.getTime() - nDate.getTime();
       const diffDays = diffMs / msInDay;
 
@@ -44,19 +55,19 @@ export default function NotificationsScreen() {
 
     const result: ListItem[] = [];
     if (today.length > 0) {
-      result.push({ type: 'header', title: 'TODAY', id: 'h-today' });
+      result.push({ type: 'header', title: 'Today', id: 'h-today' });
       today.forEach(n => result.push({ type: 'notification', data: n, id: n.id }));
     }
     if (yesterday.length > 0) {
-      result.push({ type: 'header', title: 'YESTERDAY', id: 'h-yesterday' });
+      result.push({ type: 'header', title: 'Yesterday', id: 'h-yesterday' });
       yesterday.forEach(n => result.push({ type: 'notification', data: n, id: n.id }));
     }
     if (thisWeek.length > 0) {
-      result.push({ type: 'header', title: 'THIS WEEK', id: 'h-thisweek' });
+      result.push({ type: 'header', title: 'This week', id: 'h-thisweek' });
       thisWeek.forEach(n => result.push({ type: 'notification', data: n, id: n.id }));
     }
     if (older.length > 0) {
-      result.push({ type: 'header', title: 'OLDER', id: 'h-older' });
+      result.push({ type: 'header', title: 'Older', id: 'h-older' });
       older.forEach(n => result.push({ type: 'notification', data: n, id: n.id }));
     }
 
@@ -71,117 +82,134 @@ export default function NotificationsScreen() {
     }
   };
 
+  const markAsRead = async (id: string) => {
+    useChatStore.setState(state => ({
+      notifications: state.notifications.map(n => n.id === id ? { ...n, isRead: true } : n)
+    }));
+    try {
+      await apiClient.patch(`/notifications/${id}/read`);
+    } catch(e) {}
+  };
+
   const renderItem = ({ item }: { item: ListItem }) => {
     if (item.type === 'header') {
-      return <Text className="text-white/50 text-[10px] font-bold tracking-widest mt-4 mb-3">{item.title}</Text>;
+      return <Text className="text-white font-bold text-[15px] mt-4 mb-3 ml-2">{item.title}</Text>;
     }
 
     const n = item.data;
     const isNew = !n.isRead;
     
-    // Time format helper
+    // Time format helper (Instagram style: 1m, 2h, 3d, 4w)
     const timeAgo = () => {
-      const diffHours = Math.floor((new Date().getTime() - new Date(n.timestamp).getTime()) / (1000 * 60 * 60));
-      if (diffHours < 1) return 'JUST NOW';
-      if (diffHours < 24) return `${diffHours}H AGO`;
-      const diffDays = Math.floor(diffHours / 24);
-      return `${diffDays}D AGO`;
+      const ms = new Date().getTime() - new Date(n.createdAt).getTime();
+      const seconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+      const weeks = Math.floor(days / 7);
+
+      if (weeks > 0) return `${weeks}w`;
+      if (days > 0) return `${days}d`;
+      if (hours > 0) return `${hours}h`;
+      if (minutes > 0) return `${minutes}m`;
+      return `${seconds}s`;
     };
 
-    if (n.type === 'milestone') {
-      return (
-        <Pressable className={`bg-[#1D1037]/80 border ${isNew ? 'border-[#8B5CF6]/40 shadow-lg shadow-[#8B5CF6]/20' : 'border-white/5 opacity-80'} rounded-2xl p-4 flex-row items-center gap-4 active:opacity-80 transition-opacity mb-4`}>
-          <View className="w-10 h-10 rounded-full bg-[#8B5CF6]/20 items-center justify-center">
-            <Award size={18} color="#A855F7" />
-          </View>
-          <View className="flex-1 pr-2">
-            <Text className="text-white text-[13px] leading-5">{n.body}</Text>
-            <Text className="text-white/40 text-[9px] font-bold mt-2 uppercase tracking-widest">{n.title} • {timeAgo()}</Text>
-          </View>
-        </Pressable>
-      );
+    const handlePress = () => {
+      markAsRead(n.id);
+      
+      const type = n.type?.toLowerCase();
+      
+      if (type === 'follow') {
+        if (n.actorId) router.push(`/profile/${n.actorId}` as any);
+      } else if (type === 'story_mention' && n.storyId) {
+        router.push(`/story-viewer/${n.actorId}?storyId=${n.storyId}` as any);
+      } else if (n.reelId || n.postId) {
+        const targetReelId = n.reelId || n.postId;
+        if (type === 'comment' || type === 'reply' || type === 'mention') {
+          router.push(`/reel/${targetReelId}?commentId=${n.commentId}` as any);
+        } else if (type === 'gift') {
+          router.push(`/reel/${targetReelId}?showGiftSheet=true` as any);
+        } else {
+          router.push(`/reel/${targetReelId}` as any);
+        }
+      }
+    };
+
+    // Construct text logic
+    const type = n.type?.toLowerCase();
+    let actionText = '';
+    let boldText = '';
+
+    if (type === 'like') {
+      actionText = ' liked your reel.';
+    } else if (type === 'comment_like') {
+      actionText = ' liked your comment.';
+    } else if (type === 'comment') {
+      actionText = ` commented: ${n.commentText || ''}`;
+    } else if (type === 'reply') {
+      actionText = ` replied to your comment: ${n.commentText || ''}`;
+    } else if (type === 'mention') {
+      actionText = ' mentioned you in a comment.';
+    } else if (type === 'story_mention') {
+      actionText = ' mentioned you in a story.';
+    } else if (type === 'follow') {
+      actionText = ' started following you.';
+    } else if (type === 'gift') {
+      actionText = ` sent you a ${n.giftType || 'gift'} on your reel.`;
+    } else {
+      actionText = ` ${n.type || 'interacted with you'}.`;
     }
 
-    if (n.type === 'gift' || n.title?.toLowerCase().includes('earning') || n.title?.toLowerCase().includes('withdraw')) {
-      return (
-        <Pressable 
-          onPress={() => router.push('/wallet')}
-          className={`bg-[#1D1037]/60 border border-white/5 border-l-4 border-l-[#eab308] rounded-2xl p-4 flex-row items-center gap-4 active:opacity-80 transition-opacity mb-4 ${!isNew && 'opacity-80'}`}
-        >
-          <View className="w-10 h-10 rounded-full bg-[#854d0e]/30 items-center justify-center">
-            <Gift size={18} color="#facc15" />
-          </View>
-          <View className="flex-1 pr-2">
-            <Text className="text-white text-[13px] leading-5">{n.body}</Text>
-            <Text className="text-white/40 text-[9px] font-bold mt-2 uppercase tracking-widest">{n.title} • {timeAgo()}</Text>
-          </View>
-        </Pressable>
-      );
-    }
+    const t = n.postThumbnail || n.reelThumbnail || n.storyThumbnail;
 
-    if (n.type === 'follow') {
-      return (
-        <Pressable className={`bg-[#1D1037]/60 border border-white/5 rounded-2xl p-4 flex-row items-center justify-between active:opacity-80 transition-opacity mb-4 ${!isNew && 'opacity-80'}`}>
-          <View className="flex-row items-center gap-4 flex-1">
-            <Image source={{ uri: n.senderAvatar || 'https://i.pravatar.cc/150' }} className="w-10 h-10 rounded-full" />
-            <View className="flex-1 pr-2">
-              <Text className="text-white text-[13px] leading-5"><Text className="font-bold">{n.senderName}</Text> {n.body}</Text>
-              <Text className="text-white/40 text-[9px] font-bold mt-2 uppercase tracking-widest">{n.title} • {timeAgo()}</Text>
-            </View>
-          </View>
-          <Pressable className="bg-[#A855F7] px-5 py-2 rounded-full">
-            <Text className="text-white text-[11px] font-bold">Follow</Text>
-          </Pressable>
-        </Pressable>
-      );
-    }
-
-    if (n.type === 'comment' || n.type === 'like' || n.type === 'reply' || n.type === 'comment_like' || n.type === 'mention' || n.type === 'story_mention') {
-      const getIcon = () => {
-        if (n.type === 'comment' || n.type === 'reply') return <MessageCircle size={16} color="#A855F7" />;
-        if (n.type === 'like' || n.type === 'comment_like') return <Heart size={16} color="#EC4899" />;
-        if (n.type === 'mention' || n.type === 'story_mention') return <AtSign size={16} color="#3B82F6" />;
-        return <Megaphone size={16} color="#9CA3AF" />;
-      };
-
-      return (
-        <Pressable 
-          onPress={() => {
-            if (n.postId) {
-              if (n.type === 'story_mention') {
-                const creatorId = (n as any).actorId || n.senderName; // Fallback
-                router.push(`/story-viewer/${creatorId}?storyId=${n.postId}`);
-              } else {
-                const targetCommentId = n.replyId || n.commentId;
-                router.push(targetCommentId ? `/reel/${n.postId}?commentId=${targetCommentId}` : `/reel/${n.postId}`);
-              }
-            }
-          }}
-          className={`bg-[#1D1037]/60 border border-white/5 rounded-2xl p-4 flex-row items-center justify-between active:opacity-80 transition-opacity mb-4 ${!isNew && 'opacity-80'}`}
-        >
-          <View className="flex-row items-center gap-4 flex-1 pr-3">
-            <Image source={{ uri: n.senderAvatar || 'https://i.pravatar.cc/150' }} className="w-10 h-10 rounded-full" />
-            <View className="flex-1">
-              <Text className="text-white text-[13px] leading-5"><Text className="font-bold">{n.senderName}</Text> {n.body}</Text>
-              <Text className="text-white/40 text-[9px] font-bold mt-2 uppercase tracking-widest">{n.title} • {timeAgo()}</Text>
-            </View>
-          </View>
-          <View className="w-11 h-11 items-center justify-center bg-black/40 rounded-[10px] border border-white/10">
-            {getIcon()}
-          </View>
-        </Pressable>
-      );
-    }
-
-    // Default announcement/insight
     return (
-      <Pressable className={`bg-[#1D1037]/60 border border-white/5 rounded-2xl p-4 flex-row items-center gap-4 active:opacity-80 transition-opacity mb-4 ${!isNew && 'opacity-80'}`}>
-        <View className="w-10 h-10 rounded-full bg-white/10 items-center justify-center">
-          <Megaphone size={18} color="#9CA3AF" />
+      <Pressable 
+        onPress={handlePress}
+        className={`flex-row items-center justify-between p-3 active:bg-white/5 ${isNew ? 'bg-[#8B5CF6]/10' : 'bg-transparent'}`}
+      >
+        <View className="flex-row items-center gap-3 flex-1 pr-3">
+          <Pressable onPress={() => n.actorId && router.push(`/profile/${n.actorId}` as any)}>
+            <Image source={{ uri: n.actorAvatar || 'https://i.pravatar.cc/150' }} className="w-11 h-11 rounded-full bg-white/10" />
+          </Pressable>
+          
+          <View className="flex-1 flex-row flex-wrap items-center">
+            <Text className="text-white text-[14px] leading-[18px]">
+              <Text className="font-bold">{n.actorName || 'User'}</Text>
+              <Text className="text-white/80">{actionText}</Text>
+              <Text className="text-white/50 ml-1"> {timeAgo()}</Text>
+            </Text>
+          </View>
         </View>
-        <View className="flex-1 pr-2">
-          <Text className="text-white text-[13px] leading-5">{n.body}</Text>
-          <Text className="text-white/40 text-[9px] font-bold mt-2 uppercase tracking-widest">{n.title} • {timeAgo()}</Text>
+
+        {/* Right side component */}
+        <View className="items-center justify-center">
+          {type === 'follow' ? (() => {
+            const isFollowing = followingIds.includes(n.actorId as string);
+            return (
+              <Pressable 
+                onPress={() => {
+                  if (n.actorId) toggleFollow(n.actorId);
+                }}
+                className={`px-4 py-1.5 rounded-lg ${isFollowing ? 'bg-white/10' : 'bg-[#D946EF]'}`}
+              >
+                <Text className="text-white text-[13px] font-bold">
+                  {isFollowing ? 'Following' : 'Follow'}
+                </Text>
+              </Pressable>
+            );
+          })() : (
+            t ? (
+              <View className="relative w-11 h-11">
+                <Image source={{ uri: t }} className="w-full h-full rounded-md border border-white/10" />
+                {type === 'gift' && (
+                  <View className="absolute -bottom-1 -left-1 bg-[#1D1037] rounded-full p-0.5">
+                    <Gift size={12} color="#facc15" />
+                  </View>
+                )}
+              </View>
+            ) : null
+          )}
         </View>
       </Pressable>
     );
@@ -190,20 +218,21 @@ export default function NotificationsScreen() {
   return (
     <View className="flex-1 bg-[#0d071a] pt-12">
       {/* Header bar */}
-      <View className="flex-row items-center px-4 pb-4 border-b border-transparent">
+      <View className="flex-row items-center px-4 pb-4 border-b border-white/5">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2 active:opacity-70">
           <ArrowLeft size={24} color="#FFFFFF" />
         </Pressable>
         <Text className="text-white font-bold text-[19px] ml-2">Notifications</Text>
       </View>
 
-      <View className="flex-1 px-4">
+      <View className="flex-1">
         {flattenedData.length === 0 && !loadingMore ? (
           <View className="py-20 items-center justify-center">
-            <View className="w-16 h-16 bg-white/5 rounded-full items-center justify-center mb-4">
-              <Megaphone size={24} color="#9CA3AF" />
+            <View className="w-16 h-16 border border-white/10 rounded-full items-center justify-center mb-4">
+              <Heart size={24} color="#9CA3AF" />
             </View>
-            <Text className="text-white/60 font-semibold">No notifications yet</Text>
+            <Text className="text-white/60 font-semibold">Activity On Your Posts</Text>
+            <Text className="text-white/40 text-[13px] mt-2">When someone likes or comments on one of your posts, you'll see it here.</Text>
           </View>
         ) : (
           <FlashList
@@ -211,7 +240,9 @@ export default function NotificationsScreen() {
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
             // @ts-ignore
-            estimatedItemSize={90}
+            estimatedItemSize={70}
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
             onEndReached={handleEndReached}
             onEndReachedThreshold={0.5}
             showsVerticalScrollIndicator={false}

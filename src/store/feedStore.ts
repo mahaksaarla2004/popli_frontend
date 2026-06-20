@@ -219,9 +219,7 @@ export const useFeedStore = create<FeedState>()(
         const lockKey = `${comment.reelId}-${comment.text}`;
         if ((get() as any)._inFlightComments?.has(lockKey)) return;
         
-        set((state: any) => ({
-          _inFlightComments: new Set(state._inFlightComments || []).add(lockKey)
-        }));
+        set((state: any) => ({ _inFlightComments: new Set([...state._inFlightComments, lockKey]) } as any));
 
         // Backend sync first to get the actual ID
         try {
@@ -272,7 +270,7 @@ export const useFeedStore = create<FeedState>()(
           set((state: any) => {
             const currentInFlight = new Set(state._inFlightComments || []);
             currentInFlight.delete(lockKey);
-            return { _inFlightComments: currentInFlight };
+            return { _inFlightComments: currentInFlight } as any;
           });
         }
       },

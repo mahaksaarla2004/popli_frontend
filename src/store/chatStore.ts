@@ -37,6 +37,7 @@ interface ChatState {
   fetchNextNotifications: () => Promise<void>;
   notificationsCursor?: string;
   hasMoreNotifications: boolean;
+  unreadNotificationsCount: number;
 }
 
 // Keep a reference to the active socket outside the store state 
@@ -51,6 +52,7 @@ export const useChatStore = create<ChatState>()(
       notifications: [],
       notificationsCursor: undefined,
       hasMoreNotifications: true,
+      unreadNotificationsCount: 0,
       isTyping: {},
       mutedChats: [],
       toggleMuteChat: (chatId) => {
@@ -152,6 +154,10 @@ export const useChatStore = create<ChatState>()(
             if (exists) return state;
             return { notifications: [notification, ...state.notifications] };
           });
+        });
+
+        socket.on('notification:unread-count', (data: { count: number }) => {
+          set({ unreadNotificationsCount: data.count });
         });
 
         socket.on('disconnect', () => {
@@ -363,7 +369,8 @@ export const useChatStore = create<ChatState>()(
       },
       markNotificationsRead: async () => {
         set((state) => ({
-          notifications: state.notifications.map((n) => ({ ...n, isRead: true }))
+          notifications: state.notifications.map((n) => ({ ...n, isRead: true })),
+          unreadNotificationsCount: 0
         }));
         try {
           const { notificationsApi } = require('../api/services');
@@ -430,19 +437,35 @@ export const useChatStore = create<ChatState>()(
           const formattedNotifs = rawNotifications.map((n: any) => ({
             id: n.id,
             type: n.type,
-            title: n.title,
-            body: n.body,
-            senderName: n.senderAvatar ? n.user?.name || 'User' : (n.sender?.username || 'User'),
-            senderAvatar: n.senderAvatar || n.sender?.avatar || 'https://i.pravatar.cc/150',
-            timestamp: n.createdAt,
+            actorId: n.actorId,
+            actorName: n.actorName,
+            actorAvatar: n.actorAvatar,
+            targetType: n.targetType,
+            reelId: n.reelId,
+            reelThumbnail: n.reelThumbnail,
+            postId: n.postId,
+            postThumbnail: n.postThumbnail,
+            storyId: n.storyId,
+            storyThumbnail: n.storyThumbnail,
+            commentId: n.commentId,
+            commentText: n.commentText,
+            giftId: n.giftId,
+            giftType: n.giftType,
+            giftAmount: n.giftAmount,
+            createdAt: n.createdAt,
             isRead: n.isRead,
-            coinsCount: n.type === 'gift' ? 100 : undefined
+            aggregatedCount: n.aggregatedCount
           }));
           set({ 
             notifications: formattedNotifs, 
             notificationsCursor: res.data.nextCursor,
             hasMoreNotifications: !!res.data.nextCursor
           });
+
+          try {
+            const unreadRes = await notificationsApi.getUnreadCount();
+            set({ unreadNotificationsCount: unreadRes.data.count });
+          } catch(e) {}
         } catch (error) {
           console.error("Failed to fetch notifications:", error);
         }
@@ -459,13 +482,24 @@ export const useChatStore = create<ChatState>()(
           const formattedNotifs = rawNotifications.map((n: any) => ({
             id: n.id,
             type: n.type,
-            title: n.title,
-            body: n.body,
-            senderName: n.senderAvatar ? n.user?.name || 'User' : (n.sender?.username || 'User'),
-            senderAvatar: n.senderAvatar || n.sender?.avatar || 'https://i.pravatar.cc/150',
-            timestamp: n.createdAt,
+            actorId: n.actorId,
+            actorName: n.actorName,
+            actorAvatar: n.actorAvatar,
+            targetType: n.targetType,
+            reelId: n.reelId,
+            reelThumbnail: n.reelThumbnail,
+            postId: n.postId,
+            postThumbnail: n.postThumbnail,
+            storyId: n.storyId,
+            storyThumbnail: n.storyThumbnail,
+            commentId: n.commentId,
+            commentText: n.commentText,
+            giftId: n.giftId,
+            giftType: n.giftType,
+            giftAmount: n.giftAmount,
+            createdAt: n.createdAt,
             isRead: n.isRead,
-            coinsCount: n.type === 'gift' ? 100 : undefined
+            aggregatedCount: n.aggregatedCount
           }));
           
           set({ 
