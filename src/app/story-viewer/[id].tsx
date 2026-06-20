@@ -605,7 +605,7 @@ export default function StoryViewerScreen() {
             >
               <Eye size={16} color="#FFFFFF" />
               <Text className="text-white font-semibold text-xs ml-1">
-                {activeStory.viewers?.length || 0}
+                {activeStory.viewsCount ?? activeStory.viewers?.length ?? 0}
               </Text>
             </Pressable>
           </View>

@@ -18,6 +18,7 @@ export interface Story {
   mediaType: 'IMAGE' | 'VIDEO' | 'PHOTO';
   creatorAvatar?: string;
   viewers: string[];
+  viewsCount?: number;
   isCloseFriends: boolean;
   repliesAllowed: boolean;
   reactions: Record<string, string[]>;
@@ -103,6 +104,7 @@ export const useStoryStore = create<StoryState>()(
             mediaUrl: s.mediaUrl,
             mediaType: s.mediaType || 'IMAGE', // Provide default just in case
             viewers: (s.viewers || []).map((v: any) => v.id || v.userId), // The backend only returns the viewer record ID right now if viewed
+            viewsCount: s._count?.viewers || 0,
             isCloseFriends: s.isCloseFriends,
             repliesAllowed: s.repliesAllowed,
             reactions: {}, // Can be populated if backend provides reactions
