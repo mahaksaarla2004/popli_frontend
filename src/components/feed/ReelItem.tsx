@@ -12,6 +12,8 @@ import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import Svg, { Path, G } from 'react-native-svg';
 import AnimatedReanimated, { useSharedValue, useAnimatedStyle, withSequence, withTiming, withSpring, withDelay } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_BAR_HEIGHT } from '../layout/SafeScreen';
 
 const DoubleTapHeart = React.memo(({ x, y }: { x: number, y: number }) => {
   const scale = useSharedValue(0);
@@ -178,6 +180,10 @@ export const ReelItem = React.memo(({
   
   const { toggleLikeReel, toggleSaveReel, registerValidView, deleteReel, isGlobalMuted, toggleGlobalMute } = useFeedStore();
   const { followingIds, toggleFollow, userProfile } = useAuthStore();
+  
+  const insets = useSafeAreaInsets();
+  const baseBottomPadding = isStandalone ? Math.max(insets.bottom, 20) + 12 : TAB_BAR_HEIGHT + insets.bottom + 16;
+  const sideBarBottom = baseBottomPadding + 16;
   
   // View tracking
   const [hasRegisteredView, setHasRegisteredView] = useState(false);
@@ -560,7 +566,10 @@ export const ReelItem = React.memo(({
       ))}
 
       {/* 3. FIGMA FIGURATIVE INTERACTION OVERLAYS (Right Sidebar) */}
-      <View className="absolute right-4 bottom-28 items-center z-10">
+      <View 
+        className="absolute right-4 items-center z-10"
+        style={{ bottom: sideBarBottom }}
+      >
         {/* Creator Avatar with follow + button */}
         <View className="relative items-center mb-6">
           <Pressable 
@@ -650,7 +659,7 @@ export const ReelItem = React.memo(({
       {/* 4. REEL DESCRIPTIONS (Bottom Overlay) */}
       <View 
         className="absolute left-4 right-20 gap-3 z-10"
-        style={{ bottom: isStandalone ? 32 : (Platform.OS === 'ios' ? 95 : 75) }}
+        style={{ bottom: baseBottomPadding }}
       >
         <View className="flex-row items-center gap-2">
           <Pressable onPress={() => onOpenProfile(safeCreatorUsername)}>
@@ -696,12 +705,12 @@ export const ReelItem = React.memo(({
         </View>
 
         {/* Location Ticker */}
-        {item.city && (
+        {(item.location || item.city) && (
           <View className="flex-row items-center gap-2 pt-1">
             <MapPin size={14} color="#D1D5DB" />
             <View className="overflow-hidden">
               <Text className="text-neutral-silver text-xs font-medium" numberOfLines={1}>
-                {item.city}
+                {item.location ? (item.location.name || item.location.locationName || item.location.city || item.city) : item.city}
               </Text>
             </View>
           </View>

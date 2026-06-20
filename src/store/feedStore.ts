@@ -369,7 +369,7 @@ export const useFeedStore = create<FeedState>()(
             category: r.category || 'lifestyle',
             isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
             layersData: r.layersData,
-            location: { city: 'Bengaluru', latitude: r.latitude || 12.9716, longitude: r.longitude || 77.5946 }
+            location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
 
           set((state) => {
@@ -439,7 +439,7 @@ export const useFeedStore = create<FeedState>()(
             category: r.category || 'lifestyle',
             isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
             layersData: r.layersData,
-            location: { city: 'Bengaluru', latitude: r.latitude || 12.9716, longitude: r.longitude || 77.5946 }
+            location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
 
           set((state) => {
@@ -491,7 +491,7 @@ export const useFeedStore = create<FeedState>()(
             isSaved: false,
             category: r.category || 'lifestyle',
             layersData: r.layersData,
-            location: { city: 'Bengaluru', latitude: r.latitude || 12.9716, longitude: r.longitude || 77.5946 }
+            location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
 
           set((state) => {
@@ -548,7 +548,7 @@ export const useFeedStore = create<FeedState>()(
             category: r.category || 'lifestyle',
             isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
             layersData: r.layersData,
-            location: { city: 'Bengaluru', latitude: r.latitude || 12.9716, longitude: r.longitude || 77.5946 }
+            location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
           set({ likedReels: fetchedReels });
         } catch (error) {
@@ -587,7 +587,7 @@ export const useFeedStore = create<FeedState>()(
             category: r.category || 'lifestyle',
             isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
             layersData: r.layersData,
-            location: { city: 'Bengaluru', latitude: r.latitude || 12.9716, longitude: r.longitude || 77.5946 }
+            location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
           set({ watchHistory: fetchedReels });
         } catch (error) {
@@ -627,7 +627,7 @@ export const useFeedStore = create<FeedState>()(
             category: r.category || 'lifestyle',
             isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
             layersData: r.layersData,
-            location: { city: 'Bengaluru', latitude: r.latitude || 12.9716, longitude: r.longitude || 77.5946 }
+            location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
 
           set({ userReels: fetchedReels });

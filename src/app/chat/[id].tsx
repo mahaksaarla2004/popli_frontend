@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Pressable, Platform, Modal, TouchableOpacity, Image, FlatList } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeScreen } from '../../components/layout/SafeScreen';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore, useChatStore } from '../../store';
 import { ChevronLeft, Info, BellOff, Ban, X, Phone, Video } from 'lucide-react-native';
@@ -87,7 +87,7 @@ export default function ChatScreen() {
     return {
       ...m,
       isStoryMention: m.type === 'STORY_MENTION',
-      isReelShare: m.text?.includes('check out this Reel! 🎥') && m.text?.includes('/reels/'),
+      isReelShare: (m.text?.includes('check out this Reel! 🎥') || m.text?.includes('tagged you')) && m.text?.includes('/reels/'),
       type: m.senderId === userProfile?.id ? 'sent' : 'received',
       time: formatRelativeTime(m.timestamp),
       senderAvatar: m.senderId === userProfile?.id ? userProfile?.avatar : displayAvatar,
@@ -99,7 +99,7 @@ export default function ChatScreen() {
   });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#12081E' }} edges={['top']}>
+    <SafeScreen edgeToEdgeBottom className="bg-[#12081E]">
       <View style={{ flex: 1 }}>
       {/* HEADER */}
       <View className="flex-row items-center justify-between px-4 pt-4 pb-3 border-b border-white/5 bg-[#12081E] z-10">
@@ -138,16 +138,16 @@ export default function ChatScreen() {
       </View>
 
       <View className="flex-1 px-4">
-        <FlashList
+        <FlatList
           data={formattedMessages}
+          keyExtractor={(item: any) => item.id.toString()}
           inverted={true}
-          estimatedItemSize={80}
           showsVerticalScrollIndicator={false}
           onViewableItemsChanged={onViewableItemsChanged.current}
           viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
           contentContainerStyle={{ paddingHorizontal: 0, paddingBottom: 20, paddingTop: 10 }}
           ListEmptyComponent={() => (
-            <View className="items-center justify-center flex-1 mt-20 mb-10">
+            <View style={{ transform: [{ scaleY: -1 }, { scaleX: -1 }] }} className="items-center justify-center flex-1 mt-20 mb-10">
               <Image source={{ uri: displayAvatar }} style={{ width: 90, height: 90, borderRadius: 45 }} className="mb-4" />
               <Text className="text-white font-bold text-xl mb-1">{displayName}</Text>
               <Text className="text-white/50 text-sm mb-6">Instagram</Text>
@@ -246,6 +246,6 @@ export default function ChatScreen() {
       </Modal>
 
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }

@@ -6,6 +6,7 @@ import { useAuthStore, useFeedStore, useStoryHighlightStore } from '../../store'
 import { formatSocialCount, getDefaultAvatar } from '../../utils';
 import StoryRing from '../../components/StoryRing';
 import { LinksSheet } from '../../components/sheets/LinksSheet';
+import { SafeScreen } from '../../components/layout/SafeScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -72,7 +73,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#12081E] pt-12">
+    <SafeScreen edgeToEdgeBottom className="bg-[#12081E]">
       {/* 1. HEADER */}
       <View className="flex-row items-center justify-between px-4 pb-6 border-b border-white/5">
         <View className="w-10" />
@@ -261,6 +262,6 @@ export default function ProfileScreen() {
         onClose={() => setIsLinksSheetOpen(false)} 
         links={displayProfile.socialLinks} 
       />
-    </View>
+    </SafeScreen>
   );
 }

@@ -5,6 +5,7 @@ import { ArrowLeft, Coins, ArrowUpRight, TrendingUp, Landmark, Wallet, ArrowDown
 import { useWalletStore, useKYCStore } from '../store';
 import { formatINR } from '../utils';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { SafeScreen } from '../components/layout/SafeScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -67,8 +68,9 @@ export default function WalletScreen() {
   const filteredLedgers = ledgers.filter(l => activeTab === 'ALL' || l.source === activeTab);
 
   return (
-    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-background-plum pt-12">
-      <View className="flex-row items-center justify-between px-4 pb-3 border-b border-white/5 bg-background-card/15">
+    <SafeScreen edgeToEdgeBottom className="bg-background-plum">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+        <View className="flex-row items-center justify-between px-4 pb-3 border-b border-white/5 bg-background-card/15">
         <Pressable onPress={() => router.back()} className="p-1">
           <ArrowLeft size={20} color="#D1D5DB" />
         </Pressable>
@@ -260,6 +262,7 @@ export default function WalletScreen() {
         </View>
 
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeScreen>
   );
 }

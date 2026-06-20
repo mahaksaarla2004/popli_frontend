@@ -8,6 +8,7 @@ import { apiClient } from '../../api/client';
 import { formatSocialCount } from '../../utils';
 import { MotiView } from 'moti';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { SafeScreen } from '../../components/layout/SafeScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -59,7 +60,8 @@ export default function DiscoverScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-background-plum pt-12">
+    <SafeScreen edgeToEdgeBottom className="bg-background-plum">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
       <View className="px-4 pb-6">
         <View className="flex-row items-center gap-2">
           {searchQuery.length > 0 && (
@@ -399,6 +401,7 @@ export default function DiscoverScreen() {
           </>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeScreen>
   );
 }

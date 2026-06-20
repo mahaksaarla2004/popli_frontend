@@ -9,7 +9,7 @@ import * as FileSystem from 'expo-file-system';
 
 export default function ShareStoryScreen() {
   const router = useRouter();
-  const { uri, type, text, target, mode, speed, effect, musicId, musicTitle, musicArtist, musicUrl, targetUserIds, originalStoryId, originalOwnerId, originalOwnerUsername, isStory, city, taggedUserIds, isMonetized, returnTo, challengeId, isVideoMuted, category, allowGifting, visibility, allowComments, allowDuet } = useLocalSearchParams<{ 
+  const { uri, type, text, target, mode, speed, effect, musicId, musicTitle, musicArtist, musicUrl, targetUserIds, originalStoryId, originalOwnerId, originalOwnerUsername, isStory, city, taggedUserIds, isMonetized, returnTo, challengeId, isVideoMuted, category, allowGifting, visibility, allowComments, allowDuet, location } = useLocalSearchParams<{ 
     uri: string; 
     type: 'photo' | 'video'; 
     text?: string; 
@@ -37,6 +37,7 @@ export default function ShareStoryScreen() {
     visibility?: string;
     allowComments?: string;
     allowDuet?: string;
+    location?: string;
   }>();
   const { addStory } = useStoryStore();
   const { fetchReels, addLocalReel } = useFeedStore();
@@ -146,7 +147,8 @@ export default function ShareStoryScreen() {
             privacy: visibility || 'Public',
             allowComments: allowComments === 'true',
             allowDuet: allowDuet === 'true',
-            taggedUserIds: taggedUserIds ? JSON.parse(taggedUserIds) : undefined,
+            taggedUserIds: taggedUserIds ? JSON.parse(taggedUserIds as string) : undefined,
+            location: location ? JSON.parse(location as unknown as string) : undefined,
             layersData: JSON.stringify(metadata)
           });
           
@@ -174,7 +176,7 @@ export default function ShareStoryScreen() {
             isFollowed: false, // You cannot follow yourself, but it satisfies the Reel type
             category: backendReel.category || 'comedy',
             isMonetized: backendReel.isMonetized !== undefined ? backendReel.isMonetized : true,
-            location: { city: 'Bengaluru', latitude: backendReel.latitude || 12.9716, longitude: backendReel.longitude || 77.5946 }
+            location: location ? JSON.parse(location as string) : (city ? { city } : undefined)
           };
 
           console.log(`[SHARE STORY] Reel Uploaded successfully. ID: ${formattedReel.id}`);

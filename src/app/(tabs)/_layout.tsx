@@ -4,6 +4,7 @@ import { View, Text, Platform } from 'react-native';
 import { Home, Compass, Plus, MessageSquare, User, Award } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_BAR_HEIGHT } from '../../components/layout/SafeScreen';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -20,7 +21,7 @@ export default function TabLayout() {
           backgroundColor: '#12081E', // Solid Dark Purple to prevent transparent bleed
           borderTopWidth: 1,
           borderTopColor: 'rgba(139, 92, 246, 0.2)', // Translucent Violet
-          height: 58 + bottomPadding,
+          height: TAB_BAR_HEIGHT + bottomPadding,
           paddingBottom: bottomPadding,
           paddingTop: 8,
           position: 'absolute',

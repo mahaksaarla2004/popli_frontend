@@ -8,6 +8,7 @@ import { MotiView } from 'moti';
 import { apiClient } from '../../api/client';
 import { Comment } from '../../types';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface CommentsSheetProps {
   reelId: string;
@@ -29,6 +30,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
 
   const { addComment, toggleCommentLike } = useFeedStore();
   const { userProfile } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
   React.useEffect(() => {
     if (isOpen && reelId) {
@@ -306,7 +308,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
   return (
     <Modal visible={isOpen} transparent animationType="none" onRequestClose={onClose}>
       <KeyboardAvoidingView 
-        behavior="padding" 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
         <View className="flex-1 justify-end">
@@ -390,7 +392,10 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
             </Pressable>
           </View>
         )}
-        <View className="px-4 py-4 pb-8 flex-row items-center gap-4">
+        <View 
+          className="px-4 pt-4 flex-row items-center gap-4"
+          style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+        >
           <Image 
             source={{ 
               uri: userProfile.avatar

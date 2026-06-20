@@ -8,6 +8,7 @@ import {
 import { apiClient } from '../../api/client';
 import { useAuthStore, useChatStore, useStoryStore } from '../../store';
 import StoryRing from '../../components/StoryRing';
+import { SafeScreen } from '../../components/layout/SafeScreen';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function InboxScreen() {
@@ -152,7 +153,8 @@ export default function InboxScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-[#12081E] pt-14">
+    <SafeScreen edgeToEdgeBottom className="bg-[#12081E]">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-[#12081E]">
       {/* HEADER */}
       <View className="flex-row items-center justify-between px-4 pb-6">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
@@ -255,7 +257,8 @@ export default function InboxScreen() {
 
       {/* New Message Modal */}
       <Modal visible={isNewMessageModalVisible} transparent animationType="slide">
-        <KeyboardAvoidingView behavior="padding" className="flex-1 bg-[#12081E] pt-14">
+        <SafeScreen edgeToEdgeBottom className="bg-[#12081E]">
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-[#12081E]">
           <View className="flex-row items-center justify-between px-4 pb-4 border-b border-white/10">
             <Text className="text-white font-bold text-base">New Message</Text>
             <Pressable onPress={() => setIsNewMessageModalVisible(false)} className="p-2 -mr-2">
@@ -304,9 +307,11 @@ export default function InboxScreen() {
               <Text className="text-neutral-grey text-center mt-6">Search for a user to start a chat.</Text>
             )}
           </ScrollView>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </SafeScreen>
       </Modal>
 
     </KeyboardAvoidingView>
+  </SafeScreen>
   );
 }

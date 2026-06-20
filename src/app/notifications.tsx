@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Gift, Heart, MessageCircle, AtSign, UserPlus } from 'lucide-react-native';
+import { SafeScreen } from '../components/layout/SafeScreen';
 import { useChatStore, useAuthStore } from '../store';
 import { NotificationItem } from '../types';
 import { FlashList } from '@shopify/flash-list';
@@ -231,7 +232,7 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#0d071a] pt-12">
+    <SafeScreen edgeToEdgeBottom className="bg-[#0d071a]">
       {/* Header bar */}
       <View className="flex-row items-center px-4 pb-4 border-b border-white/5">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2 active:opacity-70">
@@ -266,6 +267,6 @@ export default function NotificationsScreen() {
           />
         )}
       </View>
-    </View>
+    </SafeScreen>
   );
 }

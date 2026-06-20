@@ -157,7 +157,7 @@ export default function HomeFeedScreen() {
   const getFilteredReels = () => {
     switch (activeTab) {
       case 'following': return reels.filter((r) => followingIds.includes(r.creatorId));
-      case 'nearby': return reels.filter((r) => r.location.city === (useFeedStore.getState().gpsCity || 'Indore'));
+      case 'nearby': return reels.filter((r) => r.location?.city === (useFeedStore.getState().gpsCity || 'Indore'));
       case 'trending': return reels.filter((r) => r.likesCount > 40000);
       case 'for_you': default: return reels;
     }

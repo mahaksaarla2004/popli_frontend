@@ -96,25 +96,32 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
       const sharedReelId = reelIdMatch ? reelIdMatch[1] : null;
       
       return (
-        <Pressable 
-          onPress={() => sharedReelId ? router.push(`/reel/${sharedReelId}`) : null}
-          className="relative rounded-xl overflow-hidden"
-          style={{ width: 180, backgroundColor: 'rgba(0,0,0,0.3)' }}
-        >
-          {msg.mediaUrl ? (
-             <Image source={{ uri: getThumbnailUrl(msg.mediaUrl) }} style={{ width: 180, height: 240, opacity: 0.8 }} resizeMode="cover" />
-          ) : (
-             <View style={{ width: 180, height: 240, backgroundColor: '#2D1B4E', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 40 }}>🎬</Text>
-             </View>
-          )}
-          <View className="absolute bottom-0 left-0 right-0 p-3 bg-black/60 flex-row items-center justify-center gap-1">
-            <Play size={14} color="white" />
-            <Text className="text-white text-xs font-bold text-center" numberOfLines={1}>
-              Shared a Reel
+        <View className="flex-col gap-2">
+          {msg.text && (
+            <Text className={`text-[15px] leading-5 ${isSent ? 'text-white' : 'text-white/90'} px-1`}>
+              {msg.text.split('/reels/')[0].trim()}
             </Text>
-          </View>
-        </Pressable>
+          )}
+          <Pressable 
+            onPress={() => sharedReelId ? router.push(`/reel/${sharedReelId}`) : null}
+            className="relative rounded-xl overflow-hidden"
+            style={{ width: 180, backgroundColor: 'rgba(0,0,0,0.3)' }}
+          >
+            {msg.mediaUrl ? (
+               <Image source={{ uri: getThumbnailUrl(msg.mediaUrl) }} style={{ width: 180, height: 240, opacity: 0.8 }} resizeMode="cover" />
+            ) : (
+               <View style={{ width: 180, height: 240, backgroundColor: '#2D1B4E', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 40 }}>🎬</Text>
+               </View>
+            )}
+            <View className="absolute bottom-0 left-0 right-0 p-3 bg-black/60 flex-row items-center justify-center gap-1">
+              <Play size={14} color="white" />
+              <Text className="text-white text-xs font-bold text-center" numberOfLines={1}>
+                {msg.text?.includes('tagged') ? 'Tagged in a Reel' : 'Shared a Reel'}
+              </Text>
+            </View>
+          </Pressable>
+        </View>
       );
     }
 

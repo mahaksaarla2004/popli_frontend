@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Image, Platform, ScrollView, ActivityIndicator, Switch, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, Image, Platform, ScrollView, ActivityIndicator, Switch, Alert, Modal } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, IndianRupee, Gift } from 'lucide-react-native';
+import { ArrowLeft, IndianRupee, Gift, MapPin, UserPlus, ChevronRight } from 'lucide-react-native';
 import { useAuthStore } from '../../store';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LocationPickerSheet from '../../components/sheets/LocationPickerSheet';
+import TagPeopleSheet from '../../components/sheets/TagPeopleSheet';
 
 export default function ShareScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ uri: string, type: string, mode: string, musicId?: string, challengeId?: string, isStory?: string }>();
+  const insets = useSafeAreaInsets();
   
   const [caption, setCaption] = useState('');
   const [hashtagInput, setHashtagInput] = useState('');
+
+  // Location & Tags
+  const [location, setLocation] = useState<{ locationName: string; latitude?: number; longitude?: number; placeId?: string } | null>(null);
+  const [taggedUsers, setTaggedUsers] = useState<any[]>([]);
+  const [isLocationSheetOpen, setIsLocationSheetOpen] = useState(false);
+  const [isTagSheetOpen, setIsTagSheetOpen] = useState(false);
   
   // Toggles & Settings
   const [selectedCategory, setSelectedCategory] = useState<string>('Dance');
@@ -54,6 +64,8 @@ export default function ShareScreen() {
         musicId: params.musicId,
         challengeId: params.challengeId,
         isStory: params.isStory || 'false',
+        location: location ? JSON.stringify(location) : undefined,
+        taggedUserIds: taggedUsers.length > 0 ? JSON.stringify(taggedUsers.map(u => u.id)) : undefined,
       }
     });
   };
@@ -80,7 +92,7 @@ export default function ShareScreen() {
           </View>
         </View>
 
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 100 }}>
           
           {/* Caption & Preview */}
           <View className="p-4 border-b border-white/5">
@@ -159,6 +171,45 @@ export default function ShareScreen() {
                 </Pressable>
               ))}
             </ScrollView>
+          </View>
+
+          {/* TAG PEOPLE & LOCATION */}
+          <View className="p-4 border-b border-white/5 gap-2">
+            <Pressable 
+              onPress={() => setIsTagSheetOpen(true)}
+              className="flex-row items-center justify-between py-2"
+            >
+              <View className="flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-full bg-[#1A0E2C] items-center justify-center border border-white/5">
+                  <UserPlus size={20} color="#9CA3AF" />
+                </View>
+                <View>
+                  <Text className="text-white font-bold text-base">Tag People</Text>
+                  {taggedUsers.length > 0 && (
+                    <Text className="text-[#A855F7] text-xs mt-0.5">{taggedUsers.length} people tagged</Text>
+                  )}
+                </View>
+              </View>
+              <ChevronRight size={20} color="#9CA3AF" />
+            </Pressable>
+
+            <Pressable 
+              onPress={() => setIsLocationSheetOpen(true)}
+              className="flex-row items-center justify-between py-2"
+            >
+              <View className="flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-full bg-[#1A0E2C] items-center justify-center border border-white/5">
+                  <MapPin size={20} color="#9CA3AF" />
+                </View>
+                <View>
+                  <Text className="text-white font-bold text-base">Add Location</Text>
+                  {location && (
+                    <Text className="text-[#A855F7] text-xs mt-0.5">{location.locationName.split(',')[0]}</Text>
+                  )}
+                </View>
+              </View>
+              <ChevronRight size={20} color="#9CA3AF" />
+            </Pressable>
           </View>
 
           {/* MONETISATION & REWARDS */}
@@ -253,8 +304,27 @@ export default function ShareScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      <Modal visible={isLocationSheetOpen} animationType="slide" transparent>
+        <LocationPickerSheet
+          onClose={() => setIsLocationSheetOpen(false)}
+          onSelect={setLocation}
+          currentLocation={location}
+        />
+      </Modal>
+
+      <Modal visible={isTagSheetOpen} animationType="slide" transparent>
+        <TagPeopleSheet
+          onClose={() => setIsTagSheetOpen(false)}
+          onComplete={(users) => {
+            setTaggedUsers(users);
+            setIsTagSheetOpen(false);
+          }}
+          initialSelectedUsers={taggedUsers}
+        />
+      </Modal>
+
       {/* Footer Button */}
-      <View className="absolute bottom-0 left-0 right-0 p-4 pb-8 bg-[#12081E] border-t border-white/5">
+      <View className="absolute bottom-0 left-0 right-0 p-4 bg-[#12081E] border-t border-white/5" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
         <Pressable 
           onPress={handlePostNow}
           className="bg-[#A855F7] py-4 rounded-xl items-center justify-center flex-row gap-2 active:scale-[0.98] transition-all"

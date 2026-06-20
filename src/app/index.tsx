@@ -11,13 +11,15 @@ export default function EntryRedirectScreen() {
   useEffect(() => {
     if (!rootNavigationState?.key) return;
 
-    if (!isOnboarded) {
-      router.replace('/(auth)/onboarding');
-    } else if (!isLoggedIn) {
-      router.replace('/(auth)/login');
-    } else {
-      router.replace('/(tabs)');
-    }
+    setTimeout(() => {
+      if (!isOnboarded) {
+        router.replace('/(auth)/onboarding');
+      } else if (!isLoggedIn) {
+        router.replace('/(auth)/login');
+      } else {
+        router.replace('/(tabs)');
+      }
+    }, 0);
   }, [rootNavigationState?.key, isOnboarded, isLoggedIn]);
 
   return null;

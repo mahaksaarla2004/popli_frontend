@@ -14,6 +14,7 @@ import Svg, { Path, G } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import MusicPickerSheet from '../../components/sheets/MusicPickerSheet';
 import StickerSheet from '../../components/sheets/StickerSheet';
@@ -57,6 +58,8 @@ export default function StoryEditorScreen() {
       player.play();
     }
   });
+
+  const insets = useSafeAreaInsets();
 
   const [textMode, setTextMode] = useState(false);
   const [drawingMode, setDrawingMode] = useState(false);
@@ -291,7 +294,7 @@ export default function StoryEditorScreen() {
   return (
     <View className="flex-1 bg-black">
       
-        <View className="flex-1 rounded-3xl overflow-hidden mt-12 mb-20 relative bg-neutral-900">
+        <View className="flex-1 rounded-3xl overflow-hidden mb-20 relative bg-neutral-900" style={{ marginTop: Math.max(insets.top, 48) }}>
         {uri ? (
           isVideo ? (
             <VideoView player={videoPlayer} style={{ width: '100%', height: '100%', borderRadius: 24 }} nativeControls={false} />
@@ -483,7 +486,7 @@ export default function StoryEditorScreen() {
 
 
         {!textMode && !drawingMode && (
-          <View className="absolute top-12 left-0 right-0 px-4 flex-row justify-between items-center z-10 pt-2 pointer-events-box-none">
+          <View className="absolute left-0 right-0 px-4 flex-row justify-between items-center z-10 pointer-events-box-none" style={{ top: Math.max(insets.top, 16) }}>
             <View className="flex-row items-center gap-3">
               <Pressable onPress={() => router.back()} className="w-[44px] h-[44px] items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/20 active:scale-95 transition-transform">
                 <ChevronLeft size={24} color="#FFFFFF" />
@@ -544,7 +547,7 @@ export default function StoryEditorScreen() {
       </View>
 
       {!textMode && !drawingMode && !showTimelineEditor && (
-        <View className="absolute bottom-6 left-4 right-4 flex-row justify-between items-center z-10">
+        <View className="absolute left-4 right-4 flex-row justify-between items-center z-10" style={{ bottom: Math.max(insets.bottom, 24) }}>
           {mode === 'REEL' ? (
             <>
               <View className="flex-row items-center gap-2 flex-1">

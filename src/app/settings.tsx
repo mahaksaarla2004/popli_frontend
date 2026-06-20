@@ -8,6 +8,7 @@ import {
   Heart, Download, Bell, Database, Lock, Ban, 
   UserPlus, HelpCircle, AlertOctagon, Info, ChevronRight 
 } from 'lucide-react-native';
+import { SafeScreen } from '../components/layout/SafeScreen';
 
 const SectionTitle = ({ title }: { title: string }) => (
   <Text className="text-neutral-grey text-[10px] font-bold uppercase tracking-widest mt-6 mb-4">{title}</Text>
@@ -68,7 +69,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#12081E] pt-14">
+    <SafeScreen edgeToEdgeBottom className="bg-[#12081E]">
       {/* Header */}
       <View className="flex-row items-center px-4 pb-6">
         <Pressable onPress={() => router.back()} className="p-2 -ml-2">
@@ -226,6 +227,6 @@ export default function SettingsScreen() {
 
         </View>
       </ScrollView>
-    </View>
+    </SafeScreen>
   );
 }

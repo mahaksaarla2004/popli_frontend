@@ -5,6 +5,7 @@ import { useAuthStore, useChatStore } from '../../store';
 import { MotiView } from 'moti';
 import { apiClient, BASE_URL } from '../../api/client';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface SendSheetProps {
   reelId: string;
@@ -19,6 +20,7 @@ export const SendSheet = ({ reelId, isOpen, onClose }: SendSheetProps) => {
 
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -140,7 +142,7 @@ export const SendSheet = ({ reelId, isOpen, onClose }: SendSheetProps) => {
                   </View>
                 );
               })}
-              <View className="h-10" />
+              <View style={{ height: Math.max(insets.bottom, 20) + 20 }} />
             </ScrollView>
           </MotiView>
         </View>

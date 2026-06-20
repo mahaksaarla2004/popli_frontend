@@ -10,6 +10,7 @@ import EffectsSheet from '../../components/sheets/EffectsSheet';
 import { useCameraSettingsStore } from '../../store';
 import { useAudioPlayer } from 'expo-audio';
 import Svg, { Circle, Line } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -60,6 +61,7 @@ export default function CreateScreen() {
 
   const cameraRef = useRef<CameraView>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
 
   useFocusEffect(
     useCallback(() => {
@@ -266,7 +268,7 @@ export default function CreateScreen() {
   };
 
   return (
-    <View className="flex-1 bg-black">
+    <View className="flex-1 bg-black" style={{ paddingBottom: Math.max(insets.bottom, 0) }}>
       <View className="flex-1 rounded-b-3xl overflow-hidden relative">
         {isFocused && (
           <CameraView 
@@ -308,7 +310,7 @@ export default function CreateScreen() {
         )}
 
         {/* Top Controls */}
-        <View className="absolute top-12 left-0 right-0 px-4 flex-row items-center z-10 pt-2">
+        <View className="absolute left-0 right-0 px-4 flex-row items-center z-10" style={{ top: Math.max(insets.top, 16) }}>
           <View className="flex-1 items-start">
             <Pressable onPress={handleClose} className="w-[44px] h-[44px] items-center justify-center rounded-full bg-black/30 backdrop-blur-md border border-white/10">
               <X size={24} color="#FFFFFF" />

@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, Dimensions, TextInput, ActivityIndicator, Animated, PanResponder, Alert, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Building2, Smartphone, Check, ChevronRight, Clock, RefreshCw, Gift, Eye, CheckCircle2 } from 'lucide-react-native';
+import { ChevronLeft, Landmark, Clock, CheckCircle2, History } from 'lucide-react-native';
 import { apiClient } from '../api/client';
-
-const { width } = Dimensions.get('window');
+import { SafeScreen } from '../components/layout/SafeScreen';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { Platform } from 'react-native';
 
 export default function WithdrawScreen() {
   const router = useRouter();
-  const [method, setMethod] = useState('upi');
-  const [upiId, setUpiId] = useState('');
-  const [amount, setAmount] = useState('');
-  
-  const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [wallet, setWallet] = useState<any>(null);
+  
+  const [amount, setAmount] = useState('');
+  const [upiId, setUpiId] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'ALL' | 'VIEW' | 'GIFT'>('ALL');
 
   // Custom Alert State
   const [alertVisible, setAlertVisible] = useState(false);
@@ -24,65 +25,6 @@ export default function WithdrawScreen() {
     setAlertConfig({ title, message, type });
     setAlertVisible(true);
   };
-
-  const [pan] = useState(() => new Animated.ValueXY());
-  const maxSwipe = width - 32 - 40 - 16; // container width minus padding and button size
-
-  const viewEarnings = wallet?.viewEarnings ?? 0;
-  const giftEarnings = wallet?.giftEarnings ?? 0;
-  const availableBalance = viewEarnings + giftEarnings + (wallet?.referralEarnings ?? 0);
-
-  const handleWithdrawSubmit = async () => {
-    if (!upiId || !amount) {
-      showAlert('Error', 'Please enter UPI ID and Amount', 'error');
-      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
-      return;
-    }
-    const amt = parseFloat(amount);
-    if (amt < 500) {
-      showAlert('Error', 'Minimum withdrawal is ₹500', 'error');
-      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
-      return;
-    }
-    if (amt > availableBalance) {
-      showAlert('Error', 'Insufficient balance', 'error');
-      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
-      return;
-    }
-
-    try {
-      setWithdrawing(true);
-      await apiClient.post('/wallet/withdraw', { amount: amt, upiId });
-      showAlert('Success', 'Withdrawal requested successfully!', 'success');
-      setTimeout(() => {
-        router.back();
-      }, 2000);
-    } catch (e: any) {
-      showAlert('Error', e.response?.data?.message || 'Failed to withdraw', 'error');
-      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
-    } finally {
-      setWithdrawing(false);
-    }
-  };
-
-  const panResponder = useState(() =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dx > 0 && gestureState.dx < maxSwipe) {
-          pan.setValue({ x: gestureState.dx, y: 0 });
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx > maxSwipe * 0.8) {
-          Animated.spring(pan, { toValue: { x: maxSwipe, y: 0 }, useNativeDriver: false }).start();
-          handleWithdrawSubmit();
-        } else {
-          Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
-        }
-      },
-    })
-  )[0];
 
   useEffect(() => {
     const fetchWallet = async () => {
@@ -97,7 +39,49 @@ export default function WithdrawScreen() {
     };
     fetchWallet();
   }, []);
-  
+
+  const totalEarnings = wallet?.totalEarnings ?? 0;
+  const pendingValidation = wallet?.pendingBalance ?? 0;
+  const withdrawable = wallet?.withdrawableBalance ?? 0;
+  const ledgers = wallet?.ledgers || [];
+
+  const handleWithdrawSubmit = async () => {
+    if (!upiId || !amount) {
+      showAlert('Error', 'Please enter UPI ID and Amount', 'error');
+      return;
+    }
+    const amt = parseFloat(amount);
+    if (amt < 500) {
+      showAlert('Error', 'Minimum withdrawal is ₹500', 'error');
+      return;
+    }
+    if (amt > withdrawable) {
+      showAlert('Error', 'Insufficient withdrawable balance', 'error');
+      return;
+    }
+
+    try {
+      setWithdrawing(true);
+      await apiClient.post('/wallet/withdraw', { amount: amt, upiId });
+      showAlert('Success', 'Withdrawal requested successfully!', 'success');
+      setAmount('');
+      setUpiId('');
+      const res = await apiClient.get('/wallet');
+      setWallet(res.data);
+    } catch (e: any) {
+      showAlert('Error', e.response?.data?.message || 'Failed to withdraw', 'error');
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
+  const filteredLedgers = ledgers.filter((l: any) => {
+    if (activeTab === 'ALL') return true;
+    if (activeTab === 'VIEW') return l.source === 'VIEW_EARNING';
+    if (activeTab === 'GIFT') return l.source === 'GIFT_RECEIVED';
+    return true;
+  });
+
   if (loading) {
     return (
       <View className="flex-1 bg-[#12081E] items-center justify-center">
@@ -107,155 +91,139 @@ export default function WithdrawScreen() {
   }
 
   return (
-    <View className="flex-1 bg-[#12081E] pt-14">
-      {/* Header */}
-      <View className="flex-row items-center px-4 pb-4">
-        <Pressable onPress={() => router.back()} className="mr-4 active:opacity-70 p-2 -ml-2">
-          <ChevronLeft color="white" size={24} />
-        </Pressable>
-        <Text className="text-white font-bold text-lg">Withdraw Funds</Text>
-      </View>
-
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
-        
-        {/* Earnings Breakdown Card */}
-        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-5 mb-8">
-          <Text className="text-white font-bold text-base mb-4">Earnings Breakdown</Text>
-          
-          <View className="flex-row items-center justify-between mb-4">
-            <View className="flex-row items-center gap-3">
-              <View className="bg-[#F59E0B]/20 w-8 h-8 rounded-full items-center justify-center">
-                <Gift size={16} color="#FBBF24" />
-              </View>
-              <Text className="text-white/80 font-medium text-sm">Gift Earnings</Text>
-            </View>
-            <Text className="text-white font-bold">₹{giftEarnings.toFixed(2)}</Text>
-          </View>
-
-          <View className="flex-row items-center justify-between mb-4">
-            <View className="flex-row items-center gap-3">
-              <View className="bg-[#8B5CF6]/20 w-8 h-8 rounded-full items-center justify-center">
-                <Eye size={16} color="#8B5CF6" />
-              </View>
-              <Text className="text-white/80 font-medium text-sm">View Earnings</Text>
-            </View>
-            <Text className="text-white font-bold">₹{viewEarnings.toFixed(2)}</Text>
-          </View>
-
-          <View className="h-[1px] bg-[#3E2B5C] w-full mb-4" />
-          
-          <View className="flex-row justify-between items-center">
-            <Text className="text-white/60 font-medium text-sm">Total Available</Text>
-            <Text className="text-[#10B981] font-black text-xl">₹{availableBalance.toFixed(2)}</Text>
-          </View>
+    <SafeScreen edgeToEdgeBottom className="bg-[#12081E] flex-1">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+        {/* Header */}
+        <View className="flex-row items-center justify-center px-4 pt-4 pb-4 relative">
+          <Pressable onPress={() => router.back()} className="absolute left-4 p-2 -ml-2 z-10 active:opacity-70">
+            <ChevronLeft color="white" size={28} />
+          </Pressable>
+          <Text className="text-white font-bold text-lg tracking-wide">Creator Rewards</Text>
         </View>
 
-        <Text className="text-white font-bold text-sm mb-4">Select Withdrawal Method</Text>
-
-        {/* Methods */}
-        <View className="flex-row gap-4 mb-6">
-          <Pressable 
-            onPress={() => setMethod('upi')}
-            className={`flex-1 rounded-2xl p-6 border ${method === 'upi' ? 'border-[#A855F7]' : 'border-[#3E2B5C]'} bg-[#1D1037] items-center justify-center relative`}
-          >
-            {method === 'upi' && (
-              <View className="absolute top-3 right-3 bg-[#A855F7] rounded-full p-0.5">
-                <Check size={12} color="white" strokeWidth={3} />
-              </View>
-            )}
-            <View className="w-12 h-12 rounded-full bg-[#8B5CF6]/10 items-center justify-center mb-3">
-               <Smartphone size={24} color="#A855F7" />
-            </View>
-            <Text className={`font-bold text-sm mb-1 ${method === 'upi' ? 'text-white' : 'text-white/60'}`}>UPI</Text>
-            <Text className="text-white/40 text-[10px]">Instant transfer</Text>
-          </Pressable>
-
-          <Pressable 
-            onPress={() => setMethod('bank')}
-            className={`flex-1 rounded-2xl p-6 border ${method === 'bank' ? 'border-[#A855F7]' : 'border-[#3E2B5C]'} bg-[#1D1037] items-center justify-center relative`}
-          >
-            {method === 'bank' && (
-              <View className="absolute top-3 right-3 bg-[#A855F7] rounded-full p-0.5">
-                <Check size={12} color="white" strokeWidth={3} />
-              </View>
-            )}
-            <View className="w-12 h-12 rounded-full bg-[#8B5CF6]/10 items-center justify-center mb-3">
-              <Building2 size={24} color="#A855F7" />
-            </View>
-            <Text className={`font-bold text-sm mb-1 ${method === 'bank' ? 'text-white' : 'text-white/60'}`}>Bank Transfer</Text>
-            <Text className="text-white/40 text-[10px]">2-24 hours</Text>
-          </Pressable>
-        </View>
-
-        {/* Form */}
-        <View className="gap-6 mb-8">
-          <View>
-            <Text className="text-white font-semibold text-sm mb-2">UPI ID</Text>
-            <View className="relative justify-center">
-              <TextInput 
-                value={upiId}
-                onChangeText={setUpiId}
-                placeholder="e.g. yourname@upi"
-                placeholderTextColor="rgba(255, 255, 255, 0.2)"
-                className="bg-[#1D1037] border border-[#3E2B5C] rounded-xl px-4 h-14 text-white"
-              />
-              <View className="absolute right-4 w-8 h-8 bg-white/5 rounded-full items-center justify-center">
-                <View className="w-3.5 h-3.5 rounded-full bg-white/20 border-2 border-white/40" />
-              </View>
-            </View>
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+          
+          {/* Huge Balance */}
+          <View className="items-center mt-2 mb-8">
+             <Text className="text-white font-black text-6xl tracking-tighter">₹{totalEarnings.toFixed(2)}</Text>
           </View>
 
-          <View>
-            <Text className="text-white font-semibold text-sm mb-2">Enter Amount</Text>
-            <View className="flex-row items-center bg-[#1D1037] border border-[#3E2B5C] rounded-xl px-4 h-14">
-              <Text className="text-white text-lg mr-2 font-bold">₹</Text>
-              <TextInput 
-                value={amount}
-                onChangeText={setAmount}
-                placeholder="0.00"
-                placeholderTextColor="rgba(255, 255, 255, 0.2)"
-                keyboardType="numeric"
-                className="flex-1 text-white text-lg"
-              />
-              <Pressable onPress={() => setAmount(availableBalance.toString())} className="bg-[#3E2B5C] px-3 py-1.5 rounded-lg">
-                <Text className="text-white/60 font-bold text-[10px]">MAX</Text>
+          <View className="px-5">
+            
+            {/* Pending & Withdrawable Split Card */}
+            <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-5 mb-6 flex-row justify-between shadow-lg">
+              <View className="flex-1 border-r border-[#3E2B5C] pr-4">
+                <View className="flex-row items-center gap-1.5 mb-2">
+                  <Clock size={14} color="#FBBF24" />
+                  <Text className="text-gray-400 font-bold text-[10px] uppercase tracking-wider">Pending Validation</Text>
+                </View>
+                <Text className="text-[#FBBF24] font-black text-xl">₹{pendingValidation.toFixed(2)}</Text>
+              </View>
+              <View className="flex-1 pl-4">
+                 <View className="flex-row items-center gap-1.5 mb-2">
+                  <CheckCircle2 size={14} color="#10B981" />
+                  <Text className="text-gray-400 font-bold text-[10px] uppercase tracking-wider">Withdrawable</Text>
+                </View>
+                <Text className="text-[#10B981] font-black text-xl">₹{withdrawable.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            {/* Request Cash Withdrawal Form */}
+            <View className="bg-[#1D1037] rounded-[24px] p-6 mb-8 border border-[#3E2B5C] shadow-lg">
+              <View className="flex-row items-center gap-2 mb-6">
+                <Landmark size={20} color="#A855F7" />
+                <Text className="text-white font-bold text-base">Request Cash Withdrawal</Text>
+              </View>
+
+              <View className="mb-5">
+                <Text className="text-gray-400 font-bold text-[10px] uppercase tracking-wider mb-2">Withdrawal Amount (Min ₹500)</Text>
+                <TextInput 
+                  value={amount}
+                  onChangeText={setAmount}
+                  placeholder={`Max available: ₹${withdrawable.toFixed(0)}`}
+                  placeholderTextColor="rgba(255, 255, 255, 0.2)"
+                  keyboardType="numeric"
+                  className="bg-[#12081E] border border-[#3E2B5C] rounded-xl px-4 h-14 text-white font-medium"
+                />
+              </View>
+
+              <View className="mb-6">
+                <Text className="text-gray-400 font-bold text-[10px] uppercase tracking-wider mb-2">Recipient UPI ID</Text>
+                <TextInput 
+                  value={upiId}
+                  onChangeText={setUpiId}
+                  placeholder="username@bank"
+                  placeholderTextColor="rgba(255, 255, 255, 0.2)"
+                  className="bg-[#12081E] border border-[#3E2B5C] rounded-xl px-4 h-14 text-white font-medium"
+                />
+              </View>
+
+              <Pressable 
+                onPress={handleWithdrawSubmit}
+                disabled={withdrawing}
+                className="bg-[#A855F7] py-4 rounded-xl items-center justify-center active:scale-95"
+              >
+                {withdrawing ? (
+                   <ActivityIndicator color="white" />
+                ) : (
+                   <Text className="text-white font-bold text-sm uppercase tracking-widest">Submit Request</Text>
+                )}
               </Pressable>
             </View>
-            <Text className="text-white/40 text-[10px] mt-2">Available: ₹{availableBalance.toFixed(2)}</Text>
-          </View>
-        </View>
 
-        {/* Swipe Button */}
-        <View className="bg-[#A855F7] h-14 rounded-full flex-row items-center px-2 mb-10 overflow-hidden relative">
-          <Text className="text-white font-bold text-sm absolute w-full text-center z-0">
-            {withdrawing ? 'Processing...' : 'Swipe to Withdraw'}
-          </Text>
-          <Animated.View 
-            {...panResponder.panHandlers}
-            style={{ transform: [{ translateX: pan.x }] }}
-            className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm z-10"
-          >
-            <ChevronRight size={20} color="#A855F7" strokeWidth={3} />
-          </Animated.View>
-          <View className="absolute right-4 w-6 h-6 items-center justify-center opacity-30 z-0">
-             <ChevronRight size={20} color="white" />
-          </View>
-        </View>
+            {/* Ledger & History */}
+            <View className="flex-row items-center gap-2 mb-4">
+              <History size={18} color="white" />
+              <Text className="text-white font-bold text-base">LEDGER & HISTORY</Text>
+            </View>
 
-        {/* History */}
-        <View className="flex-row items-center gap-2 mb-4">
-          <Clock size={16} color="white" />
-          <Text className="text-white font-bold text-sm">My Withdrawal Requests</Text>
-        </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6 flex-row">
+              <Pressable 
+                onPress={() => setActiveTab('ALL')}
+                className={`px-4 py-3 rounded-xl border mr-3 ${activeTab === 'ALL' ? 'border-[#A855F7] bg-[#1D1037]' : 'border-[#3E2B5C] bg-[#1D1037]/50'}`}
+              >
+                <Text className={`font-bold text-[11px] uppercase tracking-wider ${activeTab === 'ALL' ? 'text-white' : 'text-gray-400'}`}>All Transactions</Text>
+              </Pressable>
+              
+              <Pressable 
+                onPress={() => setActiveTab('VIEW')}
+                className={`px-4 py-3 rounded-xl border mr-3 ${activeTab === 'VIEW' ? 'border-[#A855F7] bg-[#1D1037]' : 'border-[#3E2B5C] bg-[#1D1037]/50'}`}
+              >
+                <Text className={`font-bold text-[11px] uppercase tracking-wider ${activeTab === 'VIEW' ? 'text-white' : 'text-gray-400'}`}>View Earnings</Text>
+              </Pressable>
+              
+              <Pressable 
+                onPress={() => setActiveTab('GIFT')}
+                className={`px-4 py-3 rounded-xl border ${activeTab === 'GIFT' ? 'border-[#A855F7] bg-[#1D1037]' : 'border-[#3E2B5C] bg-[#1D1037]/50'}`}
+              >
+                <Text className={`font-bold text-[11px] uppercase tracking-wider ${activeTab === 'GIFT' ? 'text-white' : 'text-gray-400'}`}>Gift Earnings</Text>
+              </Pressable>
+            </ScrollView>
 
-        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-8 items-center justify-center mb-10">
-          <View className="opacity-40 mb-3">
-             <RefreshCw size={24} color="white" />
+            <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-6 min-h-[150px] justify-center shadow-lg border-dashed">
+               {filteredLedgers.length === 0 ? (
+                 <Text className="text-gray-500 text-center font-medium">No transactions found.</Text>
+               ) : (
+                 filteredLedgers.map((l: any, i: number) => (
+                   <View key={i} className="flex-row justify-between items-center mb-4 last:mb-0 border-b border-[#3E2B5C] pb-4 last:border-0 last:pb-0">
+                     <View>
+                       <Text className="text-white font-bold text-sm">{l.source}</Text>
+                       <Text className="text-gray-400 text-[10px] mt-0.5">{new Date(l.createdAt).toLocaleDateString()}</Text>
+                     </View>
+                     <View className="items-end">
+                       <Text className={`${l.credit > 0 ? 'text-[#10B981]' : 'text-red-400'} font-black text-sm`}>
+                         {l.credit > 0 ? '+' : '-'}₹{Math.abs(l.credit > 0 ? l.credit : l.debit).toFixed(2)}
+                       </Text>
+                       <Text className="text-gray-500 text-[10px] mt-0.5">Bal: ₹{l.balanceAfter?.toFixed(2)}</Text>
+                     </View>
+                   </View>
+                 ))
+               )}
+            </View>
+
           </View>
-          <Text className="text-white/60 text-xs">No withdrawal requests yet</Text>
-        </View>
-        
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Custom Alert Modal */}
       <Modal visible={alertVisible} transparent animationType="fade">
@@ -281,6 +249,6 @@ export default function WithdrawScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeScreen>
   );
 }

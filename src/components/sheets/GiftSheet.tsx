@@ -110,11 +110,11 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
         animate={{ translateY: 0, opacity: 1 }}
         exit={{ translateY: 600, opacity: 0 }}
         transition={{ type: 'timing', duration: 300 }}
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] z-50 shadow-2xl flex-col"
+        className="absolute bottom-0 left-0 right-0 bg-[#12081E] border-t border-white/10 rounded-t-[32px] z-50 shadow-2xl flex-col"
         style={{ paddingBottom: Math.max(insets.bottom, 20) }}
       >
         <View className="items-center py-3">
-          <View className="w-10 h-1 bg-gray-300 rounded-full" />
+          <View className="w-12 h-1.5 bg-white/20 rounded-full" />
         </View>
 
         {viewMode === 'gifts' ? (
@@ -122,20 +122,20 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
             <View className="flex-row items-center justify-between px-5 pb-4">
               <View className="flex-row items-center gap-2">
                 <Gift size={20} color="#A855F7" />
-                <Text className="text-gray-900 font-extrabold text-lg">Send a Gift</Text>
+                <Text className="text-white font-extrabold text-lg">Send a Gift</Text>
               </View>
 
               <View className="flex-row items-center gap-4">
                 <View className="flex-row items-center gap-1.5">
-                  <Coins size={14} color="#EAB308" fill="#EAB308" />
-                  <Text className="text-yellow-500 font-bold">{coinBalance.toLocaleString()} Coins</Text>
+                  <Coins size={14} color="#FBBF24" fill="#FBBF24" />
+                  <Text className="text-yellow-400 font-bold">{coinBalance.toLocaleString()} Coins</Text>
                 </View>
                 
                 <TouchableOpacity 
                   onPress={() => setViewMode('recharge')}
-                  className="border border-[#D8B4FE] bg-white px-3 py-1.5 rounded-lg active:scale-95"
+                  className="bg-[#FBBF24] px-4 py-1.5 rounded-full active:scale-95 shadow-lg"
                 >
-                  <Text className="text-[#A855F7] text-xs font-bold">+ Recharge</Text>
+                  <Text className="text-[#12081E] text-xs font-extrabold">+ Recharge</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -152,17 +152,17 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
                       className="w-[90px] h-[110px] items-center justify-center rounded-2xl border"
                       style={
                         isSelected 
-                          ? { backgroundColor: '#F3E8FF', borderColor: '#D8B4FE' }
-                          : { backgroundColor: '#FFFFFF', borderColor: '#F3F4F6' }
+                          ? { backgroundColor: 'rgba(168, 85, 247, 0.15)', borderColor: '#A855F7' }
+                          : { backgroundColor: '#1A0E2C', borderColor: 'rgba(255, 255, 255, 0.05)' }
                       }
                     >
                       <View className="mb-3">
                         {getGiftIconComponent(gift.id, 32)}
                       </View>
-                      <Text className="text-gray-700 font-bold text-xs mb-1">{gift.name}</Text>
+                      <Text className="text-white font-bold text-xs mb-1">{gift.name}</Text>
                       <View className="flex-row items-center gap-1">
-                        <Coins size={10} color="#EAB308" fill="#EAB308" />
-                        <Text className="text-gray-500 text-[10px] font-medium">{gift.cost}</Text>
+                        <Coins size={10} color="#FBBF24" fill="#FBBF24" />
+                        <Text className="text-white/50 text-[10px] font-medium">{gift.cost}</Text>
                       </View>
                     </TouchableOpacity>
                   );
@@ -170,18 +170,21 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
               </ScrollView>
             </View>
 
-            <View className="px-5 pt-6 pb-2 items-center">
-              <Text className="text-gray-500 text-xs mb-3">
+            <View 
+              className="px-5 pt-6 items-center"
+              style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+            >
+              <Text className="text-white/50 text-xs mb-3">
                 Sending to @{reel.creatorUsername}
               </Text>
               
               <TouchableOpacity
                 onPress={handleSendGift}
                 disabled={isSending}
-                className={`w-full py-4 rounded-xl items-center justify-center ${isSending ? 'bg-[#A855F7]/50' : 'bg-[#A855F7]'}`}
+                className={`w-full py-4 rounded-xl items-center justify-center ${isSending ? 'bg-white/10' : 'bg-[#A855F7]'}`}
               >
                 {isSending ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator size="small" color="#A855F7" />
                 ) : (
                   <Text className="text-white text-sm font-bold">Send Gift</Text>
                 )}
@@ -192,17 +195,17 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
           <>
             <View className="flex-row items-center justify-between px-5 pb-2">
               <View className="flex-row items-center gap-2">
-                <View className="bg-yellow-100 p-1.5 rounded-full">
-                  <Coins size={16} color="#EAB308" fill="#EAB308" />
+                <View className="bg-yellow-500/20 p-1.5 rounded-full">
+                  <Coins size={16} color="#FBBF24" fill="#FBBF24" />
                 </View>
-                <Text className="text-gray-900 font-extrabold text-lg">Recharge Coins</Text>
+                <Text className="text-white font-extrabold text-lg">Recharge Coins</Text>
               </View>
-              <TouchableOpacity onPress={() => setViewMode('gifts')} className="p-1.5 rounded-full bg-gray-100 active:scale-95">
-                <X size={18} color="#6B7280" />
+              <TouchableOpacity onPress={() => setViewMode('gifts')} className="p-1.5 rounded-full bg-white/10 active:scale-95">
+                <X size={18} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
-            <Text className="text-gray-500 text-xs px-5 mb-4">
+            <Text className="text-white/50 text-xs px-5 mb-4">
               Use coins to send gifts to your favourite creators
             </Text>
 
@@ -214,35 +217,39 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
                     key={pack.coins}
                     onPress={() => setSelectedRechargePack(pack.coins)}
                     activeOpacity={0.7}
-                    className="w-[48%] bg-white rounded-2xl p-4 items-center border relative"
-                    style={{ borderColor: isSelected ? '#A855F7' : '#F3F4F6' }}
+                    className="w-[48%] rounded-2xl p-4 items-center border relative"
+                    style={
+                      isSelected
+                        ? { backgroundColor: 'rgba(168, 85, 247, 0.1)', borderColor: '#A855F7' }
+                        : { backgroundColor: '#1A0E2C', borderColor: 'rgba(255, 255, 255, 0.05)' }
+                    }
                   >
                     {isSelected && (
                       <View className="absolute top-2 left-2">
-                        <CheckCircle2 size={18} color="#EAB308" fill="#FEF08A" />
+                        <CheckCircle2 size={18} color="#A855F7" fill="#1A0E2C" />
                       </View>
                     )}
                     {pack.badge && (
-                      <View className="absolute -top-2 right-2 bg-[#8B5CF6] px-2 py-0.5 rounded flex-row items-center gap-1">
+                      <View className="absolute -top-2 right-2 bg-gradient-to-r from-[#A855F7] to-[#8B5CF6] px-2 py-0.5 rounded flex-row items-center gap-1">
                         <Text className="text-white text-[8px] font-bold">✨ Popular</Text>
                       </View>
                     )}
                     
-                    <View className="bg-yellow-50 w-10 h-10 rounded-full items-center justify-center mb-2">
-                      <Coins size={20} color="#EAB308" fill="#EAB308" />
+                    <View className="bg-yellow-500/10 w-10 h-10 rounded-full items-center justify-center mb-2">
+                      <Coins size={20} color="#FBBF24" fill="#FBBF24" />
                     </View>
                     
-                    <Text className="text-gray-900 font-black text-lg mb-1">{pack.coins.toLocaleString()}</Text>
+                    <Text className="text-white font-black text-lg mb-1">{pack.coins.toLocaleString()}</Text>
                     
                     {pack.bonus && (
-                      <Text className="text-green-500 text-[9px] font-bold mb-1">{pack.bonus}</Text>
+                      <Text className="text-[#10B981] text-[9px] font-bold mb-1">{pack.bonus}</Text>
                     )}
                     
-                    <Text className="text-[#A855F7] font-bold text-base mb-2">₹{pack.price}</Text>
+                    <Text className="text-[#D8B4FE] font-bold text-base mb-2">₹{pack.price}</Text>
                     
                     {pack.tag && (
-                      <View className={`px-2 py-0.5 rounded-sm ${pack.tagColor}`}>
-                        <Text className="text-[9px] font-bold">{pack.tag}</Text>
+                      <View className={`px-2 py-0.5 rounded-sm ${pack.tagColor === 'bg-purple-100 text-purple-600' ? 'bg-[#A855F7]/20' : 'bg-[#10B981]/20'}`}>
+                        <Text className={`text-[9px] font-bold ${pack.tagColor === 'bg-purple-100 text-purple-600' ? 'text-[#D8B4FE]' : 'text-[#34D399]'}`}>{pack.tag}</Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -250,20 +257,23 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
               })}
             </View>
 
-            <View className="px-5 pt-6 pb-2">
-              <View className="flex-row items-center justify-between gap-2 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                <Text className="text-gray-500 text-xs">
+            <View 
+              className="px-5 pt-6"
+              style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+            >
+              <View className="flex-row items-center justify-between gap-2 mb-4 bg-white/5 p-3 rounded-lg border border-white/10">
+                <Text className="text-white/50 text-xs">
                   🔒 Secured via Razorpay · PCI-DSS compliant
                 </Text>
-                <Zap size={14} color="#6B7280" />
+                <Zap size={14} color="#A855F7" />
               </View>
 
               <TouchableOpacity
                 onPress={handleRecharge}
-                className={`w-full py-4 rounded-xl items-center justify-center ${!selectedRechargePack ? 'bg-[#FBBF24]/50' : 'bg-[#F97316]'}`}
+                className={`w-full py-4 rounded-xl items-center justify-center ${!selectedRechargePack ? 'bg-white/10' : 'bg-[#A855F7]'}`}
                 disabled={!selectedRechargePack}
               >
-                <Text className="text-black text-sm font-bold">
+                <Text className={`text-sm font-bold ${!selectedRechargePack ? 'text-white/30' : 'text-white'}`}>
                   {selectedRechargePack 
                     ? `Pay ₹${RECHARGE_PACKS.find(p => p.coins === selectedRechargePack)?.price} · Get ${(selectedRechargePack + (RECHARGE_PACKS.find(p => p.coins === selectedRechargePack)?.bonusCoins || 0)).toLocaleString()} Coins` 
                     : 'Select a Pack'}
@@ -275,18 +285,18 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
       </MotiView>
 
       {showInsufficientModal && (
-        <View style={[StyleSheet.absoluteFill, { elevation: 100, zIndex: 100 }]} className="flex-1 bg-black/50 items-center justify-center px-6">
+        <View style={[StyleSheet.absoluteFill, { elevation: 100, zIndex: 100 }]} className="flex-1 bg-black/60 items-center justify-center px-6">
           <MotiView 
             from={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', damping: 15 }}
-            className="bg-white w-full rounded-[24px] p-6 items-center shadow-2xl"
+            className="bg-[#1A0E2C] border border-white/10 w-full rounded-[24px] p-6 items-center shadow-2xl"
           >
-            <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+            <View className="w-16 h-16 rounded-full bg-red-500/20 items-center justify-center mb-4">
               <Coins size={32} color="#EF4444" />
             </View>
-            <Text className="text-gray-900 text-xl font-black mb-2 text-center">Insufficient Balance</Text>
-            <Text className="text-gray-500 text-xs text-center leading-5 mb-6 px-4">
+            <Text className="text-white text-xl font-black mb-2 text-center">Insufficient Balance</Text>
+            <Text className="text-white/60 text-xs text-center leading-5 mb-6 px-4">
               You need {selectedGift.cost - coinBalance} more coins to send this {selectedGift.name}.
             </Text>
             <TouchableOpacity 
@@ -302,25 +312,25 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
               onPress={() => setShowInsufficientModal(false)}
               className="py-2"
             >
-              <Text className="text-gray-400 font-medium text-xs">Cancel</Text>
+              <Text className="text-white/40 font-medium text-xs">Cancel</Text>
             </TouchableOpacity>
           </MotiView>
         </View>
       )}
 
       {showSuccessModal && (
-        <View style={[StyleSheet.absoluteFill, { elevation: 100, zIndex: 100 }]} className="flex-1 bg-black/50 items-center justify-center px-6">
+        <View style={[StyleSheet.absoluteFill, { elevation: 100, zIndex: 100 }]} className="flex-1 bg-black/60 items-center justify-center px-6">
           <MotiView 
             from={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', damping: 15 }}
-            className="bg-white w-full rounded-[24px] p-6 items-center shadow-2xl"
+            className="bg-[#1A0E2C] border border-white/10 w-full rounded-[24px] p-6 items-center shadow-2xl"
           >
-            <View className="w-16 h-16 rounded-full bg-green-100 items-center justify-center mb-4">
+            <View className="w-16 h-16 rounded-full bg-green-500/20 items-center justify-center mb-4">
               <Award size={32} color="#10B981" />
             </View>
-            <Text className="text-gray-900 text-xl font-black mb-2 text-center">Recharge Success!</Text>
-            <Text className="text-gray-500 text-xs text-center leading-5 mb-6 px-4">
+            <Text className="text-white text-xl font-black mb-2 text-center">Recharge Success!</Text>
+            <Text className="text-white/60 text-xs text-center leading-5 mb-6 px-4">
               Successfully added coins to your wallet balance. Keep spreading the vibe!
             </Text>
             <TouchableOpacity 
@@ -334,18 +344,18 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
       )}
 
       {showErrorModal && (
-        <View style={[StyleSheet.absoluteFill, { elevation: 100, zIndex: 100 }]} className="flex-1 bg-black/50 items-center justify-center px-6">
+        <View style={[StyleSheet.absoluteFill, { elevation: 100, zIndex: 100 }]} className="flex-1 bg-black/60 items-center justify-center px-6">
           <MotiView 
             from={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', damping: 15 }}
-            className="bg-white w-full rounded-[24px] p-6 items-center shadow-2xl"
+            className="bg-[#1A0E2C] border border-white/10 w-full rounded-[24px] p-6 items-center shadow-2xl"
           >
-            <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+            <View className="w-16 h-16 rounded-full bg-red-500/20 items-center justify-center mb-4">
               <X size={32} color="#EF4444" />
             </View>
-            <Text className="text-gray-900 text-xl font-black mb-2 text-center">Transfer Failed</Text>
-            <Text className="text-gray-500 text-xs text-center leading-5 mb-6 px-4">
+            <Text className="text-white text-xl font-black mb-2 text-center">Transfer Failed</Text>
+            <Text className="text-white/60 text-xs text-center leading-5 mb-6 px-4">
               We couldn't process your gift. Please try again.
             </Text>
             <TouchableOpacity 

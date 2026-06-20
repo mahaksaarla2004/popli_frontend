@@ -44,15 +44,40 @@ export default function LoginScreen() {
     setErrors({});
     setIsLoading(true);
 
-    // BYPASS FIREBASE FOR CLIENT DEMO
-    setTimeout(() => {
+    try {
+      const targetPhone = identTrimmed.startsWith('+') ? identTrimmed : `+91${identTrimmed}`;
+      
+      // 1. Check if user exists
+      const checkRes = await apiClient.post('/auth/check-user', { identifier: targetPhone });
+      
+      if (!checkRes.data.exists) {
+        setIsLoading(false);
+        Alert.alert(
+          "Account Not Found", 
+          "This number is not registered. Please create an account first.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Sign Up", onPress: () => router.push('/(auth)/signup') }
+          ]
+        );
+        return;
+      }
+
+      // BYPASS FIREBASE FOR CLIENT DEMO
+      setTimeout(() => {
+        setIsLoading(false);
+        // Navigate directly to OTP screen
+        router.push({
+          pathname: '/(auth)/otp',
+          params: { target: identTrimmed, type: 'phone', phone: identTrimmed, intent: 'login' }
+        });
+      }, 500);
+
+    } catch (error: any) {
       setIsLoading(false);
-      // Navigate directly to OTP screen
-      router.push({
-        pathname: '/(auth)/otp',
-        params: { target: identTrimmed, type: 'phone', phone: identTrimmed, intent: 'login' }
-      });
-    }, 500);
+      console.error('Login Check User Error:', error);
+      setErrors({ api: error?.response?.data?.message || 'Failed to connect to server. Please try again.' });
+    }
   };
 
   return (

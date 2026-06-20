@@ -254,7 +254,7 @@ export const useChatStore = create<ChatState>()(
                 : state.messages.map(m => m.id === tempId ? newMsg as any : m), // Replace temp with API result
               chats: state.chats.map((c) => {
                 if (c.id === chatId) {
-                  return { ...c, lastMessageTime: newMsg.timestamp };
+                  return { ...c, lastMessageTime: formatRelativeTime(newMsg.timestamp) };
                 }
                 return c;
               }),

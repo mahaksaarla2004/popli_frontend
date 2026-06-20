@@ -50,8 +50,10 @@ export interface Reel {
   isSaved: boolean;
   isFollowed: boolean;
   category: string;
-  location: {
-    city: string;
+  location?: {
+    name?: string;
+    city?: string;
+    locationName?: string;
     latitude: number;
     longitude: number;
   };
