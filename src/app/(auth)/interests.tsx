@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, Platform, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { apiClient } from '../../api/client';
 import { ChevronLeft, Sparkles, ChevronRight, Check } from 'lucide-react-native';
@@ -25,6 +25,7 @@ export default function InterestsScreen() {
   const [interests, setInterests] = useState<any[]>(INTERESTS);
   const [isSaving, setIsSaving] = useState(false);
   const { updateProfile } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
     apiClient.get('/interests')
@@ -91,10 +92,7 @@ export default function InterestsScreen() {
       } as any);
 
       setIsSaving(false);
-      // Navigate smoothly to location configuration page on next tick to avoid Navigation Context errors
-      setTimeout(() => {
-        router.push('/(auth)/location');
-      }, 50);
+      router.push('/(auth)/location');
     } catch (error) {
       setIsSaving(false);
       console.error('Failed to update profile:', error);
