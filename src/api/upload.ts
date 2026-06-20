@@ -23,26 +23,38 @@ export const uploadToCloudinary = async (fileUri: string, mediaType: 'image' | '
     formData.append('signature', signature);
     formData.append('folder', folder);
 
-    // 3. Upload directly to Cloudinary
+    // 3. Upload directly to Cloudinary using Axios
     const resourceType = mediaType === 'raw' ? 'raw' : mediaType === 'video' ? 'video' : 'image';
     const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
 
-    const uploadRes = await fetch(uploadUrl, {
-      method: 'POST',
-      body: formData,
+    const axios = require('axios').default;
+    
+    console.log(`[UPLOAD] Starting Cloudinary upload to ${uploadUrl}`);
+    console.log(`[UPLOAD] Appending file: uri=${fileUri}, type=${type}, name=${filename}`);
+
+    const uploadRes = await axios.post(uploadUrl, formData, {
+      timeout: 30000, // 30 second timeout
       headers: {
-        'Content-Type': 'multipart/form-data',
+        Accept: 'application/json',
+        // Do NOT set Content-Type to multipart/form-data manually, let axios auto-generate the boundary
       },
+      onUploadProgress: (progressEvent: any) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`[UPLOAD] Progress: ${percentCompleted}%`);
+        }
+      }
     });
 
-    const data = await uploadRes.json();
-    if (!uploadRes.ok) {
-      throw new Error(data.error?.message || 'Failed to upload to Cloudinary');
+    const data = uploadRes.data;
+    if (!data || !data.secure_url) {
+      throw new Error('Cloudinary upload failed: Missing secure_url in response');
     }
 
+    console.log(`[UPLOAD] Success! URL: ${data.secure_url}`);
     return data.secure_url;
-  } catch (error) {
-    console.error('Cloudinary Upload Error:', error);
-    throw error;
+  } catch (error: any) {
+    console.error('Cloudinary Upload Error:', error?.response?.data || error.message || error);
+    throw new Error(error?.response?.data?.error?.message || error.message || 'Failed to upload file');
   }
 };

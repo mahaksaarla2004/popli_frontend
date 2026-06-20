@@ -179,6 +179,16 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
       }
     }).catch(e => {
       console.error("Failed to post comment:", e);
+      // Revert the optimistic update since the API failed
+      setLocalComments(prev => {
+        const removeTempId = (list: Comment[]): Comment[] => {
+          return list.filter(c => c.id !== tempId).map(c => ({
+            ...c,
+            replies: c.replies ? removeTempId(c.replies) : []
+          }));
+        };
+        return removeTempId(prev);
+      });
     });
 
     // We can release the submission lock after a short delay to prevent double taps,

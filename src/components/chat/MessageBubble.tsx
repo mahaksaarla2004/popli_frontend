@@ -75,8 +75,8 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
           className="relative rounded-xl overflow-hidden"
           style={{ width: 180, backgroundColor: 'rgba(0,0,0,0.3)' }}
         >
-          {msg.attachment ? (
-             <Image source={{ uri: getThumbnailUrl(msg.attachment) }} style={{ width: 180, height: 240, opacity: 0.8 }} resizeMode="cover" />
+          {msg.mediaUrl ? (
+             <Image source={{ uri: getThumbnailUrl(msg.mediaUrl) }} style={{ width: 180, height: 240, opacity: 0.8 }} resizeMode="cover" />
           ) : (
              <View style={{ width: 180, height: 240, backgroundColor: '#2D1B4E', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontSize: 40 }}>📱</Text>
@@ -101,8 +101,8 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
           className="relative rounded-xl overflow-hidden"
           style={{ width: 180, backgroundColor: 'rgba(0,0,0,0.3)' }}
         >
-          {msg.attachment ? (
-             <Image source={{ uri: getThumbnailUrl(msg.attachment) }} style={{ width: 180, height: 240, opacity: 0.8 }} resizeMode="cover" />
+          {msg.mediaUrl ? (
+             <Image source={{ uri: getThumbnailUrl(msg.mediaUrl) }} style={{ width: 180, height: 240, opacity: 0.8 }} resizeMode="cover" />
           ) : (
              <View style={{ width: 180, height: 240, backgroundColor: '#2D1B4E', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontSize: 40 }}>🎬</Text>
@@ -118,11 +118,12 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
       );
     }
 
-    if (msg.attachment && !msg.isStoryMention) {
+    if (msg.mediaUrl && !msg.isStoryMention) {
+      const isVideo = msg.mediaUrl.endsWith('.mp4') || msg.mediaUrl.endsWith('.mov');
       return (
-        <Pressable onPress={() => onImagePress && onImagePress(msg.attachment)} className="relative rounded-xl overflow-hidden">
-          <Image source={{ uri: getThumbnailUrl(msg.attachment) }} style={{ width: 180, height: 240 }} resizeMode="cover" />
-          {msg.isVideo && (
+        <Pressable onPress={() => onImagePress && onImagePress(msg.mediaUrl)} className="relative rounded-xl overflow-hidden">
+          <Image source={{ uri: getThumbnailUrl(msg.mediaUrl) }} style={{ width: 180, height: 240 }} resizeMode="cover" />
+          {isVideo && (
             <View className="absolute inset-0 items-center justify-center bg-black/20">
               <View className="w-12 h-12 bg-white/30 rounded-full items-center justify-center backdrop-blur-md">
                 <Play size={20} color="#FFFFFF" fill="#FFFFFF" className="ml-1" />

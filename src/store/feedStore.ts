@@ -52,7 +52,7 @@ interface FeedState {
   exploreNextCursor: string | null;
   isFetchingFeed: boolean;
   clearCache: () => void;
-  _inFlightComments?: Set<string>;
+  _inFlightComments?: string[];
 }
 const inFlightLikes = new Set<string>();
 
@@ -217,9 +217,9 @@ export const useFeedStore = create<FeedState>()(
         })),
       addComment: async (comment) => {
         const lockKey = `${comment.reelId}-${comment.text}`;
-        if ((get() as any)._inFlightComments?.has(lockKey)) return;
-        
-        set((state: any) => ({ _inFlightComments: new Set([...state._inFlightComments, lockKey]) } as any));
+        const currentInFlight = Array.isArray((get() as any)._inFlightComments) ? (get() as any)._inFlightComments : [];
+        if (currentInFlight.includes(lockKey)) return;
+        set((state: any) => ({ _inFlightComments: [...currentInFlight, lockKey] } as any));
 
         // Backend sync first to get the actual ID
         try {
@@ -268,9 +268,8 @@ export const useFeedStore = create<FeedState>()(
         } finally {
           const lockKey = `${comment.reelId}-${comment.text}`;
           set((state: any) => {
-            const currentInFlight = new Set(state._inFlightComments || []);
-            currentInFlight.delete(lockKey);
-            return { _inFlightComments: currentInFlight } as any;
+            const currentInFlight = Array.isArray(state._inFlightComments) ? state._inFlightComments : [];
+            return { _inFlightComments: currentInFlight.filter((k: string) => k !== lockKey) } as any;
           });
         }
       },

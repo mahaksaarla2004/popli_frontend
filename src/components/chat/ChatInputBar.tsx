@@ -86,10 +86,16 @@ export default function ChatInputBar({
       try {
         const fileUri = result.assets[0].uri;
         const type = result.assets[0].type === 'video' ? 'video' : 'image';
+        
+        console.log('[DEBUG-TRACE] 1. Selected asset URI:', fileUri, 'Type:', type);
+        
         const uploadedUrl = await uploadToCloudinary(fileUri, type, 'chats');
+        
+        console.log('[DEBUG-TRACE] 2. Cloudinary Upload response URL:', uploadedUrl);
+        
         onSend('', uploadedUrl);
       } catch (err) {
-        console.error("Upload failed", err);
+        console.error("[DEBUG-TRACE] Upload failed:", err);
         // Fallback or error handling can be added here
       }
     }

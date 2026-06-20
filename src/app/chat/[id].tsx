@@ -66,6 +66,7 @@ export default function ChatScreen() {
   });
 
   const handleSend = async (text: string, mediaUrl?: string, type?: 'TEXT'|'VOICE') => {
+    console.log('[DEBUG-TRACE] 3. handleSend triggered with:', { text, mediaUrl, type });
     await sendMessage(id as string, text, mediaUrl, {
       type,
       replyToId: replyingTo?.id,
@@ -137,9 +138,10 @@ export default function ChatScreen() {
       </View>
 
       <View className="flex-1 px-4">
-        <FlatList
+        <FlashList
           data={formattedMessages}
           inverted={true}
+          estimatedItemSize={80}
           showsVerticalScrollIndicator={false}
           onViewableItemsChanged={onViewableItemsChanged.current}
           viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
@@ -154,11 +156,11 @@ export default function ChatScreen() {
               </View>
             </View>
           )}
-          renderItem={({ item }) => (
+          renderItem={({ item }: any) => (
             <MessageBubble 
               msg={item} 
-              onReply={(msg) => setReplyingTo(msg)} 
-              onImagePress={(url) => setViewerImage(url)}
+              onReply={(msg: any) => setReplyingTo(msg)} 
+              onImagePress={(url: string) => setViewerImage(url)}
             />
           )}
         />

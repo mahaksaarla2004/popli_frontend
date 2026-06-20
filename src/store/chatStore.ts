@@ -197,6 +197,7 @@ export const useChatStore = create<ChatState>()(
           status: 'sending'
         };
 
+        console.log('[DEBUG-TRACE] 4. chatStore sendMessage adding optimistic message:', tempMsg);
         // Optimistically add the message
         set((state) => ({
           messages: [tempMsg as any, ...state.messages],
@@ -204,7 +205,7 @@ export const useChatStore = create<ChatState>()(
             if (c.id === chatId) {
               return {
                 ...c,
-                lastMessage: tempMsg.text,
+                lastMessage: tempMsg.text || 'Photo',
                 lastMessageTime: 'Just now',
                 unreadCount: 0,
               };
@@ -214,14 +215,19 @@ export const useChatStore = create<ChatState>()(
         }));
 
         try {
-          const res = await apiClient.post(`/chats/${chatId}/messages`, { 
+          const payload = { 
             text: tempMsg.text, 
             mediaUrl,
             type: options?.type || 'TEXT',
             replyToId: options?.replyToId,
             replyToText: options?.replyToText
-          });
+          };
+          console.log('[DEBUG-TRACE] 5. Sending API request:', `/chats/${chatId}/messages`, payload);
+          
+          const res = await apiClient.post(`/chats/${chatId}/messages`, payload);
           const rawMsg = res.data;
+          
+          console.log('[DEBUG-TRACE] 6. Received API response:', rawMsg);
           
           const newMsg = {
             id: rawMsg.id || tempId,
