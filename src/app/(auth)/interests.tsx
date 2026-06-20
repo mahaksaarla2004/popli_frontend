@@ -85,14 +85,24 @@ export default function InterestsScreen() {
         return found ? found.label : id;
       });
 
-      // Update auth store (this automatically triggers apiClient.put('/users/me') internally)
-      await updateProfile({
-        interestNames: selectedNames,
-        selectedInterests: selectedIds, // frontend cache
+      // Save full profile and interests to backend
+      await apiClient.put('/users/me', {
+        bio: profile.bio,
+        category: profile.category,
+        avatar: profile.avatar,
+        interestNames: selectedNames
+      });
+
+      // Cache preferences into active profile
+      updateProfile({
+        selectedInterests: selectedIds, // Save all interests dynamically
       } as any);
 
       setIsSaving(false);
-      router.push('/(auth)/location');
+      // Navigate smoothly to location configuration page after render cycle
+      setTimeout(() => {
+        router.push('/(auth)/location');
+      }, 0);
     } catch (error) {
       setIsSaving(false);
       console.error('Failed to update profile:', error);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Platform, Image , ActivityIndicator } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { ChevronLeft, Camera, Sparkles, Globe, ChevronRight } from 'lucide-react-native';
 import { MotiView } from 'moti';
@@ -29,7 +29,6 @@ const LANGUAGES: ('English' | 'Hindi' | 'Bengali' | 'Tamil')[] = ['English', 'Hi
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
-  const { referredByCode: deepLinkReferralCode } = useLocalSearchParams<{ referredByCode?: string }>();
   const { userProfile, updateProfile, setLanguage } = useAuthStore();
 
   const [avatar, setAvatar] = useState(AVATAR_PRESETS[0]);
@@ -37,7 +36,6 @@ export default function ProfileSetupScreen() {
   const [gender, setGender] = useState<string>('Male');
   const [category, setCategory] = useState<string>('comedy');
   const [selectedLang, setSelectedLang] = useState<'English' | 'Hindi' | 'Bengali' | 'Tamil'>('English');
-  const [referredByCode, setReferredByCode] = useState(deepLinkReferralCode || '');
   const [isUploading, setIsUploading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'error'>('idle');
 
@@ -150,7 +148,6 @@ export default function ProfileSetupScreen() {
       avatar,
       bio: bio.trim() || 'Indian video creator 🚀',
       category,
-      ...(referredByCode.trim() ? { referredByCode: referredByCode.trim() } : {})
     });
     setIsUploading(false);
 
@@ -293,21 +290,6 @@ export default function ProfileSetupScreen() {
               <View className="items-end mt-2">
                 <Text className="text-white/30 text-[10px]">{bio.length}/100</Text>
               </View>
-            </View>
-          </View>
-
-          {/* Referral Code */}
-          <View className="gap-2 mt-2">
-            <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Referral Code (Optional)</Text>
-            <View className="bg-[#190C2C] border border-white/5 rounded-2xl p-4">
-              <TextInput
-                value={referredByCode}
-                onChangeText={(text) => setReferredByCode(text.toUpperCase())}
-                placeholder="Got an invite code? Enter it here"
-                placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                className="text-white text-sm py-1 font-bold tracking-widest"
-                autoCapitalize="characters"
-              />
             </View>
           </View>
 

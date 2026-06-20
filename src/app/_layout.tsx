@@ -130,9 +130,8 @@ export default function RootLayout() {
       if (inAuthGroup) {
         const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions', 'personalization-loader'];
         if (allowedAuthRoutes.includes(segments[1] as string)) {
-          // They are on a setup page. Even if profile is marked complete by backend,
-          // let them finish the local UI flow (location -> permissions) naturally.
-          // Do nothing here.
+          // They are on a setup page but profile is complete, kick them out to tabs!
+          setTimeout(() => router.replace('/(tabs)'), 0);
         } else if (!allowedAuthRoutes.includes(segments[1] as string)) {
           if (useAuthStore.getState().isFirstLogin) {
             useAuthStore.getState().setFirstLogin(false);

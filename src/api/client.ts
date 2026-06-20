@@ -17,9 +17,12 @@ const resolveBaseUrl = () => {
     // @ts-ignore
     const hostUri = Constants.expoConfig?.hostUri || (Constants.manifest as any)?.hostUri || (Constants.manifest2 as any)?.extra?.expoGo?.debuggerHost;
     // Do NOT use hostUri if it's an ngrok/exp.direct tunnel, because it won't route port 3000 to the backend.
-    if (hostUri && !hostUri.includes('exp.direct') && !hostUri.includes('ngrok.io')) {
+    if (hostUri && !hostUri.includes('exp.direct') && !hostUri.includes('ngrok.io') && !hostUri.includes('ngrok-free.app') && !hostUri.includes('ngrok.app') && !hostUri.includes('loca.lt')) {
       const lanIp = hostUri.split(':')[0].trim(); // e.g. "192.168.1.28"
-      return `http://${lanIp}:3001`;
+      // Prevent crash if lanIp contains underscores (invalid hostname)
+      if (!lanIp.includes('_')) {
+        return `http://${lanIp}:3001`;
+      }
     }
   }
 
@@ -27,7 +30,12 @@ const resolveBaseUrl = () => {
   return CLOUDFLARE_FALLBACK.trim();
 };
 
-export const BASE_URL = resolveBaseUrl();
+let resolved = resolveBaseUrl();
+// Sanitize resolved URL just in case of weird hidden characters or quotes
+resolved = resolved.replace(/['"]/g, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+
+export const BASE_URL = resolved;
+console.log('[API CLIENT] Initialized with BASE_URL:', BASE_URL);
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, Dimensions, Share, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, ScrollView, Pressable, Dimensions, Share, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { ChevronLeft, User, Link as LinkIcon, Star, UserPlus, Trophy, Send } from 'lucide-react-native';
@@ -11,20 +11,17 @@ export default function ReferralsScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [configs, setConfigs] = useState<any>({});
-  const [referralsList, setReferralsList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileRes, configRes, referralsRes] = await Promise.all([
+        const [profileRes, configRes] = await Promise.all([
           apiClient.get('/users/me'),
-          apiClient.get('/system/configs?keys=REFERRAL_CREATOR_REWARD,REFERRAL_STANDARD_REWARD,REFERRAL_SUPER_REWARD'),
-          apiClient.get('/users/me/referrals')
+          apiClient.get('/system/configs?keys=REFERRAL_CREATOR_REWARD,REFERRAL_STANDARD_REWARD,REFERRAL_SUPER_REWARD')
         ]);
         setProfile(profileRes.data);
         setConfigs(configRes.data);
-        setReferralsList(referralsRes.data);
       } catch (error) {
         console.error('Failed to fetch data', error);
       } finally {
@@ -37,14 +34,9 @@ export default function ReferralsScreen() {
   const referralCode = profile?.referralCode || 'G7BML8CS';
   const referralLink = `app.popli.in/join/${referralCode}`;
 
-  const handleCopyCode = async () => {
+  const handleCopy = async () => {
     await Clipboard.setStringAsync(referralCode);
     Alert.alert('Copied!', 'Referral code copied to clipboard');
-  };
-
-  const handleCopyLink = async () => {
-    await Clipboard.setStringAsync(referralLink);
-    Alert.alert('Copied!', 'Referral link copied to clipboard');
   };
 
   const handleShare = async () => {
@@ -92,19 +84,16 @@ export default function ReferralsScreen() {
 
         {/* Your Referral Code */}
         <Text className="text-white font-bold text-base mb-3">Your Referral Code</Text>
-        <Pressable 
-          onPress={handleCopyCode}
-          className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl py-5 mb-2 items-center active:opacity-70"
-        >
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl py-5 mb-2 items-center">
           <Text className="text-[#A855F7] font-black text-2xl tracking-[0.2em]">{referralCode}</Text>
-        </Pressable>
+        </View>
         <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-3 flex-row items-center justify-between mb-6">
           <View className="flex-row items-center gap-2 flex-1 overflow-hidden pr-4">
             <LinkIcon size={16} color="#9CA3AF" />
             <Text className="text-gray-400 text-sm" numberOfLines={1}>{referralLink}</Text>
           </View>
           <Pressable 
-            onPress={handleCopyLink}
+            onPress={handleCopy}
             className="bg-[#8B5CF6] px-4 py-2 rounded-xl active:opacity-80"
           >
             <Text className="text-white font-bold text-sm">Copy</Text>
@@ -112,42 +101,14 @@ export default function ReferralsScreen() {
         </View>
 
         {/* Your Referred Friends */}
-        <Text className="text-white font-bold text-base mb-3">Your Referred Friends ({referralsList.length})</Text>
-        
-        {referralsList.length === 0 ? (
-          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-6 items-center mb-6">
-            <User size={32} color="#6B7280" className="mb-3" />
-            <Text className="text-white font-bold text-lg mb-2">No referrals yet</Text>
-            <Text className="text-gray-400 text-center text-sm leading-5">
-              Share your code below to start earning bonus rewards for each friend who joins Popli.
-            </Text>
-          </View>
-        ) : (
-          <View className="mb-6 gap-3">
-            {referralsList.map((ref: any, idx: number) => (
-              <View key={idx} className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3">
-                  {ref.referredUser?.avatar ? (
-                    <Image source={{ uri: ref.referredUser.avatar }} className="w-12 h-12 rounded-full border border-white/10" />
-                  ) : (
-                    <View className="w-12 h-12 rounded-full bg-white/10 items-center justify-center border border-white/20">
-                      <User size={20} color="white" />
-                    </View>
-                  )}
-                  <View>
-                    <Text className="text-white font-bold text-base">{ref.referredUser?.name || 'Unknown User'}</Text>
-                    <Text className="text-gray-400 text-xs mt-1">@{ref.referredUser?.username || 'unknown'}</Text>
-                  </View>
-                </View>
-                <View className={`px-3 py-1 rounded-full border ${ref.status === 'COMPLETED' ? 'bg-[#34D399]/10 border-[#34D399]/30' : 'bg-[#F59E0B]/10 border-[#F59E0B]/30'}`}>
-                  <Text className={`text-xs font-bold ${ref.status === 'COMPLETED' ? 'text-[#34D399]' : 'text-[#F59E0B]'}`}>
-                    {ref.status === 'COMPLETED' ? 'Earned ₹100' : 'Pending KYC'}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
+        <Text className="text-white font-bold text-base mb-3">Your Referred Friends</Text>
+        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-6 items-center mb-6">
+          <User size={32} color="#6B7280" className="mb-3" />
+          <Text className="text-white font-bold text-lg mb-2">No referrals yet</Text>
+          <Text className="text-gray-400 text-center text-sm leading-5">
+            Share your code below to start earning bonus rewards for each friend who joins Popli.
+          </Text>
+        </View>
 
         {/* Reward Tiers */}
         <Text className="text-white font-bold text-base mb-3">Reward Tiers</Text>

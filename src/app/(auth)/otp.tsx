@@ -71,16 +71,9 @@ export default function OTPScreen() {
         }
 
         // 3. Authenticate with backend using the bypass
-        const response = await apiClient.post('/auth/verify-firebase-token', {
-          idToken: 'bypass_1234',
+        const response = await apiClient.post('/auth/demo-login', {
+          otp: otpString,
           phone: params.phone || params.target,
-          intent: params.intent,
-          name: params.name,
-          username: params.username,
-          email: params.email,
-          dob: params.dob,
-          referredByCode: params.referredByCode,
-          deviceId: deviceId,
         });
 
         if (response.data.accessToken) {
@@ -171,7 +164,7 @@ export default function OTPScreen() {
   const handleResendOTP = async () => {
     if (timerSeconds > 0) return;
     try {
-      // await sendFirebaseOTP(params.target as string);
+      await sendFirebaseOTP(params.target as string);
       setOtpArray(Array(otpLength).fill(''));
       setTimerSeconds(300);
       setFocusedIndex(0);

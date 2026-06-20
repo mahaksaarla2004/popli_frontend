@@ -53,8 +53,10 @@ export default function LocationScreen() {
       updateProfile({ city: cityName });
 
       setIsLoading(false);
-      // Route smoothly to permission checklist
-      router.push('/(auth)/permissions');
+      // Route smoothly to permission checklist after render cycle
+      setTimeout(() => {
+        router.push('/(auth)/permissions');
+      }, 0);
 
     } catch {
       console.warn("GPS Request Failed. Directing to fallback lists.");
@@ -72,7 +74,9 @@ export default function LocationScreen() {
 
   const handleNext = () => {
     if (!selectedCity) return;
-    router.push('/(auth)/permissions');
+    setTimeout(() => {
+      router.push('/(auth)/permissions');
+    }, 0);
   };
 
   return (

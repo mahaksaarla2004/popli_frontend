@@ -8,9 +8,6 @@ export function useFCM() {
   const { isLoggedIn, updateProfile } = useAuthStore();
 
   useEffect(() => {
-    // Disable Firebase completely per user request
-    return;
-    
     // We only want to set up FCM if the user is actually logged in
     if (!isLoggedIn) return;
 
