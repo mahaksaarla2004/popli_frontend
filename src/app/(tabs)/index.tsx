@@ -81,7 +81,7 @@ export default function HomeFeedScreen() {
       // If we got less than 10, there might not be more
       const currentReels = useFeedStore.getState().reels;
       if (currentReels.length < 10) setHasMoreReels(false);
-    });
+    }).catch(console.error);
     fetchStories();
     fetchNotifications();
     fetchChats();

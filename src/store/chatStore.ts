@@ -65,6 +65,13 @@ export const useChatStore = create<ChatState>()(
       connectSocket: () => {
         if (socket?.connected) return;
         
+        // Cleanup existing socket if it exists but is disconnected to prevent duplicate listeners
+        if (socket) {
+          socket.removeAllListeners();
+          socket.disconnect();
+          socket = null;
+        }
+        
         // eslint-disable-next-line @typescript-eslint/no-require-imports
           const { useAuthStore } = require('./authStore');
         const token = useAuthStore.getState().token;
@@ -166,6 +173,7 @@ export const useChatStore = create<ChatState>()(
       },
       disconnectSocket: () => {
         if (socket) {
+          socket.removeAllListeners();
           socket.disconnect();
           socket = null;
         }

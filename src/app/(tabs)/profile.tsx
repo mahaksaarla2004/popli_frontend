@@ -65,7 +65,7 @@ export default function ProfileScreen() {
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
       }
-      import('react-native').then(rn => rn.Linking.openURL(url));
+      import('react-native').then(rn => rn.Linking.openURL(url)).catch(console.error);
     } else if (displayProfile.socialLinks.length > 1) {
       setIsLinksSheetOpen(true);
     }
@@ -177,7 +177,7 @@ export default function ProfileScreen() {
         {/* 2.5 STORY HIGHLIGHTS */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="py-2 px-4 mb-4" contentContainerStyle={{ gap: 16 }}>
           <Pressable 
-            onPress={() => router.push('/story-archive')}
+            onPress={() => router.push('/story-archive' as any)}
             className="items-center"
           >
             <View className="w-16 h-16 rounded-full border border-white/20 items-center justify-center mb-1">

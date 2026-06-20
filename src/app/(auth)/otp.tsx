@@ -122,7 +122,6 @@ export default function OTPScreen() {
             setTimeout(() => {
               setLogin(true);
               setFirstLogin(false);
-              router.replace('/(tabs)');
             }, 800);
             return;
           }
@@ -142,7 +141,6 @@ export default function OTPScreen() {
             setTimeout(() => {
               setLogin(true);
               setFirstLogin(false);
-              router.replace('/(auth)/profile-setup');
             }, 800);
           } catch (profileError) {
             console.error('Failed to process user profile:', profileError);
