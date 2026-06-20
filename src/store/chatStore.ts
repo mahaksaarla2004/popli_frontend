@@ -106,7 +106,7 @@ export const useChatStore = create<ChatState>()(
             };
 
             const isChatActive = state.messages.some(m => m.chatId === message.chatId);
-            const updatedMessages = isChatActive ? [...state.messages, formattedMsg as any] : state.messages;
+            const updatedMessages = isChatActive ? [formattedMsg as any, ...state.messages] : state.messages;
 
             const updatedChats = state.chats.map((c) => {
               if (c.id === message.chatId) {
