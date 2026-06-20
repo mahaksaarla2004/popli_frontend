@@ -84,14 +84,11 @@
       "reactCompiler": false
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "f933dfd0-5bd2-44cc-abf0-1e02c580c90b"
-      }
+      "router": {}
     },
     "assetBundlePatterns": [
       "**/*"
     ],
-    "owner": "kanha_meena04"
+    "owner": "mahakcode"
   }
 }
