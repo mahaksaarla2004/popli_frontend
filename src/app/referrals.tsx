@@ -37,9 +37,14 @@ export default function ReferralsScreen() {
   const referralCode = profile?.referralCode || 'G7BML8CS';
   const referralLink = `app.popli.in/join/${referralCode}`;
 
-  const handleCopy = async () => {
+  const handleCopyCode = async () => {
     await Clipboard.setStringAsync(referralCode);
     Alert.alert('Copied!', 'Referral code copied to clipboard');
+  };
+
+  const handleCopyLink = async () => {
+    await Clipboard.setStringAsync(referralLink);
+    Alert.alert('Copied!', 'Referral link copied to clipboard');
   };
 
   const handleShare = async () => {
@@ -87,16 +92,19 @@ export default function ReferralsScreen() {
 
         {/* Your Referral Code */}
         <Text className="text-white font-bold text-base mb-3">Your Referral Code</Text>
-        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl py-5 mb-2 items-center">
+        <Pressable 
+          onPress={handleCopyCode}
+          className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl py-5 mb-2 items-center active:opacity-70"
+        >
           <Text className="text-[#A855F7] font-black text-2xl tracking-[0.2em]">{referralCode}</Text>
-        </View>
+        </Pressable>
         <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-3 flex-row items-center justify-between mb-6">
           <View className="flex-row items-center gap-2 flex-1 overflow-hidden pr-4">
             <LinkIcon size={16} color="#9CA3AF" />
             <Text className="text-gray-400 text-sm" numberOfLines={1}>{referralLink}</Text>
           </View>
           <Pressable 
-            onPress={handleCopy}
+            onPress={handleCopyLink}
             className="bg-[#8B5CF6] px-4 py-2 rounded-xl active:opacity-80"
           >
             <Text className="text-white font-bold text-sm">Copy</Text>
