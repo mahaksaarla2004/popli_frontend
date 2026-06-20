@@ -175,10 +175,9 @@ export const useAuthStore = create<AuthState>()(
         const state = useAuthStore.getState();
         
         // Prevent concurrent identical requests
-        if ((state as any)._inFlightFollows?.has(creatorId)) return;
-        const newInFlight = new Set((state as any)._inFlightFollows || []);
-        newInFlight.add(creatorId);
-        set({ _inFlightFollows: newInFlight } as any);
+        const inFlight = Array.isArray((state as any)._inFlightFollows) ? (state as any)._inFlightFollows : [];
+        if (inFlight.includes(creatorId)) return;
+        set({ _inFlightFollows: [...inFlight, creatorId] } as any);
 
         const isFollowing = state.followingIds.includes(creatorId);
         
@@ -211,9 +210,10 @@ export const useAuthStore = create<AuthState>()(
             }
           });
         } finally {
-          const currentInFlight = new Set((useAuthStore.getState() as any)._inFlightFollows || []);
-          currentInFlight.delete(creatorId);
-          set({ _inFlightFollows: currentInFlight } as any);
+          const currentInFlight = Array.isArray((useAuthStore.getState() as any)._inFlightFollows) 
+            ? (useAuthStore.getState() as any)._inFlightFollows 
+            : [];
+          set({ _inFlightFollows: currentInFlight.filter((id: string) => id !== creatorId) } as any);
         }
       },
       logout: async () => {

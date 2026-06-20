@@ -106,6 +106,24 @@ export default function StoryEditorScreen() {
     }
   }, [isVideoMuted, videoPlayer]);
 
+  // If this is a 'Mention Back' (repost), automatically add a Mention sticker for the original creator!
+  useEffect(() => {
+    if (originalOwnerUsername) {
+      setLayers(prev => {
+        if (prev.some(l => l.id === 'repost-mention')) return prev;
+        return [...prev, {
+          id: 'repost-mention',
+          type: 'interactive',
+          content: { type: 'mention', text: originalOwnerUsername, styleVariant: 0 },
+          x: 0,
+          y: -150, // Position it nicely in the upper half
+          scale: 1,
+          rotation: 0
+        }];
+      });
+    }
+  }, [originalOwnerUsername]);
+
   const navigateToShare = (target: 'your_story' | 'close_friends' | 'share', targetUserIds?: string[]) => {
     try { audioPlayer?.pause(); } catch(e) {}
     try { videoPlayer?.pause(); } catch(e) {}

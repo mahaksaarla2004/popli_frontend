@@ -173,12 +173,27 @@ export default function NotificationsScreen() {
             <Image source={{ uri: n.actorAvatar || 'https://i.pravatar.cc/150' }} className="w-11 h-11 rounded-full bg-white/10" />
           </Pressable>
           
-          <View className="flex-1 flex-row flex-wrap items-center">
+          <View className="flex-1 flex-col justify-center">
             <Text className="text-white text-[14px] leading-[18px]">
               <Text className="font-bold">{n.actorName || 'User'}</Text>
               <Text className="text-white/80">{actionText}</Text>
               <Text className="text-white/50 ml-1"> {timeAgo()}</Text>
             </Text>
+            
+            {type === 'story_mention' && n.storyId && (
+              <View className="flex-row mt-1.5">
+                <Pressable 
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    const url = `/(create)/story-editor?mode=STORY&type=image&uri=${encodeURIComponent(n.storyThumbnail || '')}&originalStoryId=${n.storyId}&originalOwnerId=${n.actorId}&originalOwnerUsername=${encodeURIComponent(n.actorName || '')}`;
+                    router.push(url as any);
+                  }}
+                  className="py-1 px-3 bg-[#D946EF]/20 rounded-md border border-[#D946EF]/30 active:bg-[#D946EF]/30"
+                >
+                  <Text className="text-[#D946EF] text-[11px] font-bold">Add to your story</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         </View>
 

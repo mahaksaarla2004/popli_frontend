@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView, Platform, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, Pressable, ScrollView, Platform, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { apiClient } from '../../api/client';
 import { ChevronLeft, Sparkles, ChevronRight, Check } from 'lucide-react-native';
@@ -25,7 +25,6 @@ export default function InterestsScreen() {
   const [interests, setInterests] = useState<any[]>(INTERESTS);
   const [isSaving, setIsSaving] = useState(false);
   const { updateProfile } = useAuthStore();
-  const router = useRouter();
 
   useEffect(() => {
     apiClient.get('/interests')
@@ -201,14 +200,11 @@ export default function InterestsScreen() {
 
       {/* Footer Navigation CTA */}
       <View className="w-full">
-        <Pressable
+        <TouchableOpacity
           onPress={handleNext}
           disabled={!isMinSelected}
-          className={`py-4 rounded-2xl items-center justify-center flex-row gap-2 transition-all ${
-            isMinSelected
-              ? 'bg-primary-purple active:scale-[0.98] shadow-lg shadow-primary-purple/40'
-              : 'bg-white/5 border border-white/5 opacity-55'
-          }`}
+          activeOpacity={0.8}
+          className="py-4 rounded-2xl items-center justify-center flex-row gap-2 bg-primary-purple"
         >
           {isSaving ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
@@ -217,10 +213,10 @@ export default function InterestsScreen() {
               <Text className="text-white text-sm font-bold uppercase tracking-wider">
                 {isMinSelected ? 'Continue to Location' : `Choose ${remaining} More`}
               </Text>
-              {isMinSelected && <ChevronRight size={16} color="#FFFFFF" strokeWidth={3} />}
+              {isMinSelected && <Text className="text-white font-bold text-lg">{'>'}</Text>}
             </>
           )}
-        </Pressable>
+        </TouchableOpacity>
       </View>
 
     </View>

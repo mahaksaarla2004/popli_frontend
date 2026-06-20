@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Platform, Image , ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { ChevronLeft, Camera, Sparkles, Globe, ChevronRight } from 'lucide-react-native';
 import { MotiView } from 'moti';
@@ -28,7 +28,6 @@ const CATEGORIES = [
 const LANGUAGES: ('English' | 'Hindi' | 'Bengali' | 'Tamil')[] = ['English', 'Hindi', 'Bengali', 'Tamil'];
 
 export default function ProfileSetupScreen() {
-  const router = useRouter();
   const { userProfile, updateProfile, setLanguage } = useAuthStore();
 
   const [avatar, setAvatar] = useState(AVATAR_PRESETS[0]);
@@ -158,8 +157,10 @@ export default function ProfileSetupScreen() {
 
     setLanguage(selectedLang);
 
-    // Slide smoothly into interest selection
-    router.push('/(auth)/interests');
+    // Slide smoothly into interest selection after render cycle
+    setTimeout(() => {
+      router.push('/(auth)/interests');
+    }, 0);
   };
 
   return (

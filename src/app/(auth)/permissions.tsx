@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Platform, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { ChevronLeft, Sparkles, Bell, Image, Camera, Mic } from 'lucide-react-native';
 
 // Safe mock wrapper or conditional execution for camera/mic permissions
 export default function PermissionsScreen() {
-  const router = useRouter();
   const { toggleNotifications } = useAuthStore();
 
   const [permissionsState, setPermissionsState] = useState({
