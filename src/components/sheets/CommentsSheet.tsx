@@ -312,7 +312,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
   return (
     <Modal visible={isOpen} transparent animationType="none" onRequestClose={onClose}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         style={{ flex: 1 }}
       >
         <View className="flex-1 justify-end">
