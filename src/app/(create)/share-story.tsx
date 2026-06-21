@@ -87,6 +87,7 @@ export default function ShareStoryScreen() {
             decodedUri,
             {
               httpMethod: 'POST',
+              // @ts-ignore
               uploadType: FileSystem.FileSystemUploadType.MULTIPART,
               fieldName: 'file',
               parameters: {
@@ -97,7 +98,7 @@ export default function ShareStoryScreen() {
               }
             },
             (data) => {
-              const percentCompleted = Math.round((data.totalByteSent / data.totalBytesExpectedToSend) * 100);
+              const percentCompleted = Math.round((data.totalBytesSent / data.totalBytesExpectedToSend) * 100);
               setUploadProgress(percentCompleted);
             }
           );
@@ -207,6 +208,7 @@ export default function ShareStoryScreen() {
               decodedUri,
               {
                 httpMethod: 'POST',
+                // @ts-ignore
                 uploadType: FileSystem.FileSystemUploadType.MULTIPART,
                 fieldName: 'file',
                 parameters: {
@@ -217,7 +219,7 @@ export default function ShareStoryScreen() {
                 }
               },
               (data) => {
-                const percentCompleted = Math.round((data.totalByteSent / data.totalBytesExpectedToSend) * 100);
+                const percentCompleted = Math.round((data.totalBytesSent / data.totalBytesExpectedToSend) * 100);
                 setUploadProgress(percentCompleted);
               }
             );

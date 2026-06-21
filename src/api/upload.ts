@@ -16,6 +16,7 @@ export const uploadToCloudinary = async (fileUri: string, mediaType: 'image' | '
       fileUri,
       {
         httpMethod: 'POST',
+        // @ts-ignore
         uploadType: FileSystem.FileSystemUploadType.MULTIPART,
         fieldName: 'file',
         parameters: {
