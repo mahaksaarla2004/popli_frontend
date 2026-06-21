@@ -166,10 +166,22 @@ export default function HomeFeedScreen() {
   const filteredReels = getFilteredReels();
 
   useEffect(() => {
-    if (filteredReels.length > 0 && !activeReelId) {
-      setTimeout(() => setActiveReelId(filteredReels[0].id), 0);
+    if (filteredReels.length > 0) {
+      // If the active reel is not in the new filtered list, or if we switched tabs, we should ensure we are at the top
+      // We will handle the tab change explicitly
+      if (!activeReelId || !filteredReels.find(r => r.id === activeReelId)) {
+         setTimeout(() => setActiveReelId(filteredReels[0].id), 0);
+      }
     }
   }, [filteredReels]);
+
+  // When activeTab changes, force scroll to top and play the first reel of the new tab
+  useEffect(() => {
+    if (filteredReels.length > 0) {
+      flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      setTimeout(() => setActiveReelId(filteredReels[0].id), 50);
+    }
+  }, [activeTab]);
 
   // Handle Initial Target User Navigation
   useEffect(() => {
