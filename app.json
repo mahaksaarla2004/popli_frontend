@@ -84,7 +84,10 @@
       "reactCompiler": false
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "bd246bc6-f0c2-48e6-9b4f-4942292d1f38"
+      }
     },
     "assetBundlePatterns": [
       "**/*"

@@ -35,7 +35,9 @@ let resolved = resolveBaseUrl();
 resolved = resolved.replace(/['"]/g, '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
 
 export const BASE_URL = resolved;
-console.log('[API CLIENT] Initialized with BASE_URL:', BASE_URL);
+if (__DEV__) {
+  console.log('[API CLIENT] Initialized with BASE_URL:', BASE_URL);
+}
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -48,7 +50,9 @@ export const apiClient = axios.create({
 // Request interceptor to attach JWT token and log requests
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`[API REQUEST] ${config.method?.toUpperCase()} ${config.url}`, config.params || '');
+    if (__DEV__) {
+      console.log(`[API REQUEST] ${config.method?.toUpperCase()} ${config.url}`, config.params || '');
+    }
     
     // Dynamically require to avoid require cycle with authStore
     const { useAuthStore } = require('../store/authStore');
@@ -59,7 +63,9 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error(`[API REQUEST ERROR]`, error);
+    if (__DEV__) {
+      console.error(`[API REQUEST ERROR]`, error);
+    }
     return Promise.reject(error);
   }
 );
@@ -67,18 +73,24 @@ apiClient.interceptors.request.use(
 // Response interceptor to handle token refresh automatically and log responses
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`[API RESPONSE] ${response.config.method?.toUpperCase()} ${response.config.url} - Status: ${response.status}`);
+    if (__DEV__) {
+      console.log(`[API RESPONSE] ${response.config.method?.toUpperCase()} ${response.config.url} - Status: ${response.status}`);
+    }
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
     
     if (axios.isCancel(error)) {
-      console.log(`[API REQUEST CANCELED] ${originalRequest?.url}`);
+      if (__DEV__) {
+        console.log(`[API REQUEST CANCELED] ${originalRequest?.url}`);
+      }
       return Promise.reject(error);
     }
     
-    console.error(`[API ERROR] ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} - Status: ${error.response?.status || 'NETWORK_ERROR'}`);
+    if (__DEV__) {
+      console.error(`[API ERROR] ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} - Status: ${error.response?.status || 'NETWORK_ERROR'}`);
+    }
     
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;

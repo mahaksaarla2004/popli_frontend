@@ -27,6 +27,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
   
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
+  const inputRef = React.useRef<TextInput>(null);
 
   const { addComment, toggleCommentLike } = useFeedStore();
   const { userProfile } = useAuthStore();
@@ -210,7 +211,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
       return list.map(c => {
         if (String(c.id) === String(commentId)) {
           const newLiked = !c.isLiked;
-          return { ...c, isLiked: newLiked, likesCount: c.likesCount + (newLiked ? 1 : -1) };
+          return { ...c, isLiked: newLiked, likesCount: (c.likesCount || 0) + (newLiked ? 1 : -1) };
         }
         if (c.replies && c.replies.length > 0) {
           return { ...c, replies: toggleInList(c.replies) };
@@ -276,6 +277,9 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
               const targetId = isReply ? comment.parentId! : comment.id;
               if (String(targetId).startsWith('temp-')) return;
               setReplyingTo({ id: targetId, username: comment.user?.username || 'user' });
+              setTimeout(() => {
+                inputRef.current?.focus();
+              }, 100);
             }}
             className="py-2 pr-3"
           >
@@ -407,6 +411,7 @@ export const CommentsSheet = ({ reelId, isOpen, onClose, highlightedCommentId }:
           
           <View className="flex-1 flex-row items-center bg-[#1D1037] rounded-full px-4 py-2.5 border border-white/5">
             <TextInput
+              ref={inputRef}
               value={newCommentText}
               onChangeText={handleTextChange}
               placeholder="Add a comment..."

@@ -225,11 +225,11 @@ export const ReelItem = React.memo(({
     
     // If the reel is active and we haven't registered a view yet
     if (isActive && !hasRegisteredView) {
-      // Start a 3 second timer
+      // Start a 10 second timer
       viewTimer = setTimeout(() => {
         setHasRegisteredView(true);
         registerValidView(item.id, safeCreatorUsername);
-      }, 3000); // 3 seconds
+      }, 10000); // 10 seconds
     }
     
     return () => {

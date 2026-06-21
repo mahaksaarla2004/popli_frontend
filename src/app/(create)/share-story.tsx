@@ -82,30 +82,31 @@ export default function ShareStoryScreen() {
           const sigResponse = await apiClient.get('/upload/signature?folder=reels');
           const { timestamp, signature, cloudName, apiKey, folder } = sigResponse.data;
 
-          const formData = new FormData();
-          formData.append('file', {
-            uri: decodedUri,
-            type: mimeType,
-            name: `upload-${Date.now()}.${fileType}`
-          } as any);
-          formData.append('api_key', String(apiKey || ''));
-          formData.append('timestamp', String(timestamp || ''));
-          formData.append('signature', String(signature || ''));
-          formData.append('folder', String(folder || ''));
-
-          // Use axios instead of fetch to avoid Expo SDK 56 WinterCG FormDataPart issues
-          const axios = require('axios').default;
-          
-          const uploadRes = await axios.post(`https://api.cloudinary.com/v1_1/${cloudName}/${type === 'video' ? 'video' : 'image'}/upload`, formData, {
-            onUploadProgress: (progressEvent: any) => {
-              if (progressEvent.total) {
-                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                setUploadProgress(percentCompleted);
+          const uploadTask = FileSystem.createUploadTask(
+            `https://api.cloudinary.com/v1_1/${cloudName}/${type === 'video' ? 'video' : 'image'}/upload`,
+            decodedUri,
+            {
+              httpMethod: 'POST',
+              uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+              fieldName: 'file',
+              parameters: {
+                api_key: String(apiKey || ''),
+                timestamp: String(timestamp || ''),
+                signature: String(signature || ''),
+                folder: String(folder || '')
               }
+            },
+            (data) => {
+              const percentCompleted = Math.round((data.totalByteSent / data.totalBytesExpectedToSend) * 100);
+              setUploadProgress(percentCompleted);
             }
-          });
+          );
           
-          const uploadData = uploadRes.data;
+          const uploadRes = await uploadTask.uploadAsync();
+          if (!uploadRes || uploadRes.status !== 200) {
+            throw new Error(`Cloudinary upload failed: ${uploadRes?.body || 'Unknown error'}`);
+          }
+          const uploadData = JSON.parse(uploadRes.body);
           if (!uploadData.secure_url) throw new Error('Cloudinary upload failed: File might be too large');
 
           let finalUrl = uploadData.secure_url;
@@ -201,30 +202,31 @@ export default function ShareStoryScreen() {
             const sigResponse = await apiClient.get('/upload/signature?folder=stories');
             const { timestamp, signature, cloudName, apiKey, folder } = sigResponse.data;
 
-            const formData = new FormData();
-            formData.append('file', {
-              uri: decodedUri,
-              type: mimeType,
-              name: `story-${Date.now()}.${fileType}`
-            } as any);
-            formData.append('api_key', String(apiKey || ''));
-            formData.append('timestamp', String(timestamp || ''));
-            formData.append('signature', String(signature || ''));
-            formData.append('folder', String(folder || ''));
-
-            // Use axios instead of fetch to avoid Expo SDK 56 WinterCG FormDataPart issues
-            const axios = require('axios').default;
-
-            const uploadRes = await axios.post(`https://api.cloudinary.com/v1_1/${cloudName}/${type === 'video' ? 'video' : 'image'}/upload`, formData, {
-              onUploadProgress: (progressEvent: any) => {
-                if (progressEvent.total) {
-                  const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                  setUploadProgress(percentCompleted);
+            const uploadTask = FileSystem.createUploadTask(
+              `https://api.cloudinary.com/v1_1/${cloudName}/${type === 'video' ? 'video' : 'image'}/upload`,
+              decodedUri,
+              {
+                httpMethod: 'POST',
+                uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                fieldName: 'file',
+                parameters: {
+                  api_key: String(apiKey || ''),
+                  timestamp: String(timestamp || ''),
+                  signature: String(signature || ''),
+                  folder: String(folder || '')
                 }
+              },
+              (data) => {
+                const percentCompleted = Math.round((data.totalByteSent / data.totalBytesExpectedToSend) * 100);
+                setUploadProgress(percentCompleted);
               }
-            });
+            );
             
-            const uploadData = uploadRes.data;
+            const uploadRes = await uploadTask.uploadAsync();
+            if (!uploadRes || uploadRes.status !== 200) {
+              throw new Error(`Cloudinary upload failed: ${uploadRes?.body || 'Unknown error'}`);
+            }
+            const uploadData = JSON.parse(uploadRes.body);
             if (!uploadData.secure_url) throw new Error('Cloudinary upload failed');
 
             finalUrl = uploadData.secure_url;

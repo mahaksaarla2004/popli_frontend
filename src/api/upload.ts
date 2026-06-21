@@ -27,26 +27,21 @@ export const uploadToCloudinary = async (fileUri: string, mediaType: 'image' | '
     const resourceType = mediaType === 'raw' ? 'raw' : mediaType === 'video' ? 'video' : 'image';
     const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
 
-    const axios = require('axios').default;
-    
-    console.log(`[UPLOAD] Starting Cloudinary upload to ${uploadUrl}`);
-    console.log(`[UPLOAD] Appending file: uri=${fileUri}, type=${type}, name=${filename}`);
-
-    const uploadRes = await axios.post(uploadUrl, formData, {
-      timeout: 30000, // 30 second timeout
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'POST',
+      body: formData,
       headers: {
         Accept: 'application/json',
-        // Do NOT set Content-Type to multipart/form-data manually, let axios auto-generate the boundary
       },
-      onUploadProgress: (progressEvent: any) => {
-        if (progressEvent.total) {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          console.log(`[UPLOAD] Progress: ${percentCompleted}%`);
-        }
-      }
     });
 
-    const data = uploadRes.data;
+    if (!uploadRes.ok) {
+      const errorText = await uploadRes.text();
+      console.error('[UPLOAD] Cloudinary response:', errorText);
+      throw new Error(`Cloudinary error: ${uploadRes.status}`);
+    }
+
+    const data = await uploadRes.json();
     if (!data || !data.secure_url) {
       throw new Error('Cloudinary upload failed: Missing secure_url in response');
     }

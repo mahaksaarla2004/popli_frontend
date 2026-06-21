@@ -57,7 +57,7 @@ export default function RewardsScreen() {
     })),
     ...(wallet?.transactions || []).map((t: any) => ({
       id: t.id,
-      title: t.type === 'COIN_RECHARGE' ? `Coin Recharge • ${t.amount} coins` : t.type === 'GIFT_SENT' ? 'Gift Sent' : t.type,
+      title: t.type === 'COIN_RECHARGE' ? `Coin Recharge • ${t.amount} coins` : t.type === 'GIFT_SENT' ? (t.description || 'Gift Sent') : t.type,
       amount: t.type === 'COIN_RECHARGE' ? `-₹${(t.amount / 10).toFixed(0)}` : `-${Math.abs(t.amount)} coins`, // Assuming 10 coins = 1 INR loosely for display or from actual field
       isNegative: true,
       date: new Date(t.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -224,16 +224,16 @@ export default function RewardsScreen() {
           <View className="gap-3">
             {historyItems.length > 0 ? historyItems.map((item: any, i: number) => (
               <View key={i} className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-4 flex-row justify-between items-center shadow-lg">
-                <View className="flex-row items-center">
-                   <View className="w-10 h-10 rounded-full bg-[#2D1B4E] items-center justify-center mr-3">
+                <View className="flex-row items-center flex-1 pr-4">
+                   <View className="w-10 h-10 rounded-full bg-[#2D1B4E] items-center justify-center mr-3 shrink-0">
                      {item.icon}
                    </View>
-                   <View>
-                     <Text className="text-white font-bold text-sm mb-0.5">{item.title}</Text>
+                   <View className="flex-1">
+                     <Text className="text-white font-bold text-sm mb-0.5" numberOfLines={2}>{item.title}</Text>
                      <Text className="text-gray-400 text-[10px]">{item.date}</Text>
                    </View>
                 </View>
-                <View className="items-end">
+                <View className="items-end shrink-0">
                    <Text className="text-white font-black text-sm">{item.amount}</Text>
                    {item.status && (
                      <Text className="text-yellow-500 font-bold text-[10px] mt-0.5 capitalize">{item.status}</Text>

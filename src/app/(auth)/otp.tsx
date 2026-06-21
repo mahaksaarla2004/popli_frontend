@@ -119,10 +119,8 @@ export default function OTPScreen() {
 
             setIsVerifying(false);
             setIsSuccess(true);
-            setTimeout(() => {
-              setLogin(true);
-              setFirstLogin(false);
-            }, 800);
+            setLogin(true);
+            setFirstLogin(false);
             return;
           }
 
@@ -138,10 +136,8 @@ export default function OTPScreen() {
             setIsVerifying(false);
             setIsSuccess(true);
 
-            setTimeout(() => {
-              setLogin(true);
-              setFirstLogin(false);
-            }, 800);
+            setLogin(true);
+            setFirstLogin(false);
           } catch (profileError) {
             console.error('Failed to process user profile:', profileError);
             setIsVerifying(false);

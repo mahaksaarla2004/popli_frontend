@@ -54,7 +54,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
     }
 
     setIsSending(true);
-    const success = await sendGiftCoins(reel.creatorId, selectedGift.id, selectedGift.cost, ''); 
+    const success = await sendGiftCoins(reel.creatorId, selectedGift.id, selectedGift.cost, '', reel.id); 
     setIsSending(false);
     
     if (success) {

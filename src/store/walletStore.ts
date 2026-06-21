@@ -42,7 +42,7 @@ interface WalletState {
   withdrawalRequests: WithdrawalRequestItem[];
   transactions: TransactionItem[]; // Legacy
   rechargeCoins: (coins: number) => Promise<boolean>;
-  sendGiftCoins: (receiverId: string, giftId: string, cost: number, message?: string) => Promise<boolean>;
+  sendGiftCoins: (receiverId: string, giftId: string, cost: number, message?: string, reelId?: string) => Promise<boolean>;
   withdrawEarnings: (amount: number, upiId: string) => Promise<boolean>;
   fetchWallet: () => Promise<void>;
 }
@@ -71,7 +71,7 @@ export const useWalletStore = create<WalletState>()(
           return false;
         }
       },
-      sendGiftCoins: async (receiverId, giftId, cost, message) => {
+      sendGiftCoins: async (receiverId, giftId, cost, message, reelId) => {
         // Assume cost in coins for now
         if (get().coinBalance >= cost) {
           set((state) => ({ coinBalance: state.coinBalance - cost }));
@@ -80,7 +80,8 @@ export const useWalletStore = create<WalletState>()(
               receiverId,
               giftId,
               cost,
-              message
+              message,
+              reelId
             });
             get().fetchWallet();
             return true;
