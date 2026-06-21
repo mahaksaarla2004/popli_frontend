@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Calendar, TrendingUp, PieChart, Download } from 'lucide-react-native';
+import { useWalletStore } from '../../store/walletStore';
 
 export default function EarningsHistoryScreen() {
   const router = useRouter();
+  const { totalEarnings, viewEarnings, giftEarnings, referralEarnings, fetchWallet } = useWalletStore();
+
+  useEffect(() => {
+    fetchWallet();
+  }, []);
 
   const HistoryRow = ({ date, amount, source }: any) => (
     <View className="flex-row items-center justify-between border-b border-white/5 py-4">
@@ -39,8 +45,8 @@ export default function EarningsHistoryScreen() {
         <View className="bg-[#1A0E2C] border border-white/5 rounded-3xl p-6 gap-6">
           <View className="flex-row items-center justify-between">
             <View>
-              <Text className="text-neutral-grey text-xs font-medium">Last 30 Days</Text>
-              <Text className="text-white text-3xl font-black mt-1">₹0.00</Text>
+              <Text className="text-neutral-grey text-xs font-medium">Lifetime Earnings</Text>
+              <Text className="text-white text-3xl font-black mt-1">₹{totalEarnings.toFixed(2)}</Text>
             </View>
             <View className="w-12 h-12 rounded-full bg-[#3B82F6]/10 items-center justify-center border border-[#3B82F6]/20">
               <TrendingUp size={24} color="#3B82F6" />
@@ -50,15 +56,15 @@ export default function EarningsHistoryScreen() {
           <View className="flex-row gap-4 border-t border-white/5 pt-4">
             <View className="flex-1">
               <Text className="text-neutral-grey text-[10px] uppercase">Ads</Text>
-              <Text className="text-white font-bold mt-1">₹0.00</Text>
+              <Text className="text-white font-bold mt-1">₹{viewEarnings.toFixed(2)}</Text>
             </View>
             <View className="flex-1 border-l border-white/5 pl-4">
               <Text className="text-neutral-grey text-[10px] uppercase">Gifts</Text>
-              <Text className="text-white font-bold mt-1">₹0.00</Text>
+              <Text className="text-white font-bold mt-1">₹{giftEarnings.toFixed(2)}</Text>
             </View>
             <View className="flex-1 border-l border-white/5 pl-4">
-              <Text className="text-neutral-grey text-[10px] uppercase">Subs</Text>
-              <Text className="text-white font-bold mt-1">₹0.00</Text>
+              <Text className="text-neutral-grey text-[10px] uppercase">Referrals</Text>
+              <Text className="text-white font-bold mt-1">₹{referralEarnings.toFixed(2)}</Text>
             </View>
           </View>
         </View>

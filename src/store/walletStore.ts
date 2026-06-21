@@ -38,6 +38,9 @@ interface WalletState {
   withdrawableBalance: number;
   totalEarnings: number;
   totalWithdrawn: number;
+  viewEarnings: number;
+  giftEarnings: number;
+  referralEarnings: number;
   ledgers: WalletLedgerItem[];
   withdrawalRequests: WithdrawalRequestItem[];
   transactions: TransactionItem[]; // Legacy
@@ -119,6 +122,9 @@ export const useWalletStore = create<WalletState>()(
             withdrawableBalance: res.data.withdrawableBalance || 0,
             totalEarnings: res.data.totalEarnings || 0,
             totalWithdrawn: res.data.totalWithdrawn || 0,
+            viewEarnings: res.data.viewEarnings || 0,
+            giftEarnings: res.data.giftEarnings || 0,
+            referralEarnings: res.data.referralEarnings || 0,
             ledgers: res.data.ledgers || [],
             withdrawalRequests: res.data.withdrawalRequests || [],
             transactions: res.data.transactions || []
