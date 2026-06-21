@@ -71,7 +71,13 @@ export default function RewardsScreen() {
       }
       return {
         id: t.id,
-        title: t.type === 'COIN_RECHARGE' ? `Coin Recharge • ${t.amount} coins` : t.type === 'GIFT_SEND' ? (t.description || 'Gift Sent') : t.type,
+        title: t.type === 'COIN_RECHARGE' ? `Coin Recharge • ${t.amount} coins` 
+          : t.type === 'GIFT_SEND' ? (t.description || 'Gift Sent') 
+          : t.type === 'AD_REVENUE' ? (t.description || 'Watch Reward')
+          : t.type === 'REFERRAL_BONUS' ? 'Referral Bonus'
+          : t.type === 'CHALLENGE_REWARD' ? 'Challenge Reward'
+          : t.type === 'GIFT_RECEIVE' ? 'Gift Received'
+          : t.type.replace(/_/g, ' '),
         amount: amountStr,
         isNegative: !isEarning,
         date: new Date(t.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
