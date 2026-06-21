@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, Alert, Dimensions, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ArrowLeft, Coins, ArrowUpRight, TrendingUp, Landmark, Wallet, ArrowDownLeft, Clock, CheckCircle2, ListFilter } from 'lucide-react-native';
 import { useWalletStore, useKYCStore } from '../store';
 import { formatINR } from '../utils';
@@ -33,9 +33,11 @@ export default function WalletScreen() {
   const [customUpi, setCustomUpi] = useState(upiId || '');
   const [activeTab, setActiveTab] = useState('ALL');
 
-  React.useEffect(() => {
-    useWalletStore.getState().fetchWallet();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      useWalletStore.getState().fetchWallet();
+    }, [])
+  );
 
   const handleWithdraw = async () => {
     if (!kycCompleted) {
@@ -195,16 +197,19 @@ export default function WalletScreen() {
                   createdAt: l.createdAt,
                   type: 'LEDGER'
                 })),
-                ...transactions.filter((t: any) => t.status === 'SUCCESS' || t.status === 'success').map((t: any) => ({
-                  id: t.id,
-                  source: t.type,
-                  description: t.description || 'Coin Recharge',
-                  credit: t.amount,
-                  debit: 0,
-                  balanceAfter: null,
-                  createdAt: t.timestamp || t.createdAt,
-                  type: 'COIN_TX'
-                }))
+                ...transactions.filter((t: any) => t.status === 'SUCCESS' || t.status === 'success').map((t: any) => {
+                  const isDebit = t.type === 'GIFT_SEND' || t.type === 'WITHDRAWAL';
+                  return {
+                    id: t.id,
+                    source: t.type,
+                    description: t.description || t.type.replace('_', ' '),
+                    credit: isDebit ? 0 : t.amount,
+                    debit: isDebit ? t.amount : 0,
+                    balanceAfter: null,
+                    createdAt: t.timestamp || t.createdAt,
+                    type: 'COIN_TX'
+                  };
+                })
               ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
               const filteredHistory = allHistory.filter(item => activeTab === 'ALL' || item.source === activeTab);

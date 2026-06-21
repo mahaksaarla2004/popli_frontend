@@ -46,25 +46,40 @@ export default function RewardsScreen() {
   
   // Combine ledgers and transactions for history
   const historyItems = [
-    ...(wallet?.ledgers || []).map((l: any) => ({
-      id: l.id,
-      title: l.source === 'WITHDRAWAL' ? 'Withdrawal' : l.source === 'GIFT_RECEIVED' ? 'Gift Received' : l.description || l.source,
-      amount: `₹${Math.abs(l.credit > 0 ? l.credit : l.debit).toFixed(2)}`,
-      isNegative: l.debit > 0,
-      date: new Date(l.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-      type: 'LEDGER',
-      icon: <Gift size={20} color="#FBBF24" />
-    })),
-    ...(wallet?.transactions || []).map((t: any) => ({
-      id: t.id,
-      title: t.type === 'COIN_RECHARGE' ? `Coin Recharge • ${t.amount} coins` : t.type === 'GIFT_SENT' ? (t.description || 'Gift Sent') : t.type,
-      amount: t.type === 'COIN_RECHARGE' ? `-₹${(t.amount / 10).toFixed(0)}` : `-${Math.abs(t.amount)} coins`, // Assuming 10 coins = 1 INR loosely for display or from actual field
-      isNegative: true,
-      date: new Date(t.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-      status: t.status === 'SUCCESS' ? 'Completed' : t.status,
-      type: 'TRANSACTION',
-      icon: <Banknote size={20} color="#FBBF24" />
-    }))
+    ...(wallet?.ledgers || []).map((l: any) => {
+      const isDebit = l.debit > 0;
+      const amountVal = Math.abs(isDebit ? l.debit : l.credit).toFixed(2);
+      return {
+        id: l.id,
+        title: l.source === 'WITHDRAWAL' ? 'Withdrawal' : l.source === 'GIFT_RECEIVED' ? 'Gift Received' : l.description || l.source.replace('_', ' '),
+        amount: isDebit ? `-₹${amountVal}` : `+₹${amountVal}`,
+        isNegative: isDebit,
+        date: new Date(l.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        type: 'LEDGER',
+        icon: <Gift size={20} color="#FBBF24" />
+      };
+    }),
+    ...(wallet?.transactions || []).map((t: any) => {
+      const isEarning = t.type === 'AD_REVENUE' || t.type === 'GIFT_RECEIVE' || t.type === 'REFERRAL_BONUS' || t.type === 'CHALLENGE_REWARD';
+      let amountStr = '';
+      if (t.type === 'COIN_RECHARGE') {
+         amountStr = `-₹${(t.amount / 10).toFixed(0)}`;
+      } else if (isEarning) {
+         amountStr = `+${Math.abs(t.amount)} coins`;
+      } else {
+         amountStr = `-${Math.abs(t.amount)} coins`;
+      }
+      return {
+        id: t.id,
+        title: t.type === 'COIN_RECHARGE' ? `Coin Recharge • ${t.amount} coins` : t.type === 'GIFT_SEND' ? (t.description || 'Gift Sent') : t.type,
+        amount: amountStr,
+        isNegative: !isEarning,
+        date: new Date(t.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        status: t.status === 'SUCCESS' ? 'Completed' : t.status,
+        type: 'TRANSACTION',
+        icon: <Banknote size={20} color="#FBBF24" />
+      };
+    })
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 7);
 
   const handleWithdrawClick = () => {
