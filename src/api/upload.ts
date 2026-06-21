@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
 import { apiClient } from './client';
 
 export const uploadToCloudinary = async (fileUri: string, mediaType: 'image' | 'video' | 'raw', folder: string = 'general'): Promise<string> => {
@@ -7,41 +7,34 @@ export const uploadToCloudinary = async (fileUri: string, mediaType: 'image' | '
     const sigRes = await apiClient.get(`/upload/signature?folder=${folder}`);
     const { timestamp, signature, cloudName, apiKey } = sigRes.data;
 
-    // 2. Prepare FormData
-    const formData = new FormData();
-    const filename = fileUri.split('/').pop() || `upload_${Date.now()}`;
-    const type = mediaType === 'image' ? 'image/jpeg' : mediaType === 'video' ? 'video/mp4' : 'audio/m4a';
-
-    formData.append('file', {
-      uri: Platform.OS === 'ios' ? fileUri.replace('file://', '') : fileUri,
-      name: filename,
-      type,
-    } as any);
-
-    formData.append('api_key', apiKey);
-    formData.append('timestamp', timestamp.toString());
-    formData.append('signature', signature);
-    formData.append('folder', folder);
-
-    // 3. Upload directly to Cloudinary using Axios
+    // 3. Upload directly to Cloudinary using FileSystem
     const resourceType = mediaType === 'raw' ? 'raw' : mediaType === 'video' ? 'video' : 'image';
     const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
 
-    const uploadRes = await fetch(uploadUrl, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+    const uploadTask = FileSystem.createUploadTask(
+      uploadUrl,
+      fileUri,
+      {
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: 'file',
+        parameters: {
+          api_key: String(apiKey || ''),
+          timestamp: String(timestamp || ''),
+          signature: String(signature || ''),
+          folder: String(folder || '')
+        }
+      }
+    );
 
-    if (!uploadRes.ok) {
-      const errorText = await uploadRes.text();
-      console.error('[UPLOAD] Cloudinary response:', errorText);
-      throw new Error(`Cloudinary error: ${uploadRes.status}`);
+    const uploadRes = await uploadTask.uploadAsync();
+
+    if (!uploadRes || uploadRes.status !== 200) {
+      console.error('[UPLOAD] Cloudinary response:', uploadRes?.body);
+      throw new Error(`Cloudinary error: ${uploadRes?.status}`);
     }
 
-    const data = await uploadRes.json();
+    const data = JSON.parse(uploadRes.body);
     if (!data || !data.secure_url) {
       throw new Error('Cloudinary upload failed: Missing secure_url in response');
     }

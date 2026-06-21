@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TextInput, Pressable, Alert, Platform, Image, M
 import { useRouter } from 'expo-router';
 import { ArrowLeft, AtSign, Link as LinkIcon, UserPlus, Check } from 'lucide-react-native';
 import { useAuthStore, useFeedStore } from '../store';
+import { uploadToCloudinary } from '../api/upload';
 import * as ImagePicker from 'expo-image-picker';
 import { getDefaultAvatar } from '../utils';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -89,26 +90,37 @@ export default function EditProfileScreen() {
     }
 
     setIsSaving(true);
-    const result = await updateProfile({
-      name: fullName,
-      username: username,
-      bio: bio,
-      avatar: avatarUri,
-      // email and phone can be sent to backend if supported
-      email: email || undefined,
-      phone: phone || undefined,
-      socialLinks: socialLinks,
-    });
-    setIsSaving(false);
+    let finalAvatarUrl = avatarUri;
     
-    if (result.success) {
-      // Refresh feed stores to instantly reflect new profile data
-      fetchReels(null);
-      fetchUserReels(userProfile.id);
+    try {
+      if (avatarUri && avatarUri.startsWith('file://')) {
+        finalAvatarUrl = await uploadToCloudinary(avatarUri, 'image', 'avatars');
+      }
 
-      setShowSuccessModal(true);
-    } else {
-      Alert.alert('Error', result.error || 'Failed to save profile changes. Please try again.');
+      const result = await updateProfile({
+        name: fullName,
+        username: username,
+        bio: bio,
+        avatar: finalAvatarUrl,
+        // email and phone can be sent to backend if supported
+        email: email || undefined,
+        phone: phone || undefined,
+        socialLinks: socialLinks,
+      });
+      setIsSaving(false);
+      
+      if (result.success) {
+        // Refresh feed stores to instantly reflect new profile data
+        fetchReels(null);
+        fetchUserReels(userProfile.id);
+
+        setShowSuccessModal(true);
+      } else {
+        Alert.alert('Error', result.error || 'Failed to save profile changes. Please try again.');
+      }
+    } catch (error: any) {
+      setIsSaving(false);
+      Alert.alert('Upload Error', error.message || 'Failed to upload profile picture.');
     }
   };
 
