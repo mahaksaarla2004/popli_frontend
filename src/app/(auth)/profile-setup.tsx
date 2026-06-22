@@ -101,10 +101,17 @@ export default function ProfileSetupScreen() {
         formData.append('folder', folder);
 
         // Upload directly to Cloudinary
-        const axios = require('axios').default;
-        const uploadRes = await axios.post(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, formData);
+        const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData,
+          headers: { Accept: 'application/json' }
+        });
         
-        const uploadData = uploadRes.data;
+        if (!uploadRes.ok) {
+          throw new Error('Cloudinary upload failed');
+        }
+        
+        const uploadData = await uploadRes.json();
         if (uploadData.secure_url) {
           setAvatar(uploadData.secure_url);
         } else {

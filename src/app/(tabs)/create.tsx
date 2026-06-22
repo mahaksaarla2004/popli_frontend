@@ -160,6 +160,12 @@ export default function CreateScreen() {
       setIsRecording(false);
 
       if (video) {
+        // Enforce 10 seconds minimum for Reels
+        if (activeMode === 'REEL' && recordingTime < 10) {
+          Alert.alert('Too Short', 'Reels must be at least 10 seconds long.');
+          return;
+        }
+
         // if (cameraSettings.saveOriginals) {
         //   try { await MediaLibrary.saveToLibraryAsync(video.uri); } catch(e) {}
         // }
@@ -232,11 +238,19 @@ export default function CreateScreen() {
     });
 
     if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0];
+      
+      // Enforce 10 seconds minimum for Reels from gallery
+      if (activeMode === 'REEL' && asset.type === 'video' && asset.duration && asset.duration < 10000) {
+        Alert.alert('Too Short', 'Reels must be at least 10 seconds long.');
+        return;
+      }
+
       router.push({ 
         pathname: '/(create)/story-editor', 
         params: { 
-          uri: result.assets[0].uri, 
-          type: result.assets[0].type === 'video' ? 'video' : 'photo', 
+          uri: asset.uri, 
+          type: asset.type === 'video' ? 'video' : 'photo', 
           mode: activeMode,
           challengeId
         } 

@@ -63,15 +63,12 @@ export default function LoginScreen() {
         return;
       }
 
-      // BYPASS FIREBASE FOR CLIENT DEMO
-      setTimeout(() => {
-        setIsLoading(false);
-        // Navigate directly to OTP screen
-        router.push({
-          pathname: '/(auth)/otp',
-          params: { target: identTrimmed, type: 'phone', phone: identTrimmed, intent: 'login' }
-        });
-      }, 500);
+      // Navigate directly to OTP screen
+      setIsLoading(false);
+      router.push({
+        pathname: '/(auth)/otp',
+        params: { target: identTrimmed, type: 'phone', phone: identTrimmed, intent: 'login' }
+      });
 
     } catch (error: any) {
       setIsLoading(false);

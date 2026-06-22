@@ -60,6 +60,8 @@ interface AuthState {
   };
 }
 
+const inFlightFollows = new Set<string>();
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -175,9 +177,8 @@ export const useAuthStore = create<AuthState>()(
         const state = useAuthStore.getState();
         
         // Prevent concurrent identical requests
-        const inFlight = Array.isArray((state as any)._inFlightFollows) ? (state as any)._inFlightFollows : [];
-        if (inFlight.includes(creatorId)) return;
-        set({ _inFlightFollows: [...inFlight, creatorId] } as any);
+        if (inFlightFollows.has(creatorId)) return;
+        inFlightFollows.add(creatorId);
 
         const isFollowing = state.followingIds.includes(creatorId);
         
@@ -210,10 +211,7 @@ export const useAuthStore = create<AuthState>()(
             }
           });
         } finally {
-          const currentInFlight = Array.isArray((useAuthStore.getState() as any)._inFlightFollows) 
-            ? (useAuthStore.getState() as any)._inFlightFollows 
-            : [];
-          set({ _inFlightFollows: currentInFlight.filter((id: string) => id !== creatorId) } as any);
+          inFlightFollows.delete(creatorId);
         }
       },
       logout: async () => {

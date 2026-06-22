@@ -38,11 +38,14 @@ interface WalletState {
   withdrawableBalance: number;
   totalEarnings: number;
   totalWithdrawn: number;
+  viewEarnings: number;
+  giftEarnings: number;
+  referralEarnings: number;
   ledgers: WalletLedgerItem[];
   withdrawalRequests: WithdrawalRequestItem[];
   transactions: TransactionItem[]; // Legacy
   rechargeCoins: (coins: number) => Promise<boolean>;
-  sendGiftCoins: (receiverId: string, giftId: string, cost: number, message?: string) => Promise<boolean>;
+  sendGiftCoins: (receiverId: string, giftId: string, cost: number, message?: string, reelId?: string) => Promise<boolean>;
   withdrawEarnings: (amount: number, upiId: string) => Promise<boolean>;
   fetchWallet: () => Promise<void>;
 }
@@ -50,13 +53,16 @@ interface WalletState {
 export const useWalletStore = create<WalletState>()(
   persist(
     (set, get) => ({
-      coinBalance: 0,
+    coinBalance: 0,
       inrEarnings: 0,
       pendingBalance: 0,
       approvedBalance: 0,
       withdrawableBalance: 0,
       totalEarnings: 0,
       totalWithdrawn: 0,
+      viewEarnings: 0,
+      giftEarnings: 0,
+      referralEarnings: 0,
       ledgers: [],
       withdrawalRequests: [],
       transactions: [],
@@ -71,7 +77,7 @@ export const useWalletStore = create<WalletState>()(
           return false;
         }
       },
-      sendGiftCoins: async (receiverId, giftId, cost, message) => {
+      sendGiftCoins: async (receiverId, giftId, cost, message, reelId) => {
         // Assume cost in coins for now
         if (get().coinBalance >= cost) {
           set((state) => ({ coinBalance: state.coinBalance - cost }));
@@ -80,7 +86,8 @@ export const useWalletStore = create<WalletState>()(
               receiverId,
               giftId,
               cost,
-              message
+              message,
+              reelId
             });
             get().fetchWallet();
             return true;
@@ -110,7 +117,7 @@ export const useWalletStore = create<WalletState>()(
       fetchWallet: async () => {
         try {
           const res = await apiClient.get('/wallet');
-          set({
+        set({
             coinBalance: res.data.coinBalance || 0,
             inrEarnings: res.data.inrEarnings || 0,
             pendingBalance: res.data.pendingBalance || 0,
@@ -118,6 +125,9 @@ export const useWalletStore = create<WalletState>()(
             withdrawableBalance: res.data.withdrawableBalance || 0,
             totalEarnings: res.data.totalEarnings || 0,
             totalWithdrawn: res.data.totalWithdrawn || 0,
+            viewEarnings: res.data.viewEarnings || 0,
+            giftEarnings: res.data.giftEarnings || 0,
+            referralEarnings: res.data.referralEarnings || 0,
             ledgers: res.data.ledgers || [],
             withdrawalRequests: res.data.withdrawalRequests || [],
             transactions: res.data.transactions || []

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Platform, StyleSheet, ActivityIndicator, ScrollView, Modal, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -40,8 +40,15 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
   const [isSending, setIsSending] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { coinBalance, sendGiftCoins, rechargeCoins } = useWalletStore();
+ const { coinBalance, sendGiftCoins, rechargeCoins, fetchWallet } = useWalletStore();
   const { kycCompleted } = useKYCStore();
+
+  // Refresh wallet balance whenever this sheet opens, so coinBalance is never stale
+  useEffect(() => {
+    if (isOpen) {
+      fetchWallet();
+    }
+  }, [isOpen, fetchWallet]);
 
   const selectedGift = GIFT_CATALOG.find((g) => g.id === selectedGiftId)!;
 
@@ -54,7 +61,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
     }
 
     setIsSending(true);
-    const success = await sendGiftCoins(reel.creatorId, selectedGift.id, selectedGift.cost, ''); 
+    const success = await sendGiftCoins(reel.creatorId, selectedGift.id, selectedGift.cost, '', reel.id); 
     setIsSending(false);
     
     if (success) {
@@ -356,7 +363,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
             </View>
             <Text className="text-white text-xl font-black mb-2 text-center">Transfer Failed</Text>
             <Text className="text-white/60 text-xs text-center leading-5 mb-6 px-4">
-              We couldn't process your gift. Please try again.
+              We couldnt process your gift. Please try again.
             </Text>
             <TouchableOpacity 
               onPress={() => setShowErrorModal(false)}

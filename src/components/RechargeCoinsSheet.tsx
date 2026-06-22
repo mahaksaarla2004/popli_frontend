@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Modal, Dimensions, Alert } from 'react-native';
+import { View, Text, Pressable, Modal, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import { X, Lock, CheckCircle2, Zap, Coins } from 'lucide-react-native';
+import { apiClient } from '../api/client';
 
 interface RechargeCoinsSheetProps {
   visible: boolean;
@@ -12,6 +13,7 @@ const { width } = Dimensions.get('window');
 
 export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: RechargeCoinsSheetProps) {
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const packs = [
     { id: '1', coins: 50, price: 5, tag: null, tagColor: null },
@@ -107,36 +109,54 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
             </View>
 
             <Pressable 
-              disabled={!selectedPackId}
+              disabled={!selectedPackId || isProcessing}
               onPress={() => {
                 const pack = packs.find(p => p.id === selectedPackId);
                 if (!pack) return;
 
-                Alert.alert(
+             Alert.alert(
                   'Razorpay Checkout',
                   `Confirm payment of ₹${pack.price.toFixed(2)}?`,
                   [
                     { text: 'Cancel', style: 'cancel' },
                     { 
                       text: 'Pay', 
-                      onPress: () => {
+                      onPress: async () => {
                         const totalCoins = pack.coins + (pack.bonusCoins || 0);
-                        Alert.alert('Payment Successful!', `₹${pack.price.toFixed(2)} paid successfully. ${totalCoins.toLocaleString()} Coins added to your wallet!`);
-                        if (onSuccess) onSuccess(totalCoins);
-                        onClose();
+                        setIsProcessing(true);
+                        try {
+                          // NOTE: this is still a sandbox/mock payment confirmation,
+                          // but it now actually persists the coins to the backend,
+                          // unlike before where this was purely a local/fake update.
+                          await apiClient.post('/wallet/recharge', {
+                            amount: totalCoins,
+                            paymentReference: `SANDBOX_TXN_${Date.now()}`,
+                          });
+                          Alert.alert('Payment Successful!', `₹${pack.price.toFixed(2)} paid successfully. ${totalCoins.toLocaleString()} Coins added to your wallet!`);
+                          if (onSuccess) onSuccess(totalCoins);
+                          onClose();
+                        } catch (e: any) {
+                          Alert.alert('Payment Failed', e?.response?.data?.message || 'Could not complete recharge. Please try again.');
+                        } finally {
+                          setIsProcessing(false);
+                        }
                       }
                     }
                   ]
                 );
               }}
-              className={`w-full py-4 rounded-xl items-center justify-center active:scale-95 transition-all ${selectedPackId ? 'bg-[#A855F7]' : 'bg-[#A855F7]/30'}`}
+            className={`w-full py-4 rounded-xl items-center justify-center active:scale-95 transition-all ${selectedPackId ? 'bg-[#A855F7]' : 'bg-[#A855F7]/30'}`}
             >
-              <Text className={`font-bold text-sm ${selectedPackId ? 'text-white' : 'text-white/50'}`}>
-                {selectedPackId 
-                  ? `Pay ₹${packs.find(p => p.id === selectedPackId)?.price} · Get ${(packs.find(p => p.id === selectedPackId)!.coins + (packs.find(p => p.id === selectedPackId)!.bonusCoins || 0)).toLocaleString()} Coins`
-                  : 'Select a Pack'
-                }
-              </Text>
+              {isProcessing ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text className={`font-bold text-sm ${selectedPackId ? 'text-white' : 'text-white/50'}`}>
+                  {selectedPackId 
+                    ? `Pay ₹${packs.find(p => p.id === selectedPackId)?.price} · Get ${(packs.find(p => p.id === selectedPackId)!.coins + (packs.find(p => p.id === selectedPackId)!.bonusCoins || 0)).toLocaleString()} Coins`
+                    : 'Select a Pack'
+                  }
+                </Text>
+              )}
             </Pressable>
           </View>
         </View>

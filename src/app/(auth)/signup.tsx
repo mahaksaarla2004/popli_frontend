@@ -155,25 +155,22 @@ export default function SignupScreen() {
         return;
       }
 
-      // BYPASS FIREBASE FOR CLIENT DEMO
-      setTimeout(() => {
-        setIsLoading(false);
-        // Route user to OTP confirmation
-        router.push({
-          pathname: '/(auth)/otp',
-          params: { 
-            target: targetPhone, 
-            isSignup: 'true',
-            name: nameTrimmed,
-            username: usernameTrimmed,
-            email: emailTrimmed,
-            phone: targetPhone,
-            dob: dob,
-            referredByCode: referralCode.trim(),
-            intent: 'signup'
-          }
-        });
-      }, 500);
+      // Route user to OTP confirmation
+      setIsLoading(false);
+      router.push({
+        pathname: '/(auth)/otp',
+        params: { 
+          target: targetPhone, 
+          isSignup: 'true',
+          name: nameTrimmed,
+          username: usernameTrimmed,
+          email: emailTrimmed,
+          phone: targetPhone,
+          dob: dob,
+          referredByCode: referralCode.trim(),
+          intent: 'signup'
+        }
+      });
     } catch (error: any) {
       setIsLoading(false);
       console.error('Check User Error:', error);

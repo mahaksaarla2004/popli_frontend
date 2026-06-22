@@ -55,6 +55,7 @@ interface FeedState {
   _inFlightComments?: string[];
 }
 const inFlightLikes = new Set<string>();
+const inFlightComments = new Set<string>();
 
 export const useFeedStore = create<FeedState>()(
   persist(
@@ -217,9 +218,8 @@ export const useFeedStore = create<FeedState>()(
         })),
       addComment: async (comment) => {
         const lockKey = `${comment.reelId}-${comment.text}`;
-        const currentInFlight = Array.isArray((get() as any)._inFlightComments) ? (get() as any)._inFlightComments : [];
-        if (currentInFlight.includes(lockKey)) return;
-        set((state: any) => ({ _inFlightComments: [...currentInFlight, lockKey] } as any));
+        if (inFlightComments.has(lockKey)) return;
+        inFlightComments.add(lockKey);
 
         // Backend sync first to get the actual ID
         try {
@@ -266,11 +266,7 @@ export const useFeedStore = create<FeedState>()(
           console.error("Failed to add comment to backend:", e);
           throw e;
         } finally {
-          const lockKey = `${comment.reelId}-${comment.text}`;
-          set((state: any) => {
-            const currentInFlight = Array.isArray(state._inFlightComments) ? state._inFlightComments : [];
-            return { _inFlightComments: currentInFlight.filter((k: string) => k !== lockKey) } as any;
-          });
+          inFlightComments.delete(`${comment.reelId}-${comment.text}`);
         }
       },
       toggleCommentLike: async (commentId) => {
