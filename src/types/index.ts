@@ -7,6 +7,7 @@ export interface Creator {
   category: 'music' | 'comedy' | 'fitness' | 'art' | 'gaming' | 'culinary' | 'motivation' | 'fashion' | 'lifestyle';
   followersCount: number;
   followingCount: number;
+  wallet?: { totalEarnings: number };
   coinsEarned: number;
   giftsReceivedCount: number;
   isVerified: boolean;

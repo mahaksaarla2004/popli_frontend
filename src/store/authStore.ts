@@ -25,6 +25,7 @@ interface AuthState {
     followersCount: number;
     followingCount: number;
     giftsReceivedCount: number;
+    wallet?: { totalEarnings: number };
     coinsEarned?: number;
     isVerified: boolean;
     isProfileComplete?: boolean;
