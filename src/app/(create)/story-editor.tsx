@@ -507,7 +507,7 @@ export default function StoryEditorScreen() {
                     timelineData,
                     musicData: selectedMusic
                   });
-                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId, challengeId } });
+                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId, challengeId, isVideoMuted: isVideoMuted ? 'true' : 'false' } });
                 }}
                 className="bg-[#A855F7] px-6 py-2.5 rounded-full active:scale-95 transition-transform shadow-lg shadow-purple-500/40"
               >
@@ -566,7 +566,7 @@ export default function StoryEditorScreen() {
                     timelineData,
                     musicData: selectedMusic
                   });
-                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId, challengeId } });
+                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId, challengeId, isVideoMuted: isVideoMuted ? 'true' : 'false' } });
                 }}
                 className="items-center justify-center bg-[#A855F7] px-8 py-3.5 rounded-[20px] flex-row gap-2 shadow-xl shadow-purple-500/30 ml-3 active:scale-95 transition-transform"
               >

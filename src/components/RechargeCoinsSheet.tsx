@@ -9,9 +9,12 @@ interface RechargeCoinsSheetProps {
 }
 
 const { width } = Dimensions.get('window');
+import { useWalletStore } from '../store';
 
 export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: RechargeCoinsSheetProps) {
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const rechargeCoins = useWalletStore(state => state.rechargeCoins);
 
   const packs = [
     { id: '1', coins: 50, price: 5, tag: null, tagColor: null },
@@ -107,7 +110,7 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
             </View>
 
             <Pressable 
-              disabled={!selectedPackId}
+              disabled={!selectedPackId || isProcessing}
               onPress={() => {
                 const pack = packs.find(p => p.id === selectedPackId);
                 if (!pack) return;
@@ -119,11 +122,23 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
                     { text: 'Cancel', style: 'cancel' },
                     { 
                       text: 'Pay', 
-                      onPress: () => {
+                      onPress: async () => {
+                        setIsProcessing(true);
                         const totalCoins = pack.coins + (pack.bonusCoins || 0);
-                        Alert.alert('Payment Successful!', `₹${pack.price.toFixed(2)} paid successfully. ${totalCoins.toLocaleString()} Coins added to your wallet!`);
-                        if (onSuccess) onSuccess(totalCoins);
-                        onClose();
+                        try {
+                          const success = await rechargeCoins(totalCoins);
+                          if (success) {
+                            Alert.alert('Payment Successful!', `₹${pack.price.toFixed(2)} paid successfully. ${totalCoins.toLocaleString()} Coins added to your wallet!`);
+                            if (onSuccess) onSuccess(totalCoins);
+                            onClose();
+                          } else {
+                            Alert.alert('Payment Failed', 'Something went wrong while processing the payment.');
+                          }
+                        } catch (e) {
+                          Alert.alert('Error', 'Payment failed.');
+                        } finally {
+                          setIsProcessing(false);
+                        }
                       }
                     }
                   ]
@@ -132,10 +147,9 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
               className={`w-full py-4 rounded-xl items-center justify-center active:scale-95 transition-all ${selectedPackId ? 'bg-[#A855F7]' : 'bg-[#A855F7]/30'}`}
             >
               <Text className={`font-bold text-sm ${selectedPackId ? 'text-white' : 'text-white/50'}`}>
-                {selectedPackId 
+                {isProcessing ? 'Processing...' : (selectedPackId 
                   ? `Pay ₹${packs.find(p => p.id === selectedPackId)?.price} · Get ${(packs.find(p => p.id === selectedPackId)!.coins + (packs.find(p => p.id === selectedPackId)!.bonusCoins || 0)).toLocaleString()} Coins`
-                  : 'Select a Pack'
-                }
+                  : 'Select a Pack')}
               </Text>
             </Pressable>
           </View>

@@ -45,6 +45,7 @@ export default function CreateScreen() {
 
   // Recording Timer State
   const [recordingTime, setRecordingTime] = useState(0);
+  const recordingTimeRef = useRef(0);
   const recordingInterval = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Music state from params
@@ -146,12 +147,16 @@ export default function CreateScreen() {
     if (!cameraRef.current || isRecording) return;
     setIsRecording(true);
     setRecordingTime(0);
+    recordingTimeRef.current = 0;
     player?.seekTo(0);
     player?.play();
     
     if (recordingInterval.current) clearInterval(recordingInterval.current);
     recordingInterval.current = setInterval(() => {
-      setRecordingTime(prev => prev + 1);
+      setRecordingTime(prev => {
+        recordingTimeRef.current = prev + 1;
+        return prev + 1;
+      });
     }, 1000);
 
     try {
@@ -161,7 +166,7 @@ export default function CreateScreen() {
 
       if (video) {
         // Enforce 10 seconds minimum for Reels
-        if (activeMode === 'REEL' && recordingTime < 10) {
+        if (activeMode === 'REEL' && recordingTimeRef.current < 10) {
           Alert.alert('Too Short', 'Reels must be at least 10 seconds long.');
           return;
         }

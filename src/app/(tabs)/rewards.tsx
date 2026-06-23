@@ -26,6 +26,7 @@ export default function RewardsScreen() {
             apiClient.get('/wallet'),
             apiClient.get('/kyc/status')
           ]);
+          console.log("==== WALLET TRANSACTIONS FETCHED ====", JSON.stringify(walletRes.data.transactions, null, 2));
           setWallet(walletRes.data);
           setKycStatus(kycRes.data?.status || 'PENDING');
         } catch (error) {
@@ -55,6 +56,7 @@ export default function RewardsScreen() {
         amount: isDebit ? `-₹${amountVal}` : `+₹${amountVal}`,
         isNegative: isDebit,
         date: new Date(l.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        rawDate: new Date(l.createdAt).getTime(),
         type: 'LEDGER',
         icon: <Gift size={20} color="#FBBF24" />
       };
@@ -81,12 +83,13 @@ export default function RewardsScreen() {
         amount: amountStr,
         isNegative: !isEarning,
         date: new Date(t.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        rawDate: new Date(t.createdAt).getTime(),
         status: t.status === 'SUCCESS' ? 'Completed' : t.status,
         type: 'TRANSACTION',
         icon: <Banknote size={20} color="#FBBF24" />
       };
     })
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 7);
+  ].sort((a, b) => b.rawDate - a.rawDate).slice(0, 15);
 
   const handleWithdrawClick = () => {
     router.push('/withdraw' as any);
@@ -238,8 +241,13 @@ export default function RewardsScreen() {
 
           {/* TRANSACTION HISTORY */}
           <View className="flex-row justify-between items-center mb-4">
-             <Text className="text-white font-black text-lg">Transaction History</Text>
-             <Text className="text-gray-400 text-xs">{historyItems.length} transactions</Text>
+             <View>
+               <Text className="text-white font-black text-lg">Transaction History</Text>
+               <Text className="text-gray-400 text-xs">{historyItems.length} transactions</Text>
+             </View>
+             <Pressable onPress={() => router.push('/wallet')} className="bg-[#2D1B4E] px-4 py-2 rounded-full active:scale-95">
+               <Text className="text-[#A855F7] font-bold text-xs">View All</Text>
+             </Pressable>
           </View>
 
           <View className="gap-3">

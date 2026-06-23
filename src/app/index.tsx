@@ -6,12 +6,10 @@ export default function EntryRedirectScreen() {
   const { isLoggedIn, isOnboarded } = useAuthStore();
   const rootNavigationState = useRootNavigationState();
 
-  if (!rootNavigationState?.key) return null;
-
   useEffect(() => {
     if (!rootNavigationState?.key) return;
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (!isOnboarded) {
         router.replace('/(auth)/onboarding');
       } else if (!isLoggedIn) {
@@ -20,7 +18,11 @@ export default function EntryRedirectScreen() {
         router.replace('/(tabs)');
       }
     }, 0);
+
+    return () => clearTimeout(timer);
   }, [rootNavigationState?.key, isOnboarded, isLoggedIn]);
+
+  if (!rootNavigationState?.key) return null;
 
   return null;
 }

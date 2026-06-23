@@ -1,6 +1,8 @@
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { firebase } from '@react-native-firebase/app';
+import { Platform } from 'react-native';
 
-export const firebaseAuth = auth();
+export const firebaseAuth = Platform.OS === 'web' ? ({} as any) : firebase.app().auth();
 
 let confirmationResult: FirebaseAuthTypes.ConfirmationResult | null = null;
 

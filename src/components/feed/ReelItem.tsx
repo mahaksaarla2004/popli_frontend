@@ -335,6 +335,25 @@ export const ReelItem = React.memo(({
     });
   };
 
+  const handleUseAudio = () => {
+    const audioUrlToUse = musicAudioUrl || safeVideoUrl;
+    
+    if (!audioUrlToUse || isPhotoPost) {
+      Alert.alert("Audio Unavailable", "This post does not have a usable audio track.");
+      return;
+    }
+
+    router.push({
+      pathname: '/audio/[id]',
+      params: {
+        id: item.id,
+        title: item.musicName || `Original Audio`,
+        creator: `@${safeCreatorUsername}`,
+        url: audioUrlToUse
+      }
+    });
+  };
+
   return (
     <View style={{ width, height, backgroundColor: '#000000' }} className="relative">
       
@@ -631,16 +650,18 @@ export const ReelItem = React.memo(({
           <Text className="text-white text-xs font-semibold mt-1">Send</Text>
         </Pressable>
 
-        {/* Gift Button - Glowing Gold Figma Element */}
-        <View className="items-center mb-6">
-          <Pressable 
-            onPress={() => onOpenGifts(item)} 
-            className="w-12 h-12 bg-yellow-500 border-2 border-yellow-400 rounded-full items-center justify-center shadow-lg shadow-yellow-500/50"
-          >
-            <Award size={24} color="#0B001A" fill="#0B001A" strokeWidth={2} />
-          </Pressable>
-          <Text className="text-yellow-400 text-xs font-bold mt-1 shadow-sm shadow-black">Gift</Text>
-        </View>
+        {/* Gift Button - Glowing Gold Figma Element (Only visible if not own reel) */}
+        {!isOwnReel && (
+          <View className="items-center mb-6">
+            <Pressable 
+              onPress={() => onOpenGifts(item)} 
+              className="w-12 h-12 bg-yellow-500 border-2 border-yellow-400 rounded-full items-center justify-center shadow-lg shadow-yellow-500/50"
+            >
+              <Award size={24} color="#0B001A" fill="#0B001A" strokeWidth={2} />
+            </Pressable>
+            <Text className="text-yellow-400 text-xs font-bold mt-1 shadow-sm shadow-black">Gift</Text>
+          </View>
+        )}
 
         {/* Delete Button - Only visible if it's the user's own reel */}
         {isOwnReel && (
@@ -680,12 +701,20 @@ export const ReelItem = React.memo(({
           )}
 
           {/* Follow Button Next to Username */}
-          {!isFollowing && (
+          {!isOwnReel && (
             <Pressable 
               onPress={() => toggleFollow(item.creatorId)}
-              className="bg-transparent border border-white/80 px-2.5 py-0.5 rounded-full ml-1"
+              className={`border px-2.5 py-0.5 rounded-full ml-1 ${
+                isFollowing 
+                  ? 'bg-white/20 border-white/20' 
+                  : 'bg-transparent border-white/80'
+              }`}
             >
-              <Text className="text-white text-[10px] font-bold">Follow</Text>
+              <Text className={`text-[10px] font-bold ${
+                isFollowing ? 'text-white/80' : 'text-white'
+              }`}>
+                {isFollowing ? 'Following' : 'Follow'}
+              </Text>
             </Pressable>
           )}
         </View>
@@ -695,14 +724,17 @@ export const ReelItem = React.memo(({
         </Text>
 
         {/* Music Ticker */}
-        <View className="flex-row items-center gap-2 pt-1">
+        <Pressable 
+          onPress={handleUseAudio}
+          className="flex-row items-center gap-2 pt-1 active:opacity-70"
+        >
           <Music size={14} color="#D1D5DB" />
           <View className="overflow-hidden">
             <Text className="text-neutral-silver text-xs font-medium" numberOfLines={1}>
               {item.musicName || 'Original Audio'}
             </Text>
           </View>
-        </View>
+        </Pressable>
 
         {/* Location Ticker */}
         {(item.location || item.city) && (

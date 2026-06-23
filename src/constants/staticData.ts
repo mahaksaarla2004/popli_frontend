@@ -4,7 +4,7 @@ export const GIFT_CATALOG = [
   { id: 'rose', name: 'Rose', cost: 10, icon: '🌹', animationType: 'burst' },
   { id: 'heart', name: 'Heart', cost: 50, icon: '💖', animationType: 'float' },
   { id: 'crown', name: 'Crown', cost: 2000, icon: '👑', animationType: 'spin' },
-  { id: 'diamond', name: 'Diamond', cost: 1000, icon: '💎', animationType: 'burst' },
+  { id: 'diamond', name: 'Diamond', cost: 5000, icon: '💎', animationType: 'burst' },
   { id: 'party', name: 'Party', cost: 150, icon: '🎉', animationType: 'burst' },
   { id: 'sparkle', name: 'Sparkle', cost: 300, icon: '✨', animationType: 'float' },
   { id: 'star', name: 'Star', cost: 5, icon: '⭐', animationType: 'fly' }

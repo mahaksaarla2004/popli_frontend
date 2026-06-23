@@ -60,6 +60,9 @@ export const useWalletStore = create<WalletState>()(
       withdrawableBalance: 0,
       totalEarnings: 0,
       totalWithdrawn: 0,
+      viewEarnings: 0,
+      giftEarnings: 0,
+      referralEarnings: 0,
       ledgers: [],
       withdrawalRequests: [],
       transactions: [],
@@ -86,7 +89,7 @@ export const useWalletStore = create<WalletState>()(
               message,
               reelId
             });
-            get().fetchWallet();
+            await get().fetchWallet();
             return true;
           } catch (e: any) {
             console.error("Gift API failed:", e?.message);

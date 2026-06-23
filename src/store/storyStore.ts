@@ -36,6 +36,7 @@ interface StoryState {
   markStoryViewed: (storyId: string, viewerId: string) => void;
   addReaction: (storyId: string, viewerId: string, emoji: string) => void;
   fetchStories: () => Promise<void>;
+  fetchStoryById: (storyId: string) => Promise<Story | null>;
   deleteStory: (storyId: string) => Promise<void>;
   isFetchingStories: boolean;
   clearCache: () => void;
@@ -123,6 +124,39 @@ export const useStoryStore = create<StoryState>()(
           }
         } finally {
           set({ isFetchingStories: false });
+        }
+      },
+      fetchStoryById: async (storyId) => {
+        try {
+          const res = await apiClient.get(`/stories/story/${storyId}`);
+          const s = res.data;
+          const formattedStory: Story = {
+            id: s.id,
+            creatorId: s.creator?.username || s.creatorId,
+            creatorAvatar: s.creator?.avatar,
+            mediaUrl: s.mediaUrl,
+            mediaType: s.mediaType || 'IMAGE',
+            viewers: (s.viewers || []).map((v: any) => v.id || v.userId),
+            viewsCount: s._count?.viewers || 0,
+            isCloseFriends: s.isCloseFriends,
+            repliesAllowed: s.repliesAllowed,
+            reactions: {},
+            layersData: s.layersData,
+            createdAt: s.createdAt || new Date().toISOString(),
+            originalStoryId: s.originalStoryId,
+            originalOwnerId: s.originalOwnerId,
+            originalOwnerUsername: s.originalOwnerUsername
+          };
+          
+          // Check if it already exists to avoid duplicates
+          const exists = get().stories.some(st => st.id === formattedStory.id);
+          if (!exists) {
+            set((state) => ({ stories: [formattedStory, ...state.stories] }));
+          }
+          return formattedStory;
+        } catch (error) {
+          console.error("Error fetching single story:", error);
+          return null;
         }
       },
       deleteStory: async (storyId) => {

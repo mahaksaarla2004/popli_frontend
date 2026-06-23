@@ -160,6 +160,7 @@ export default function StoryViewerScreen() {
   const [replyText, setReplyText] = useState('');
   const [isPaused, setIsPaused] = useState(false);
   const [initialStoryLoaded, setInitialStoryLoaded] = useState(false);
+  const [isFetchingSingleStory, setIsFetchingSingleStory] = useState(false);
 
   const handleReply = () => {
     if (!replyText.trim()) return;
@@ -241,7 +242,25 @@ export default function StoryViewerScreen() {
         if (idx !== -1) {
           setTimeout(() => setCurrentIndex(idx), 0);
         } else {
-          setTimeout(() => setInitialStoryLoaded(true), 0);
+          // The story is missing (maybe because we don't follow them or it's a direct link)
+          // Try fetching it specifically
+          setIsFetchingSingleStory(true);
+          useStoryStore.getState().fetchStoryById(storyId).then((fetchedStory) => {
+            if (fetchedStory) {
+              // Wait for the store to update, then we can find it
+              setTimeout(() => {
+                const newIdx = useStoryStore.getState().stories.filter(s => s.creatorId === id).findIndex(s => s.id === storyId);
+                if (newIdx !== -1) {
+                  setCurrentIndex(newIdx);
+                }
+                setInitialStoryLoaded(true);
+                setIsFetchingSingleStory(false);
+              }, 100);
+            } else {
+              setInitialStoryLoaded(true);
+              setIsFetchingSingleStory(false);
+            }
+          });
         }
       } else {
         setTimeout(() => setInitialStoryLoaded(true), 0);
@@ -328,7 +347,7 @@ export default function StoryViewerScreen() {
   if (userStories.length === 0 || !activeStory) {
     return (
       <View className="flex-1 bg-black items-center justify-center">
-        {isFetchingStories ? (
+        {isFetchingStories || isFetchingSingleStory ? (
           <ActivityIndicator size="large" color="#A855F7" />
         ) : (
           <View className="items-center justify-center p-8">

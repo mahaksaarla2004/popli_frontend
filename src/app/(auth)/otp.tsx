@@ -147,7 +147,7 @@ export default function OTPScreen() {
       }
     } catch (e: any) {
       setIsVerifying(false);
-      console.error('OTP Verification Error:', e.response?.data || e.message);
+      console.warn('OTP Verification Error:', e.response?.data || e.message);
       const errorMessage = typeof e.response?.data?.message === 'string'
         ? e.response.data.message
         : (e.response?.data?.message?.[0] || e.message || 'Invalid OTP. Please try again.');

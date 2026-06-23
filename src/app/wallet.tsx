@@ -20,6 +20,7 @@ const TABS = [
   { id: 'ALL', label: 'All Transactions' },
   { id: 'VIEW_EARNING', label: 'View Earnings' },
   { id: 'GIFT_RECEIVED', label: 'Gift Earnings' },
+  { id: 'GIFT_SEND', label: 'Gifts Sent' },
   { id: 'WITHDRAWAL', label: 'Withdrawals' },
   { id: 'CHALLENGE_EARNING', label: 'Challenge Earnings' }
 ];

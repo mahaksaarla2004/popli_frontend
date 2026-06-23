@@ -6,19 +6,19 @@ import { useWalletStore } from '../../store/walletStore';
 
 export default function EarningsHistoryScreen() {
   const router = useRouter();
-  const { totalEarnings, viewEarnings, giftEarnings, referralEarnings, fetchWallet } = useWalletStore();
+  const { totalEarnings, viewEarnings, giftEarnings, referralEarnings, ledgers, fetchWallet } = useWalletStore();
 
   useEffect(() => {
     fetchWallet();
   }, []);
 
   const HistoryRow = ({ date, amount, source }: any) => (
-    <View className="flex-row items-center justify-between border-b border-white/5 py-4">
-      <View>
-        <Text className="text-white font-bold text-sm">{source}</Text>
+    <View className="flex-row items-center justify-between border-b border-white/5 py-4 gap-2">
+      <View className="flex-1 pr-2">
+        <Text className="text-white font-bold text-sm" numberOfLines={2}>{source}</Text>
         <Text className="text-neutral-grey text-[10px] mt-1">{date}</Text>
       </View>
-      <Text className="text-[#10B981] font-bold text-base">+{amount}</Text>
+      <Text className="text-[#10B981] font-bold text-base shrink-0">+{amount}</Text>
     </View>
   );
 
@@ -72,14 +72,27 @@ export default function EarningsHistoryScreen() {
         <View className="gap-4">
           <Text className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Recent Transactions</Text>
           <View className="bg-[#1A0E2C] border border-white/5 rounded-3xl px-4">
-            {/* Empty State */}
-            <View className="py-12 items-center justify-center opacity-50">
-              <Calendar size={32} color="#9CA3AF" />
-              <Text className="text-white font-medium mt-4">No earnings yet</Text>
-              <Text className="text-neutral-grey text-xs mt-2 text-center px-8">
-                When you start earning from your content, your transaction history will appear here.
-              </Text>
-            </View>
+            {ledgers && ledgers.filter(l => l.credit > 0).length > 0 ? (
+              ledgers.filter(l => l.credit > 0).map((item) => (
+                <HistoryRow 
+                  key={item.id}
+                  source={item.description || item.source}
+                  amount={`₹${item.credit.toFixed(2)}`}
+                  date={new Date(item.createdAt).toLocaleDateString('en-IN', {
+                    year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                  })}
+                />
+              ))
+            ) : (
+              <View className="py-12 items-center justify-center opacity-50">
+                <Calendar size={32} color="#9CA3AF" />
+                <Text className="text-white font-medium mt-4">No earnings yet</Text>
+                <Text className="text-neutral-grey text-xs mt-2 text-center px-8">
+                  When you start earning from your content, your transaction history will appear here.
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 

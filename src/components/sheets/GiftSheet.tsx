@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Platform, StyleSheet, ActivityIndicator, ScrollView, Modal, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -40,8 +40,14 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
   const [isSending, setIsSending] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { coinBalance, sendGiftCoins, rechargeCoins } = useWalletStore();
+  const { coinBalance, sendGiftCoins, rechargeCoins, fetchWallet } = useWalletStore();
   const { kycCompleted } = useKYCStore();
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchWallet();
+    }
+  }, [isOpen]);
 
   const selectedGift = GIFT_CATALOG.find((g) => g.id === selectedGiftId)!;
 

@@ -89,7 +89,10 @@ apiClient.interceptors.response.use(
     }
     
     if (__DEV__) {
-      console.error(`[API ERROR] ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} - Status: ${error.response?.status || 'NETWORK_ERROR'}`);
+      // Don't spam the terminal with 401 Unauthorized errors since we handle them gracefully
+      if (error.response?.status !== 401) {
+        console.warn(`[API ERROR] ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} - Status: ${error.response?.status || 'NETWORK_ERROR'}`);
+      }
     }
     
     if (error.response?.status === 401 && !originalRequest._retry) {

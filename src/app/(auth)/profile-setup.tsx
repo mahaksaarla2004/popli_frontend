@@ -30,6 +30,8 @@ const LANGUAGES: ('English' | 'Hindi' | 'Bengali' | 'Tamil')[] = ['English', 'Hi
 export default function ProfileSetupScreen() {
   const { userProfile, updateProfile, setLanguage } = useAuthStore();
 
+  const [name, setName] = useState(userProfile?.name === 'Popli User' ? '' : (userProfile?.name || ''));
+  const [username, setUsername] = useState(userProfile?.username?.startsWith('user_') ? '' : (userProfile?.username || ''));
   const [avatar, setAvatar] = useState(AVATAR_PRESETS[0]);
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [gender, setGender] = useState<string>('Male');
@@ -39,7 +41,7 @@ export default function ProfileSetupScreen() {
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'error'>('idle');
 
   React.useEffect(() => {
-    const currentUsername = userProfile?.username || '';
+    const currentUsername = username || '';
     if (currentUsername.length < 3) {
       setUsernameStatus('idle');
       return;
@@ -68,7 +70,7 @@ export default function ProfileSetupScreen() {
     }, 600);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [userProfile?.username]);
+  }, [username]);
 
   const pickImage = async () => {
     try {
@@ -127,8 +129,8 @@ export default function ProfileSetupScreen() {
   };
 
   const handleNext = async () => {
-    const currentName = userProfile?.name?.trim();
-    const currentUsername = userProfile?.username?.trim();
+    const currentName = name?.trim();
+    const currentUsername = username?.trim();
 
     if (!currentName || currentName.length < 2) {
       alert("Please enter a valid full name (at least 2 characters).");
@@ -249,8 +251,8 @@ export default function ProfileSetupScreen() {
             <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Your Full Name</Text>
             <View className="bg-[#190C2C] border border-white/5 rounded-2xl px-4 py-3">
               <TextInput
-                value={userProfile?.name || ''}
-                onChangeText={(val) => updateProfile({ name: val })}
+                value={name}
+                onChangeText={setName}
                 placeholder="Enter your full name"
                 placeholderTextColor="rgba(255, 255, 255, 0.3)"
                 className="text-white text-sm"
@@ -269,8 +271,8 @@ export default function ProfileSetupScreen() {
             </View>
             <View className={`bg-[#190C2C] border rounded-2xl px-4 py-3 ${usernameStatus === 'taken' ? 'border-red-500' : usernameStatus === 'available' ? 'border-green-500' : 'border-white/5'}`}>
               <TextInput
-                value={userProfile?.username || ''}
-                onChangeText={(val) => updateProfile({ username: val.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                value={username}
+                onChangeText={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                 placeholder="e.g. popli_creator_01"
                 placeholderTextColor="rgba(255, 255, 255, 0.3)"
                 autoCapitalize="none"

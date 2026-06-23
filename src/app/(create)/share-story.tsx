@@ -5,7 +5,7 @@ import { useStoryStore, useAuthStore, useFeedStore, useEditorStore, useChatStore
 import { MotiView } from 'moti';
 import { CheckCircle } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export default function ShareStoryScreen() {
   const router = useRouter();
@@ -62,11 +62,14 @@ export default function ShareStoryScreen() {
             decodedUri = 'file://' + decodedUri;
           }
 
-          // Check File Size before upload (Cloudinary Free Tier limit is 10MB = 10485760 bytes)
+          // Check File Size before upload
           try {
             const fileInfo = await FileSystem.getInfoAsync(decodedUri);
-            if (fileInfo.exists && fileInfo.size && fileInfo.size > 10485760) {
-              throw new Error(`File size is too large (${(fileInfo.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 10MB. Please select a smaller video.`);
+            const maxSize = type === 'video' ? 104857600 : 20971520; // 100MB for video, 20MB for images
+            const maxSizeMB = type === 'video' ? 100 : 20;
+
+            if (fileInfo.exists && fileInfo.size && fileInfo.size > maxSize) {
+              throw new Error(`File size is too large (${(fileInfo.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is ${maxSizeMB}MB.`);
             }
           } catch (e: any) {
             if (e.message.includes('too large')) throw e; // rethrow size error
@@ -88,7 +91,7 @@ export default function ShareStoryScreen() {
             {
               httpMethod: 'POST',
               // @ts-ignore
-              uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+              uploadType: 1, 
               fieldName: 'file',
               parameters: {
                 api_key: String(apiKey || ''),
@@ -209,7 +212,7 @@ export default function ShareStoryScreen() {
               {
                 httpMethod: 'POST',
                 // @ts-ignore
-                uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                uploadType: 1, // FileSystemUploadType.MULTIPART
                 fieldName: 'file',
                 parameters: {
                   api_key: String(apiKey || ''),

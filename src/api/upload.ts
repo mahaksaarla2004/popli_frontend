@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { apiClient } from './client';
 
 export const uploadToCloudinary = async (fileUri: string, mediaType: 'image' | 'video' | 'raw', folder: string = 'general'): Promise<string> => {
@@ -17,7 +17,7 @@ export const uploadToCloudinary = async (fileUri: string, mediaType: 'image' | '
       {
         httpMethod: 'POST',
         // @ts-ignore
-        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        uploadType: 1, // FileSystemUploadType.MULTIPART
         fieldName: 'file',
         parameters: {
           api_key: String(apiKey || ''),
