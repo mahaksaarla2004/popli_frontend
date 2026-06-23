@@ -31,7 +31,7 @@ export default function AnalyticsScreen() {
   const shares = userReels.reduce((sum, r) => sum + (r.sharesCount || 0), 0);
 
   // Dynamic earnings from backend wallet + calculated views
-  const viewEarnings = wallet?.viewEarnings ?? (allTimeViews * 0.15);
+  const viewEarnings = wallet?.viewEarnings ?? (allTimeViews * 0.005);
   const giftEarnings = wallet?.giftEarnings ?? 0;
   const referralEarnings = wallet?.referralEarnings ?? 0;
   const totalEarnings = viewEarnings + giftEarnings + referralEarnings;
@@ -42,7 +42,7 @@ export default function AnalyticsScreen() {
     id: r.id,
     title: r.description || 'My Video',
     views: r.viewsCount || 0,
-    earnings: ((r.viewsCount || 0) * 0.15).toFixed(2),
+    earnings: ((r.viewsCount || 0) * 0.005).toFixed(2),
     isMonetized: r.isMonetized !== false
   })) : [
     { id: '1', title: 'No posts yet', views: 0, earnings: '0.00', isMonetized: false }
@@ -206,7 +206,7 @@ export default function AnalyticsScreen() {
               </View>
               <View className="items-end">
                 <Text className="text-[#10B981] font-bold text-base">₹{post.earnings}</Text>
-                {post.views > 0 && <Text className="text-white/40 text-[9px]">@ ₹0.15/v</Text>}
+                {post.views > 0 && <Text className="text-white/40 text-[9px]">@ ₹0.005/v</Text>}
               </View>
             </View>
           ))}
