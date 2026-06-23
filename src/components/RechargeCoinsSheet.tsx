@@ -17,12 +17,12 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
   const rechargeCoins = useWalletStore(state => state.rechargeCoins);
 
   const packs = [
-    { id: '1', coins: 50, price: 5, tag: null, tagColor: null },
-    { id: '2', coins: 250, price: 20, tag: '20% off', tagColor: 'bg-[#A855F7]/20 text-[#A855F7]' },
-    { id: '3', coins: 600, price: 45, tag: '25% off', tagColor: 'bg-[#A855F7]/20 text-[#A855F7]', badge: 'Popular' },
-    { id: '4', coins: 1500, price: 100, tag: '33% off', tagColor: 'bg-[#A855F7]/20 text-[#A855F7]', bonus: '+100 bonus', bonusCoins: 100 },
-    { id: '5', coins: 3500, price: 200, tag: 'Best value', tagColor: 'bg-[#10B981]/20 text-[#10B981]', bonus: '+350 bonus', bonusCoins: 350 },
-    { id: '6', coins: 10000, price: 500, tag: '🔥 Max value', tagColor: 'bg-[#10B981]/20 text-[#10B981]', bonus: '+1,500 bonus', bonusCoins: 1500 },
+    { id: '1', coins: 100, price: 10, tag: null, tagColor: null },
+    { id: '2', coins: 500, price: 50, tag: null, tagColor: null },
+    { id: '3', coins: 1000, price: 100, tag: '10% Bonus', tagColor: 'bg-[#A855F7]/20 text-[#A855F7]', badge: 'Popular', bonus: '+100 bonus', bonusCoins: 100 },
+    { id: '4', coins: 2000, price: 200, tag: '15% Bonus', tagColor: 'bg-[#10B981]/20 text-[#10B981]', bonus: '+300 bonus', bonusCoins: 300 },
+    { id: '5', coins: 5000, price: 500, tag: '20% Bonus', tagColor: 'bg-[#10B981]/20 text-[#10B981]', badge: 'Best value', bonus: '+1,000 bonus', bonusCoins: 1000 },
+    { id: '6', coins: 10000, price: 1000, tag: '25% Bonus', tagColor: 'bg-[#EAB308]/20 text-[#EAB308]', badge: '🔥 Max value', bonus: '+2,500 bonus', bonusCoins: 2500 },
   ];
 
   return (
@@ -45,16 +45,21 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
               <View className="bg-[#EAB308]/20 p-1.5 rounded-full">
                 <Coins size={16} color="#EAB308" fill="#EAB308" />
               </View>
-              <Text className="text-white font-extrabold text-lg">Recharge Coins</Text>
+              <Text className="text-white font-extrabold text-lg">Recharge Pop Coins</Text>
             </View>
             <Pressable onPress={onClose} className="p-1.5 bg-white/5 rounded-full active:scale-95">
               <X size={18} color="#D1D5DB" />
             </Pressable>
           </View>
 
-          <Text className="text-white/50 text-xs px-5 mb-4">
-            Use coins to send gifts to your favourite creators
+          <Text className="text-white/50 text-xs px-5 mb-3">
+            Use Pop Coins to send gifts to your favourite creators
           </Text>
+
+          <View className="bg-[#EAB308]/10 border border-[#EAB308]/30 rounded-xl py-2 mx-5 mb-4 flex-row items-center justify-center">
+            <Coins size={14} color="#EAB308" fill="#EAB308" />
+            <Text className="text-[#EAB308] font-bold text-xs ml-1.5">1 ₹ = 10 Pop Coins</Text>
+          </View>
 
           {/* Grid */}
           <View className="flex-row flex-wrap px-4 justify-between gap-y-3">
