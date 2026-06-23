@@ -290,7 +290,7 @@ export default function DiscoverScreen() {
                   const rankColors = ['bg-[#FBBF24]', 'bg-gray-400', 'bg-[#F59E0B]', 'bg-[#C4B5FD]', 'bg-[#4B5563]'];
                   const rankColor = rankColors[index] || 'bg-[#4B5563]';
                   // Use actual earnings from the backend, default to 0 if not present
-                  const earnings = creator.coinsEarned || 0;
+                  const earnings = creator.wallet?.totalEarnings ?? creator.coinsEarned ?? 0;
                   
                   return (
                     <Pressable

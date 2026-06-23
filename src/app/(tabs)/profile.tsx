@@ -54,7 +54,7 @@ export default function ProfileScreen() {
     avatar: userProfile.avatar || getDefaultAvatar(userProfile.username)
   };
 
-  const totalEarnings = userProfile.coinsEarned || 0;
+  const totalEarnings = userProfile.wallet?.totalEarnings ?? userProfile.coinsEarned ?? 0;
 
   const displayReels = userReels;
 
