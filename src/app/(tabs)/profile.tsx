@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, Pressable, Dimensions } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Settings, AlignLeft, LayoutGrid, Heart, Play, Plus } from 'lucide-react-native';
+import { Settings, AlignLeft, LayoutGrid, Heart, Play, Plus, BarChart2 } from 'lucide-react-native';
 import { useAuthStore, useFeedStore, useStoryHighlightStore } from '../../store';
 import { formatSocialCount, getDefaultAvatar } from '../../utils';
 import StoryRing from '../../components/StoryRing';
@@ -250,6 +250,17 @@ export default function ProfileScreen() {
                       ₹{((reel.viewsCount || 0) * 0.005) > 0 ? ((reel.viewsCount || 0) * 0.005).toFixed(2) : '0'}
                     </Text>
                   </View>
+                )}
+                {activeTab === 'reels' && (
+                  <Pressable 
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      router.push(`/(creator)/reel-analytics/${reel.id}` as any);
+                    }}
+                    className="absolute top-2 left-2 bg-black/70 w-6 h-6 rounded flex items-center justify-center border border-white/10"
+                  >
+                    <BarChart2 size={12} color="#A855F7" />
+                  </Pressable>
                 )}
               </Pressable>
             ))}

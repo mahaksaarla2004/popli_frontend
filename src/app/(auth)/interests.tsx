@@ -7,17 +7,19 @@ import { ChevronLeft, Sparkles, ChevronRight, Check } from 'lucide-react-native'
 import { MotiView } from 'moti';
 
 const INTERESTS = [
+  { id: 'technology', label: 'Technology', emoji: '💻', description: 'Unboxing, tips & hacks' },
+  { id: 'sports', label: 'Sports', emoji: '🏏', description: 'Cricket, updates & plays' },
+  { id: 'music', label: 'Music', emoji: '🎵', description: 'Songs, covers & beats' },
+  { id: 'art', label: 'Art', emoji: '🎨', description: 'Painting, crafts & design' },
+  { id: 'gaming', label: 'Gaming', emoji: '🎮', description: 'Pubg, streaming & clips' },
+  { id: 'fashion', label: 'Fashion', emoji: '👗', description: 'Outfits, trends & beauty' },
+  { id: 'food', label: 'Food', emoji: '🥘', description: 'Recipes, street food & vlogs' },
   { id: 'comedy', label: 'Comedy', emoji: '😂', description: 'Funny sketches & voiceovers' },
   { id: 'emotional', label: 'Emotional', emoji: '😢', description: 'Drama, stories & poetry' },
-  { id: 'gaming', label: 'Gaming', emoji: '🎮', description: 'Pubg, streaming & clips' },
   { id: 'dance', label: 'Dance', emoji: '💃', description: 'Reels, trends & beats' },
   { id: 'village_life', label: 'Village Life', emoji: '🌾', description: 'Desi vloggers & culture' },
   { id: 'motivation', label: 'Motivation', emoji: '🔥', description: 'Success & daily quotes' },
-  { id: 'fashion', label: 'Fashion', emoji: '✨', description: 'Outfits, trends & beauty' },
   { id: 'fitness', label: 'Fitness', emoji: '💪', description: 'Gym, workouts & health' },
-  { id: 'tech', label: 'Tech', emoji: '💻', description: 'Unboxing, tips & hacks' },
-  { id: 'food', label: 'Food', emoji: '🥘', description: 'Recipes, street food & vlogs' },
-  { id: 'sports', label: 'Sports', emoji: '🏏', description: 'Cricket, updates & plays' },
 ];
 
 export default function InterestsScreen() {
@@ -210,7 +212,7 @@ export default function InterestsScreen() {
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <>
-              <Text className="text-white text-sm font-bold uppercase tracking-wider">
+              <Text className="text-white text-sm font-bold uppercase tracking-wider text-center" numberOfLines={1}>
                 {isMinSelected ? 'Continue to Location' : `Choose ${remaining} More`}
               </Text>
               {isMinSelected && <Text className="text-white font-bold text-lg">{'>'}</Text>}
