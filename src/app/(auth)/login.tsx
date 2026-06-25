@@ -4,12 +4,14 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { User, Lock, Eye, EyeOff, Play } from 'lucide-react-native';
 import { MotiView } from 'moti';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiClient } from '../../api/client';
 import { sendFirebaseOTP } from '../../lib/firebase';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { setLogin, setFirstLogin } = useAuthStore();
   const [identifier, setIdentifier] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -84,7 +86,7 @@ export default function LoginScreen() {
     >
       <ScrollView 
         className="flex-1 px-6"
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 100, paddingTop: Platform.OS === 'ios' ? 60 : 40 }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: Math.max(insets.bottom, 20) + 40, paddingTop: Math.max(insets.top, 20) + 20 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

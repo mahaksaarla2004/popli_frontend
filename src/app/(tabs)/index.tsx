@@ -259,8 +259,9 @@ export default function HomeFeedScreen() {
       
       {/* Top Segmented Tabs Overlay & Notification Bell */}
       <View 
-        className="absolute left-0 right-0 z-20 flex-row justify-between items-center px-4"
-        style={{ top: Math.max(insets.top, 10) }}
+        className="absolute left-0 right-0 z-50 flex-row justify-between items-center px-4"
+        style={{ top: insets.top > 0 ? insets.top + 10 : 30, elevation: 10 }}
+        pointerEvents="box-none"
       >
         <View className="w-[84px] h-10" />
 
@@ -293,7 +294,7 @@ export default function HomeFeedScreen() {
             )}
           </Pressable>
           <Pressable onPress={() => router.push('/(tabs)/inbox')} className="w-10 h-10 bg-black/40 rounded-full items-center justify-center active:scale-95">
-            <Send size={20} color="#FFFFFF" strokeWidth={2.5} className="mr-0.5 mt-0.5" />
+            <MessageSquare size={22} color="#FFFFFF" strokeWidth={2.5} className="mr-0.5 mt-0.5" />
             {unreadChatsCount > 0 && (
               <View className="absolute top-0 right-0 bg-[#D946EF] rounded-full px-[5px] py-[1px] border-[1.5px] border-black">
                 <Text className="text-white text-[8px] font-bold">{unreadChatsCount}</Text>

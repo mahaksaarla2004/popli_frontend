@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useKYCStore, useAuthStore } from '../../store';
 import { User, Phone, Lock, ChevronLeft, Eye, EyeOff, AtSign } from 'lucide-react-native';
 import { MotiView } from 'moti';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { sendFirebaseOTP } from '../../lib/firebase';
 import { apiClient } from '../../api/client';
@@ -11,6 +12,7 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function SignupScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const kyc = useKYCStore();
 
   const [fullName, setFullName] = useState('');
@@ -185,7 +187,7 @@ export default function SignupScreen() {
     >
       <ScrollView 
         className="flex-1 px-6"
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100, paddingTop: Platform.OS === 'ios' ? 60 : 40 }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: Math.max(insets.bottom, 20) + 40, paddingTop: Math.max(insets.top, 20) + 20 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

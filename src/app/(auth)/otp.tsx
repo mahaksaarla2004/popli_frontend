@@ -6,6 +6,7 @@ import { useAuthStore, useKYCStore } from '../../store';
 import { getDefaultAvatar } from '../../utils';
 import { ChevronLeft } from 'lucide-react-native';
 import { MotiView } from 'moti';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '../../api/client';
@@ -14,6 +15,7 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 export default function OTPScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ mode?: string; type?: string; target?: string; isSignup?: string; referredByCode?: string; phone?: string; intent?: string; name?: string; username?: string; email?: string; dob?: string; }>();
 
   const isResetMode = params.mode === 'reset';
@@ -271,7 +273,7 @@ export default function OTPScreen() {
       {/* 2. Main content wrapper inside ScrollView to support smooth scrolling & tap persistent */}
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32, paddingTop: 40 }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: Math.max(insets.bottom, 20) + 40, paddingTop: Math.max(insets.top, 20) + 60 }}
         showsVerticalScrollIndicator={false}
       >
 
