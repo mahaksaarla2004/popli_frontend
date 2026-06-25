@@ -214,6 +214,13 @@ export default function CreateScreen() {
       return;
     }
 
+    if (activeMode === 'STORY') {
+      if (isRecording) {
+        stopRecording();
+        return;
+      }
+    }
+
     if (timerDelay > 0 && !isRecording) {
       setTimerCountdown(timerDelay);
       let count = timerDelay;
@@ -295,7 +302,7 @@ export default function CreateScreen() {
             style={{ flex: 1 }} 
             facing={facing} 
             flash={flash}
-            mode={activeMode === 'REEL' ? 'video' : 'picture'}
+            mode={activeMode === 'POST' ? 'picture' : 'video'}
             videoQuality={cameraSettings.videoResolution === '4K' ? '2160p' : '1080p'}
             videoStabilizationMode={cameraSettings.stabilization ? 'auto' : 'off'}
             mirror={facing === 'front' ? cameraSettings.mirrorFront : false}
@@ -453,6 +460,14 @@ export default function CreateScreen() {
 
                   {/* Inner Shutter Button */}
                   <View className={`bg-[#A855F7] ${isRecording ? 'w-8 h-8 rounded-lg' : 'w-[68px] h-[68px] rounded-full'} transition-all duration-300 ease-out`} />
+                </View>
+              ) : activeMode === 'STORY' && isRecording ? (
+                <View className="w-20 h-20 items-center justify-center relative">
+                  <View className="absolute inset-0 rounded-full border-4 border-white/30" />
+                  <Svg width={80} height={80} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
+                    <Circle cx={40} cy={40} r={37} stroke="#A855F7" strokeWidth={6} fill="none" strokeDasharray={2 * Math.PI * 37} strokeDashoffset={2 * Math.PI * 37 - (recordingTime / 60) * (2 * Math.PI * 37)} strokeLinecap="round" />
+                  </Svg>
+                  <View className="bg-[#A855F7] w-8 h-8 rounded-lg transition-all duration-300 ease-out" />
                 </View>
               ) : (
               <View className="w-20 h-20 rounded-full border-4 border-white items-center justify-center p-1 bg-black/20">

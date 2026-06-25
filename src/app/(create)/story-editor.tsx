@@ -551,8 +551,13 @@ export default function StoryEditorScreen() {
           {mode === 'REEL' ? (
             <>
               <View className="flex-row items-center gap-2 flex-1">
-                <Pressable onPress={() => setShowTimelineEditor(true)} className="bg-black/60 backdrop-blur-md border border-white/20 px-4 py-3.5 rounded-[20px] flex-row items-center justify-center flex-1 active:scale-95 transition-all">
-                  <Text className="text-white font-bold text-[14px]">Edit video</Text>
+                <Pressable onPress={() => setShowTimelineEditor(true)} className="bg-black/60 backdrop-blur-md border border-white/20 px-3 py-3.5 rounded-[20px] flex-row items-center justify-center flex-1 active:scale-95 transition-all">
+                  <Text className="text-white font-bold text-[13px]">Edit video</Text>
+                </Pressable>
+                
+                <Pressable onPress={() => navigateToShare('your_story')} className="bg-[#190C2C]/90 backdrop-blur-xl border border-[#8B5CF6]/30 px-3 py-3.5 rounded-[20px] flex-row items-center justify-center flex-1 active:scale-95 transition-all shadow-lg shadow-purple-900/20">
+                  <PlusCircle size={16} color="#A78BFA" strokeWidth={2.5} className="mr-1" />
+                  <Text className="text-white font-bold text-[13px]">Story</Text>
                 </Pressable>
               </View>
 
