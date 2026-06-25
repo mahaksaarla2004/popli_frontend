@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, Dimensions, Share, Alert, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { ChevronLeft, User, Link as LinkIcon, Star, UserPlus, Trophy, Send } from 'lucide-react-native';
@@ -9,6 +10,7 @@ const { width } = Dimensions.get('window');
 
 export default function ReferralsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<any>(null);
   const [configs, setConfigs] = useState<any>({});
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export default function ReferralsScreen() {
         <Text className="text-white font-bold text-xl">Referrals & Rewards</Text>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}>
+     <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom + 140, 160) }}>
         
         {/* Purple Banner */}
         <View className="bg-gradient-to-br from-[#A855F7] to-[#8B5CF6] rounded-3xl p-6 items-center mb-6 shadow-lg shadow-[#8B5CF6]/20">
@@ -155,7 +157,7 @@ export default function ReferralsScreen() {
       </ScrollView>
 
       {/* Bottom Sticky Share Button */}
-      <View className="absolute bottom-0 left-0 right-0 p-4 bg-[#0D0518]/90">
+     <View className="absolute bottom-0 left-0 right-0 px-4 pt-4 bg-[#0D0518]/90" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
         <Text className="text-white font-bold text-base mb-3">Share Your Invite</Text>
         <Pressable 
           onPress={handleShare}

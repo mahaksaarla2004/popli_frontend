@@ -14,9 +14,10 @@ interface StoryRingProps {
   size?: number;
   showName?: boolean;
   name?: string;
+  onPress?: () => void;
 }
 
-export default function StoryRing({ userId, avatarUrl, size = 64, showName = false, name }: StoryRingProps) {
+export default function StoryRing({ userId, avatarUrl, size = 64, showName = false, name, onPress: onPressProp }: StoryRingProps) {
   const router = useRouter();
   const { stories } = useStoryStore();
   const { userProfile } = useAuthStore();
@@ -33,7 +34,11 @@ export default function StoryRing({ userId, avatarUrl, size = 64, showName = fal
   const firstUnread = userStories.find(s => !s.viewers.includes(userProfile.username));
   const isCloseFriends = firstUnread?.isCloseFriends || (hasStory && userStories[0].isCloseFriends);
 
-  const handlePress = () => {
+const handlePress = () => {
+    if (onPressProp) {
+      onPressProp();
+      return;
+    }
     const now = Date.now();
     if (now - lastNavigationTime < NAVIGATION_THROTTLE_MS) return;
     lastNavigationTime = now;

@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Platform, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKYCStore, useAuthStore } from '../../store';
-import { User, Phone, Lock, ChevronLeft, Eye, EyeOff, AtSign } from 'lucide-react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { sendFirebaseOTP } from '../../lib/firebase';
 import { apiClient } from '../../api/client';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -180,209 +179,258 @@ export default function SignupScreen() {
     }
   };
 
-  return (
-    <KeyboardAvoidingView 
-      behavior="padding"
-      className="flex-1 bg-[#0B001A]"
-    >
-      <ScrollView 
-        className="flex-1 px-6"
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: Math.max(insets.bottom, 20) + 40, paddingTop: Math.max(insets.top, 20) + 20 }}
+return (
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: '#0D0015' }}>
+      <LinearGradient
+        colors={['#1a0030', '#0D0015', '#0D0015']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.5 }}
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+      />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <MotiView 
-          from={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'timing', duration: 400 }}
-          className="gap-6"
-        >
-          {/* Custom Header with Back Button */}
-          <View className="flex-row items-center justify-between w-full pb-4 mt-2">
-            <Pressable 
-              onPress={() => router.back()}
-              className="w-11 h-11 rounded-full bg-[#2D1B4E] items-center justify-center active:scale-[0.9] transition-all"
-            >
-              <ChevronLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
-            </Pressable>
-          </View>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 28 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 22 }}>←</Text>
+        </TouchableOpacity>
 
-          {/* Header titles */}
-          <View className="mb-6">
-            <Text className="text-white font-bold text-[28px] tracking-tight">Create Account</Text>
-            <Text className="text-white/60 text-[14px] mt-1">Join the community and start sharing your vibe.</Text>
-          </View>
+        <Text style={{ color: '#FF2D6B', fontSize: 32, fontWeight: '900', letterSpacing: -0.5, marginBottom: 8 }}>popli</Text>
+        <Text style={{ color: '#fff', fontSize: 26, fontWeight: '800', marginBottom: 6 }}>Create Your Username</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, marginBottom: 32 }}>
+          This will be your unique identity on Popli
+        </Text>
 
-          {/* Form Fields */}
-          <View className="flex-col gap-4">
-            {/* Full Name input */}
-            <View className="flex-col">
-              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.fullName ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
-                <User size={20} color="#A78BFA" strokeWidth={2} />
-                <TextInput
-                  value={fullName}
-                  onChangeText={(val) => {
-                    setFullName(val);
-                    if (errors.fullName) setErrors(prev => ({ ...prev, fullName: undefined }));
-                  }}
-                  placeholder="Full Name"
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  className="flex-1 text-white text-[14px] py-2"
-                />
-              </View>
-              {errors.fullName && (
-                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.fullName}</Text>
-              )}
-            </View>
-
-            {/* Username input */}
-            <View className="flex-col">
-              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.username ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
-                <AtSign size={20} color="#A78BFA" strokeWidth={2} />
-                <TextInput
-                  value={username}
-                  onChangeText={(val) => {
-                    setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''));
-                    if (errors.username) setErrors(prev => ({ ...prev, username: undefined }));
-                  }}
-                  placeholder="username_123"
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  autoCapitalize="none"
-                  className="flex-1 text-white text-[14px] py-2"
-                />
-              </View>
-              {errors.username && (
-                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.username}</Text>
-              )}
-            </View>
-
-            {/* Email input */}
-            <View className="flex-col">
-              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.email ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
-                <AtSign size={20} color="#A78BFA" strokeWidth={2} />
-                <TextInput
-                  value={email}
-                  onChangeText={(val) => {
-                    setEmail(val);
-                    if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
-                  }}
-                  placeholder="mahaksaarla2004@gmail.com"
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  className="flex-1 text-white text-[14px] py-2"
-                />
-              </View>
-              {errors.email && (
-                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.email}</Text>
-              )}
-            </View>
-
-            {/* Mobile Number input */}
-            <View className="flex-col">
-              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.mobile ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
-                <Phone size={20} color="#A78BFA" strokeWidth={2} />
-                <TextInput
-                  value={mobile}
-                  onChangeText={(val) => {
-                    setMobile(val.replace(/[^0-9]/g, ''));
-                    if (errors.mobile) setErrors(prev => ({ ...prev, mobile: undefined }));
-                  }}
-                  placeholder="+91 9876543210"
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  className="flex-1 text-white text-[14px] py-2"
-                />
-              </View>
-              {errors.mobile && (
-                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.mobile}</Text>
-              )}
-            </View>
-
-
-
-            {/* DOB input */}
-            <View className="flex-col">
-              <View className={`bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 ${errors.dob ? 'border-red-500' : 'border-[#3E2B5C]'}`}>
-                <User size={20} color="#A78BFA" strokeWidth={2} />
-                <TextInput
-                  value={dob}
-                  onChangeText={handleDOBChange}
-                  placeholder="DD/MM/YYYY"
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  keyboardType="numeric"
-                  maxLength={10}
-                  className="flex-1 text-white text-[14px] py-2"
-                />
-              </View>
-              {errors.dob && (
-                <Text className="text-red-500 text-[10px] pl-5 mt-1 font-semibold">{errors.dob}</Text>
-              )}
-            </View>
-
-            {/* Referral Code input */}
-            <View className="flex-col">
-              <View className="bg-[#1D1037]/80 border rounded-full px-5 flex-row items-center gap-4 h-14 border-[#3E2B5C]">
-                <User size={20} color="#A78BFA" strokeWidth={2} />
-                <TextInput
-                  value={referralCode}
-                  onChangeText={(val) => setReferralCode(val.toUpperCase())}
-                  placeholder="Referral Code (Optional)"
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  autoCapitalize="characters"
-                  className="flex-1 text-white text-[14px] py-2"
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Terms checkbox */}
-          <View className="flex-col mt-5 mb-2">
-            <Pressable 
-              onPress={() => {
-                setAgreeTerms(!agreeTerms);
-                if (errors.agreeTerms) setErrors(prev => ({ ...prev, agreeTerms: undefined }));
+        {/* Username input */}
+        <View style={{ marginBottom: 8 }}>
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: errors.username ? '#FF4444' : 'rgba(255,255,255,0.12)',
+            paddingHorizontal: 16,
+            height: 54,
+            marginBottom: 4,
+          }}>
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, marginRight: 6 }}>@</Text>
+            <TextInput
+              value={username}
+              onChangeText={(val) => {
+                setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+                if (errors.username) setErrors(prev => ({ ...prev, username: undefined }));
               }}
-              className="flex-row items-center gap-4 px-1"
-            >
-              <View className={`w-[18px] h-[18px] rounded-full border items-center justify-center ${
-                agreeTerms ? 'bg-[#2D1B4E] border-[#A78BFA]' : errors.agreeTerms ? 'border-red-500 bg-[#1D1037]/45' : 'border-[#3E2B5C] bg-[#1D1037]/45'
-              }`}>
-                {agreeTerms && <Text className="text-[#A78BFA] text-[10px] font-bold">✓</Text>}
-              </View>
-              <Text className="text-white/60 text-[13px] flex-1">
-                I agree to the <Text className="text-[#A78BFA]">Terms of Service</Text> and <Text className="text-[#A78BFA]">Privacy Policy</Text>.
-              </Text>
-            </Pressable>
-            {errors.agreeTerms && (
-              <Text className="text-red-500 text-[10px] pl-1 mt-1 font-semibold">{errors.agreeTerms}</Text>
+              placeholder="yourusername"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              autoCapitalize="none"
+              style={{ flex: 1, color: '#fff', fontSize: 16, fontWeight: '600' }}
+            />
+            {username.length >= 3 && !errors.username && (
+              <Text style={{ color: '#4ADE80', fontSize: 18 }}>✓</Text>
             )}
           </View>
+          {errors.username ? (
+            <Text style={{ color: '#FF4444', fontSize: 12, paddingLeft: 4 }}>{errors.username}</Text>
+          ) : null}
+        </View>
 
-          {/* CTA Submit Button */}
-          <Pressable
-            onPress={handleSignupSubmit}
-            className="bg-[#A855F7] h-14 mt-4 rounded-full items-center justify-center shadow-lg shadow-primary-purple/40 active:scale-[0.98] transition-all"
+        {/* Suggestions */}
+        <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginBottom: 10, marginTop: 4 }}>Suggestions for you</Text>
+        {[`popli_creator`, `creator_popli`, `popli_01`, `popli_star`].map((s) => (
+          <TouchableOpacity
+            key={s}
+            onPress={() => { setUsername(s); setErrors(prev => ({ ...prev, username: undefined })); }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: 'rgba(255,255,255,0.04)',
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 13,
+              marginBottom: 8,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.07)',
+            }}
           >
-            <Text className="text-white text-[16px] font-bold">Sign Up</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14 }}>@ {s}</Text>
+            <Text style={{ color: '#FF2D6B', fontSize: 13, fontWeight: '700' }}>Use</Text>
+          </TouchableOpacity>
+        ))}
+
+        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginVertical: 20 }} />
+
+        {/* Full Name */}
+        <View style={{ marginBottom: 12 }}>
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: errors.fullName ? '#FF4444' : 'rgba(255,255,255,0.12)',
+            paddingHorizontal: 16,
+            height: 54,
+            justifyContent: 'center',
+          }}>
+            <TextInput
+              value={fullName}
+              onChangeText={(val) => { setFullName(val); if (errors.fullName) setErrors(prev => ({ ...prev, fullName: undefined })); }}
+              placeholder="Full Name"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              style={{ color: '#fff', fontSize: 15 }}
+            />
+          </View>
+          {errors.fullName ? <Text style={{ color: '#FF4444', fontSize: 12, paddingLeft: 4, marginTop: 3 }}>{errors.fullName}</Text> : null}
+        </View>
+
+        {/* Email */}
+        <View style={{ marginBottom: 12 }}>
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: errors.email ? '#FF4444' : 'rgba(255,255,255,0.12)',
+            paddingHorizontal: 16,
+            height: 54,
+            justifyContent: 'center',
+          }}>
+            <TextInput
+              value={email}
+              onChangeText={(val) => { setEmail(val); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })); }}
+              placeholder="Email"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              style={{ color: '#fff', fontSize: 15 }}
+            />
+          </View>
+          {errors.email ? <Text style={{ color: '#FF4444', fontSize: 12, paddingLeft: 4, marginTop: 3 }}>{errors.email}</Text> : null}
+        </View>
+
+        {/* Mobile */}
+        <View style={{ marginBottom: 12 }}>
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: errors.mobile ? '#FF4444' : 'rgba(255,255,255,0.12)',
+            paddingHorizontal: 16,
+            height: 54,
+          }}>
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 15, marginRight: 8 }}>+91</Text>
+            <TextInput
+              value={mobile}
+              onChangeText={(val) => { setMobile(val.replace(/[^0-9]/g, '')); if (errors.mobile) setErrors(prev => ({ ...prev, mobile: undefined })); }}
+              placeholder="Mobile Number"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              keyboardType="phone-pad"
+              maxLength={10}
+              style={{ flex: 1, color: '#fff', fontSize: 15 }}
+            />
+          </View>
+          {errors.mobile ? <Text style={{ color: '#FF4444', fontSize: 12, paddingLeft: 4, marginTop: 3 }}>{errors.mobile}</Text> : null}
+        </View>
+
+        {/* DOB */}
+        <View style={{ marginBottom: 12 }}>
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: errors.dob ? '#FF4444' : 'rgba(255,255,255,0.12)',
+            paddingHorizontal: 16,
+            height: 54,
+            justifyContent: 'center',
+          }}>
+            <TextInput
+              value={dob}
+              onChangeText={handleDOBChange}
+              placeholder="Date of Birth (DD/MM/YYYY)"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              keyboardType="numeric"
+              maxLength={10}
+              style={{ color: '#fff', fontSize: 15 }}
+            />
+          </View>
+          {errors.dob ? <Text style={{ color: '#FF4444', fontSize: 12, paddingLeft: 4, marginTop: 3 }}>{errors.dob}</Text> : null}
+        </View>
+
+        {/* Referral */}
+        <View style={{ marginBottom: 24 }}>
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.12)',
+            paddingHorizontal: 16,
+            height: 54,
+            justifyContent: 'center',
+          }}>
+            <TextInput
+              value={referralCode}
+              onChangeText={(val) => setReferralCode(val.toUpperCase())}
+              placeholder="Referral Code (Optional)"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              autoCapitalize="characters"
+              style={{ color: '#fff', fontSize: 15 }}
+            />
+          </View>
+        </View>
+
+        {/* Terms */}
+        <Pressable
+          onPress={() => { setAgreeTerms(!agreeTerms); if (errors.agreeTerms) setErrors(prev => ({ ...prev, agreeTerms: undefined })); }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 }}
+        >
+          <View style={{
+            width: 20, height: 20, borderRadius: 6,
+            backgroundColor: agreeTerms ? '#FF2D6B' : 'rgba(255,255,255,0.06)',
+            borderWidth: 1,
+            borderColor: errors.agreeTerms ? '#FF4444' : agreeTerms ? '#FF2D6B' : 'rgba(255,255,255,0.2)',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            {agreeTerms && <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>✓</Text>}
+          </View>
+          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, flex: 1 }}>
+            I agree to the <Text style={{ color: '#FF2D6B' }}>Terms of Service</Text> and <Text style={{ color: '#FF2D6B' }}>Privacy Policy</Text>
+          </Text>
+        </Pressable>
+        {errors.agreeTerms ? <Text style={{ color: '#FF4444', fontSize: 12, marginBottom: 8 }}>{errors.agreeTerms}</Text> : null}
+
+        {errors.api ? (
+          <Text style={{ color: '#FF4444', fontSize: 13, textAlign: 'center', marginVertical: 8 }}>{errors.api}</Text>
+        ) : null}
+
+        <TouchableOpacity
+          onPress={handleSignupSubmit}
+          disabled={isLoading}
+          style={{
+            backgroundColor: '#FF2D6B',
+            borderRadius: 14,
+            height: 54,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 16,
+            opacity: isLoading ? 0.7 : 1,
+          }}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>Continue</Text>
+          )}
+        </TouchableOpacity>
+
+        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20, gap: 4 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>Already have an account?</Text>
+          <Pressable onPress={() => router.push('/(auth)/login')}>
+            <Text style={{ color: '#FF2D6B', fontSize: 13, fontWeight: '700' }}> Log in</Text>
           </Pressable>
-
-
-
-            {/* Footer Navigation */}
-            <View className="flex-row items-center justify-center gap-1 pt-4">
-              <Text className="text-white/50 text-[14px]">Already have an account?</Text>
-              <Pressable 
-                onPress={() => router.push('/(auth)/login')}
-                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-                className="py-1 px-1.5"
-              >
-                <Text className="text-[#A78BFA] text-[14px] font-bold">Log in</Text>
-              </Pressable>
-            </View>
-        </MotiView>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

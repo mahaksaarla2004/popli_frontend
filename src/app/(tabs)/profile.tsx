@@ -112,9 +112,12 @@ export default function ProfileScreen() {
 
         {/* 2. AVATAR & BIO BLOCK */}
         <View className="items-center px-4 py-6">
-          <View className="mb-4">
-            <StoryRing userId={displayProfile.username} avatarUrl={displayProfile.avatar} size={96} />
-          </View>
+    <StoryRing 
+  userId={displayProfile.username} 
+  avatarUrl={displayProfile.avatar} 
+  size={96} 
+  onPress={() => router.push('/edit-profile')}
+/>
 
           <Text className="text-white font-bold text-lg mb-1">@{displayProfile.username}</Text>
           <Text className="text-neutral-grey text-[11px] mb-1">{displayProfile.roles}</Text>

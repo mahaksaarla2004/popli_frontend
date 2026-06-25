@@ -1,13 +1,13 @@
+/* eslint-disable */
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Platform, Image , ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Platform, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store';
-import { ChevronLeft, Camera, Sparkles, Globe, ChevronRight } from 'lucide-react-native';
-import { MotiView } from 'moti';
+import { ChevronLeft, Camera, Globe } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { apiClient } from '../../api/client';
-import axios from 'axios';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { LinearGradient } from 'expo-linear-gradient';
 
 const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop',
@@ -18,11 +18,11 @@ const AVATAR_PRESETS = [
 ];
 
 const CATEGORIES = [
-  { value: 'comedy', label: '😂 Comedy' },
-  { value: 'motivation', label: '🔥 Motivation' },
-  { value: 'dance', label: '💃 Dance' },
-  { value: 'gaming', label: '🎮 Gaming' },
-  { value: 'fashion', label: '✨ Fashion' },
+  { value: 'comedy', label: 'Comedy' },
+  { value: 'motivation', label: 'Motivation' },
+  { value: 'dance', label: 'Dance' },
+  { value: 'gaming', label: 'Gaming' },
+  { value: 'fashion', label: 'Fashion' },
 ];
 
 const LANGUAGES: ('English' | 'Hindi' | 'Bengali' | 'Tamil')[] = ['English', 'Hindi', 'Bengali', 'Tamil'];
@@ -30,47 +30,14 @@ const LANGUAGES: ('English' | 'Hindi' | 'Bengali' | 'Tamil')[] = ['English', 'Hi
 export default function ProfileSetupScreen() {
   const { userProfile, updateProfile, setLanguage } = useAuthStore();
 
-  const [name, setName] = useState(userProfile?.name === 'Popli User' ? '' : (userProfile?.name || ''));
-  const [username, setUsername] = useState(userProfile?.username?.startsWith('user_') ? '' : (userProfile?.username || ''));
+ const [name, setName] = useState(userProfile?.name === 'Popli User' ? '' : (userProfile?.name || ''));
   const [avatar, setAvatar] = useState(AVATAR_PRESETS[0]);
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [gender, setGender] = useState<string>('Male');
   const [category, setCategory] = useState<string>('comedy');
   const [selectedLang, setSelectedLang] = useState<'English' | 'Hindi' | 'Bengali' | 'Tamil'>('English');
   const [isUploading, setIsUploading] = useState(false);
-  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'error'>('idle');
-
-  React.useEffect(() => {
-    const currentUsername = username || '';
-    if (currentUsername.length < 3) {
-      setUsernameStatus('idle');
-      return;
-    }
-
-    setUsernameStatus('checking');
-    const delayDebounceFn = setTimeout(async () => {
-      try {
-        // Front-end reserved word check
-        const reservedUsernames = ['admin', 'support', 'official', 'popli', 'team', 'help', 'security', 'moderator', 'root', 'system'];
-        if (reservedUsernames.includes(currentUsername.toLowerCase())) {
-          setUsernameStatus('taken');
-          return;
-        }
-
-        const res = await apiClient.post('/auth/check-user', { username: currentUsername });
-        const currentUserId = useAuthStore.getState().userProfile?.id;
-        if (res.data.exists && res.data.userId !== currentUserId) {
-          setUsernameStatus('taken');
-        } else {
-          setUsernameStatus('available');
-        }
-      } catch (err) {
-        setUsernameStatus('error');
-      }
-    }, 600);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [username]);
+ 
 
   const pickImage = async () => {
     try {
@@ -129,30 +96,16 @@ export default function ProfileSetupScreen() {
   };
 
   const handleNext = async () => {
-    const currentName = name?.trim();
-    const currentUsername = username?.trim();
+  const currentName = name?.trim();
 
     if (!currentName || currentName.length < 2) {
       alert("Please enter a valid full name (at least 2 characters).");
       return;
     }
 
-    if (!currentUsername || currentUsername.length < 3) {
-      alert("Please enter a username (at least 3 characters).");
-      return;
-    }
-
-    if (usernameStatus === 'taken') {
-      alert("Please choose an available username.");
-      return;
-    }
-
-    // Attempt to persist everything directly to backend
-    // Since updateProfile is asynchronous and calls the API, we can catch username conflicts here
     setIsUploading(true);
     const result = await updateProfile({
       name: currentName,
-      username: currentUsername,
       avatar,
       bio: bio.trim() || 'Indian video creator 🚀',
       category,
@@ -164,233 +117,202 @@ export default function ProfileSetupScreen() {
       return;
     }
 
-    setLanguage(selectedLang);
+setLanguage(selectedLang);
+    await updateProfile({ manualComplete: true } as any);
 
-    // Slide smoothly into interest selection after render cycle
     setTimeout(() => {
-      router.push('/(auth)/interests');
+      router.replace('/(tabs)');
     }, 0);
   };
 
-  return (
-    <KeyboardAvoidingView
-      behavior="padding"
-      className="flex-1 bg-[#0B001A]"
-    >
+return (
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: '#0D0015' }}>
+      <LinearGradient
+        colors={['#1a0030', '#0D0015', '#0D0015']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.5 }}
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+      />
       <ScrollView
-        className="flex-1 px-6"
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40, paddingTop: Platform.OS === 'ios' ? 60 : 40 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 48 }}
         showsVerticalScrollIndicator={false}
       >
-        <MotiView
-          from={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'timing', duration: 400 }}
-          className="gap-6"
-        >
-          {/* Header */}
-          <View className="flex-row items-center justify-between w-full">
-            <Pressable 
-              onPress={() => router.back()}
-              className="w-10 h-10 rounded-full bg-white/5 border border-white/5 items-center justify-center active:scale-[0.9]"
-            >
-              <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
-            </Pressable>
-            <View className="flex-row items-center gap-2 bg-primary-pink/15 px-3 py-1.5 rounded-full border border-primary-pink/20">
-              <Sparkles size={11} color="#EC4899" />
-              <Text className="text-primary-pink text-[9px] font-black uppercase tracking-wider">Step 1 of 4</Text>
-            </View>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 28 }}>
+        <Pressable
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(auth)/otp');
+              }
+            }}
+            style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+          >
+            <ChevronLeft size={20} color="#fff" strokeWidth={2.5} />
+          </Pressable>
+          <Text style={{ color: '#FF2D6B', fontSize: 26, fontWeight: '900', letterSpacing: -0.5 }}>popli</Text>
+          <View style={{ marginLeft: 'auto', backgroundColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '700' }}>Optional</Text>
           </View>
+        </View>
 
-          {/* Intro titles */}
-          <View className="gap-2">
-            <Text className="text-white font-black text-3xl tracking-tight">Setup Profile</Text>
-            <Text className="text-white/50 text-xs">{"Let's create your creator identity and match you with local fans."}</Text>
-          </View>
+        <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800', marginBottom: 4 }}>Complete Your Profile</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginBottom: 28 }}>
+          Add a few details to grow faster and build trust.
+        </Text>
 
-          {/* Avatar Selector */}
-          <View className="gap-3">
-            <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Choose Creator Avatar</Text>
-            
-            <View className="items-center py-4">
-              <Pressable onPress={pickImage} className="relative active:scale-95 transition-all">
-                <Image 
-                  source={{ uri: avatar }} 
-                  className="w-24 h-24 rounded-full border-4 border-primary-pink shadow-lg shadow-primary-pink/40"
-                />
-                <View className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary-purple border-2 border-[#0B001A] items-center justify-center">
-                  {isUploading ? <ActivityIndicator size="small" color="#FFF" /> : <Camera size={14} color="#FFFFFF" />}
-                </View>
-              </Pressable>
+        {/* Avatar */}
+        <View style={{ alignItems: 'center', marginBottom: 28 }}>
+          <Pressable onPress={pickImage} style={{ position: 'relative' }}>
+            <View style={{
+              width: 88, height: 88, borderRadius: 44,
+              backgroundColor: 'rgba(255,255,255,0.06)',
+              borderWidth: 2, borderColor: 'rgba(255,255,255,0.12)',
+              alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+            }}>
+              {avatar !== AVATAR_PRESETS[0] ? (
+                <Image source={{ uri: avatar }} style={{ width: 88, height: 88, borderRadius: 44 }} />
+              ) : (
+                <Camera size={28} color="rgba(255,255,255,0.3)" strokeWidth={1.5} />
+              )}
             </View>
-
-            {/* Presets Horizontal Row */}
-            <View className="flex-row justify-center gap-3 py-2">
-              {AVATAR_PRESETS.map((preset, idx) => {
-                const isSelected = preset === avatar;
-                return (
-                  <Pressable 
-                    key={idx} 
-                    onPress={() => setAvatar(preset)}
-                    className={`rounded-full p-[2px] transition-all ${
-                      isSelected ? 'bg-primary-pink scale-110' : 'bg-transparent'
-                    }`}
-                  >
-                    <Image 
-                      source={{ uri: preset }} 
-                      className="w-10 h-10 rounded-full border border-white/10"
-                    />
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Name input */}
-          <View className="gap-2">
-            <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Your Full Name</Text>
-            <View className="bg-[#190C2C] border border-white/5 rounded-2xl px-4 py-3">
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="Enter your full name"
-                placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                className="text-white text-sm"
-              />
-            </View>
-          </View>
-
-          {/* Username input */}
-          <View className="gap-2">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Choose a Username</Text>
-              {usernameStatus === 'checking' && <ActivityIndicator size="small" color="#A78BFA" />}
-              {usernameStatus === 'available' && <Text className="text-green-400 text-xs font-bold">✓ Available</Text>}
-              {usernameStatus === 'taken' && <Text className="text-red-400 text-xs font-bold">✗ Taken</Text>}
-              {usernameStatus === 'error' && <Text className="text-red-400 text-xs font-bold">Error checking</Text>}
-            </View>
-            <View className={`bg-[#190C2C] border rounded-2xl px-4 py-3 ${usernameStatus === 'taken' ? 'border-red-500' : usernameStatus === 'available' ? 'border-green-500' : 'border-white/5'}`}>
-              <TextInput
-                value={username}
-                onChangeText={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                placeholder="e.g. popli_creator_01"
-                placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                autoCapitalize="none"
-                className="text-white text-sm"
-              />
-            </View>
-            <Text className="text-white/40 text-[10px]">Only lowercase letters, numbers, and underscores allowed.</Text>
-          </View>
-
-          {/* Bio input Card */}
-          <View className="gap-2 mt-2">
-            <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Your Bio</Text>
-            <View className="bg-[#190C2C] border border-white/5 rounded-2xl p-4">
-              <TextInput
-                value={bio}
-                onChangeText={setBio}
-                placeholder="Write a catchy bio for your fans (e.g. Village vlogger making funny daily reels! 🌾😂)"
-                placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                multiline
-                numberOfLines={3}
-                maxLength={100}
-                style={{ textAlignVertical: 'top' }}
-                className="text-white text-sm leading-5 h-20 py-1"
-              />
-              <View className="items-end mt-2">
-                <Text className="text-white/30 text-[10px]">{bio.length}/100</Text>
+            {isUploading && (
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 44, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator color="#FF2D6B" />
               </View>
-            </View>
-          </View>
+            )}
+          </Pressable>
+          <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 10 }}>Add your profile picture</Text>
+        </View>
 
-          {/* Gender selector grid */}
-          <View className="gap-2">
-            <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Gender</Text>
-            <View className="flex-row gap-2 w-full">
-              {['Male', 'Female', 'Other'].map((item) => {
-                const isSelected = gender === item;
-                return (
-                  <Pressable
-                    key={item}
-                    onPress={() => setGender(item)}
-                    className={`flex-1 py-3 rounded-2xl items-center border ${
-                      isSelected 
-                        ? 'bg-primary-purple/20 border-primary-purple' 
-                        : 'bg-[#190C2C]/65 border-white/5'
-                    } active:scale-[0.97]`}
-                  >
-                    <Text className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-white/60'}`}>
-                      {item}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+        {/* Full Name */}
+        <View style={{ marginBottom: 14 }}>
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14,
+            borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+            paddingHorizontal: 16, height: 54, justifyContent: 'center',
+          }}>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Full Name (optional)"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              style={{ color: '#fff', fontSize: 15 }}
+            />
           </View>
+        </View>
 
-          {/* Category Dropdown/Selector Grid */}
-          <View className="gap-2">
-            <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">Creator Vibe Category</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {CATEGORIES.map((cat) => {
-                const isSelected = category === cat.value;
-                return (
-                  <Pressable
-                    key={cat.value}
-                    onPress={() => setCategory(cat.value)}
-                    className={`px-4 py-2.5 rounded-full border ${
-                      isSelected 
-                        ? 'bg-primary-pink/25 border-primary-pink' 
-                        : 'bg-[#190C2C]/50 border-white/5'
-                    } active:scale-[0.96]`}
-                  >
-                    <Text className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-white/60'}`}>
-                      {cat.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+      
+        {/* Bio */}
+        <View style={{ marginBottom: 20 }}>
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14,
+            borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+            paddingHorizontal: 16, paddingVertical: 14,
+          }}>
+            <TextInput
+              value={bio}
+              onChangeText={setBio}
+              placeholder="Bio (optional)"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              multiline
+              numberOfLines={3}
+              maxLength={80}
+              style={{ color: '#fff', fontSize: 15, textAlignVertical: 'top', minHeight: 60 }}
+            />
+            <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, textAlign: 'right', marginTop: 4 }}>{bio.length}/80</Text>
           </View>
+        </View>
 
-          {/* Language Preference */}
-          <View className="gap-2">
-            <View className="flex-row items-center gap-1">
-              <Globe size={12} color="#A78BFA" />
-              <Text className="text-white/70 text-xs font-bold uppercase tracking-wider">App Language</Text>
-            </View>
-            <View className="flex-row gap-2 w-full">
-              {LANGUAGES.map((lang) => {
-                const isSelected = selectedLang === lang;
-                return (
-                  <Pressable
-                    key={lang}
-                    onPress={() => setSelectedLang(lang)}
-                    className={`flex-1 py-3 rounded-2xl items-center border ${
-                      isSelected 
-                        ? 'bg-primary-purple border-primary-purple' 
-                        : 'bg-[#190C2C]/50 border-white/5'
-                    } active:scale-[0.97]`}
-                  >
-                    <Text className="text-white text-xs font-bold">{lang}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Submit Next Button */}
-          <View className="pt-4">
+        {/* Gender */}
+        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '700', marginBottom: 10, letterSpacing: 0.5 }}>GENDER</Text>
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+          {['Male', 'Female', 'Other'].map((item) => (
             <Pressable
-              onPress={handleNext}
-              className="bg-primary-purple py-4 rounded-2xl items-center justify-center flex-row gap-2 active:scale-[0.98] shadow-lg shadow-primary-purple/40"
+              key={item}
+              onPress={() => setGender(item)}
+              style={{
+                flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center',
+                backgroundColor: gender === item ? 'rgba(255,45,107,0.15)' : 'rgba(255,255,255,0.04)',
+                borderWidth: 1, borderColor: gender === item ? '#FF2D6B' : 'rgba(255,255,255,0.08)',
+              }}
             >
-              <Text className="text-white text-sm font-bold uppercase tracking-wider">Continue to Interests</Text>
-              <ChevronRight size={16} color="#FFFFFF" strokeWidth={3} />
+              <Text style={{ color: gender === item ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '700' }}>{item}</Text>
             </Pressable>
-          </View>
+          ))}
+        </View>
 
-        </MotiView>
+        {/* Category */}
+        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '700', marginBottom: 10, letterSpacing: 0.5 }}>CREATOR CATEGORY</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+          {CATEGORIES.map((cat) => (
+            <Pressable
+              key={cat.value}
+              onPress={() => setCategory(cat.value)}
+              style={{
+                paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20,
+                backgroundColor: category === cat.value ? 'rgba(255,45,107,0.15)' : 'rgba(255,255,255,0.04)',
+                borderWidth: 1, borderColor: category === cat.value ? '#FF2D6B' : 'rgba(255,255,255,0.08)',
+              }}
+            >
+              <Text style={{ color: category === cat.value ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '600' }}>{cat.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Language */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          <Globe size={13} color="rgba(255,255,255,0.4)" />
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 }}>APP LANGUAGE</Text>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 32 }}>
+          {LANGUAGES.map((lang) => (
+            <Pressable
+              key={lang}
+              onPress={() => setSelectedLang(lang)}
+              style={{
+                flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center',
+                backgroundColor: selectedLang === lang ? 'rgba(255,45,107,0.15)' : 'rgba(255,255,255,0.04)',
+                borderWidth: 1, borderColor: selectedLang === lang ? '#FF2D6B' : 'rgba(255,255,255,0.08)',
+              }}
+            >
+              <Text style={{ color: selectedLang === lang ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>{lang}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* CTAs */}
+        <TouchableOpacity
+          onPress={handleNext}
+          disabled={isUploading}
+          style={{
+            backgroundColor: '#FF2D6B', borderRadius: 14,
+            paddingVertical: 16, alignItems: 'center',
+            opacity: isUploading ? 0.7 : 1, marginBottom: 12,
+          }}
+        >
+          {isUploading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>Save & Continue</Text>
+          )}
+        </TouchableOpacity>
+
+   <TouchableOpacity
+          onPress={async () => {
+            await updateProfile({ manualComplete: true } as any);
+            router.replace('/(tabs)');
+          }}
+          style={{ alignItems: 'center', paddingVertical: 12 }}
+        >
+          <Text style={{ color: '#FF2D6B', fontSize: 14, fontWeight: '600' }}>Skip for now</Text>
+        </TouchableOpacity>
+
+        <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, textAlign: 'center', marginTop: 8 }}>
+          You can change this anytime from your profile.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

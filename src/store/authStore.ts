@@ -21,7 +21,8 @@ interface AuthState {
     avatar: string;
     bio: string;
     city: string;
-    category: string;
+   category: string;
+    gender?: string;
     followersCount: number;
     followingCount: number;
     giftsReceivedCount: number;
@@ -96,11 +97,15 @@ export const useAuthStore = create<AuthState>()(
       setLogin: (status) => set({ isLoggedIn: status }),
       setOnboardingComplete: (status) => set({ isOnboarded: status }),
       setFirstLogin: (status) => set({ isFirstLogin: status }),
-      updateProfile: async (profile) => {
+  updateProfile: async (profile) => {
         set((state) => ({ userProfile: { ...state.userProfile, ...profile } }));
         try {
-          await apiClient.put('/users/me', profile);
-          
+          const res = await apiClient.put('/users/me', profile);
+
+          if (res.data?.isProfileComplete !== undefined) {
+            set((state) => ({ userProfile: { ...state.userProfile, isProfileComplete: res.data.isProfileComplete } }));
+          }
+
           // Also update the feedStore so reels instantly show the new name/username/avatar
           // eslint-disable-next-line @typescript-eslint/no-require-imports
           const { useFeedStore } = require('./feedStore');

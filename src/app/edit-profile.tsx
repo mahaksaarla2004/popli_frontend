@@ -56,6 +56,8 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState(userProfile.bio || '');
   const [socialLinks, setSocialLinks] = useState<{title: string, url: string}[]>(userProfile.socialLinks || []);
   const [avatarUri, setAvatarUri] = useState(userProfile.avatar || '');
+ const [gender, setGender] = useState<string>(userProfile.gender || 'Male');
+  const [category, setCategory] = useState<string>(userProfile.category || 'comedy');
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -97,16 +99,16 @@ export default function EditProfileScreen() {
         finalAvatarUrl = await uploadToCloudinary(avatarUri, 'image', 'avatars');
       }
 
-      const result = await updateProfile({
+const result = await updateProfile({
         name: fullName,
         username: username,
         bio: bio,
         avatar: finalAvatarUrl,
-        // email and phone can be sent to backend if supported
         email: email || undefined,
-        phone: phone || undefined,
         socialLinks: socialLinks,
-      });
+        gender: gender,
+        category: category,
+      } as any);
       setIsSaving(false);
       
       if (result.success) {
@@ -166,19 +168,74 @@ export default function EditProfileScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          <InputField 
-            label="PHONE NUMBER" 
-            value={phone} 
-            onChange={(text: string) => {
-              // Only allow numbers, plus sign, and spaces
-              const filtered = text.replace(/[^0-9+\s-]/g, '');
-              setPhone(filtered);
-            }} 
-            placeholder="+91 0000000000" 
-            keyboardType="phone-pad"
-            maxLength={15}
-          />
-        <InputField label="BIO" value={bio} onChange={setBio} multiline />
+     <View className="mb-4">
+          <Text className="text-white/60 text-[9px] font-bold uppercase tracking-widest pl-1 mb-2">PHONE NUMBER</Text>
+          <View className="bg-[#1A0E2C] border border-white/5 rounded-2xl flex-row items-center justify-between px-4 h-[52px]">
+            <Text className="text-white font-medium text-sm">{userProfile.phone || 'Not set'}</Text>
+         <Pressable
+              onPress={() => router.push('/(auth)/change-phone-otp')}
+            >
+              <Text className="text-[#EC4899] text-xs font-bold">CHANGE</Text>
+            </Pressable>
+          </View>
+        </View>
+      <InputField label="BIO" value={bio} onChange={setBio} multiline />
+
+      {/* Gender */}
+        <View className="mb-4">
+          <Text className="text-white/60 text-[9px] font-bold uppercase tracking-widest pl-1 mb-2">GENDER</Text>
+          <View className="flex-row gap-2">
+            {['Male', 'Female', 'Other'].map((item) => {
+              const isLocked = !!userProfile.gender;
+              return (
+                <Pressable
+                  key={item}
+                  onPress={() => { if (!isLocked) setGender(item); }}
+                  disabled={isLocked}
+                  className="flex-1 py-3 rounded-xl items-center"
+                  style={{
+                    backgroundColor: gender === item ? 'rgba(236,72,153,0.15)' : 'rgba(255,255,255,0.04)',
+                    borderWidth: 1,
+                    borderColor: gender === item ? '#EC4899' : 'rgba(255,255,255,0.08)',
+                    opacity: isLocked && gender !== item ? 0.4 : 1,
+                  }}
+                >
+                  <Text className="text-xs font-bold" style={{ color: gender === item ? '#fff' : 'rgba(255,255,255,0.4)' }}>{item}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {!!userProfile.gender && (
+            <Text className="text-white/30 text-[10px] mt-2 pl-1">Gender can only be set once and cannot be changed later.</Text>
+          )}
+        </View>
+
+        {/* Creator Category */}
+        <View className="mb-4">
+          <Text className="text-white/60 text-[9px] font-bold uppercase tracking-widest pl-1 mb-2">CREATOR CATEGORY</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {[
+              { value: 'comedy', label: 'Comedy' },
+              { value: 'motivation', label: 'Motivation' },
+              { value: 'dance', label: 'Dance' },
+              { value: 'gaming', label: 'Gaming' },
+              { value: 'fashion', label: 'Fashion' },
+            ].map((cat) => (
+              <Pressable
+                key={cat.value}
+                onPress={() => setCategory(cat.value)}
+                className="px-4 py-2 rounded-full"
+                style={{
+                  backgroundColor: category === cat.value ? 'rgba(236,72,153,0.15)' : 'rgba(255,255,255,0.04)',
+                  borderWidth: 1,
+                  borderColor: category === cat.value ? '#EC4899' : 'rgba(255,255,255,0.08)',
+                }}
+              >
+                <Text className="text-xs font-semibold" style={{ color: category === cat.value ? '#fff' : 'rgba(255,255,255,0.4)' }}>{cat.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
 
         {/* Social Links Section */}
         <View className="mb-4 mt-2">

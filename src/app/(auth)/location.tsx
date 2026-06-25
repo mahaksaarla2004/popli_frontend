@@ -83,8 +83,14 @@ export default function LocationScreen() {
       
       {/* Top Navigation Row */}
       <View className="flex-row items-center justify-between w-full h-12">
-        <Pressable 
-          onPress={() => router.back()}
+     <Pressable 
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(auth)/interests');
+            }
+          }}
           className="w-10 h-10 rounded-full bg-white/5 border border-white/5 items-center justify-center active:scale-[0.9]"
         >
           <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
