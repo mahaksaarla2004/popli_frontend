@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Platform, Image, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, Platform, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore, useFeedStore } from '../../store';
-import { Play, Sparkles } from 'lucide-react-native';
 import { MotiView } from 'moti';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Check, Upload, Eye, DollarSign } from 'lucide-react-native';
 
 const PROGRESS_MESSAGES = [
   'Preparing Your Custom Feed...',
@@ -20,119 +21,111 @@ const MOCK_CREATOR_AVATARS = [
 export default function PersonalizationLoaderScreen() {
   const router = useRouter();
   const { setLogin, userProfile } = useAuthStore();
-  const { gpsCity } = useFeedStore();
 
-  const [messageIndex, setMessageIndex] = useState(0);
-  const currentCity = gpsCity || userProfile?.city || 'Indore';
-
-  // Cycle messages sequentially every 500ms
-  useEffect(() => {
-    const messageInterval = setInterval(() => {
-      setMessageIndex(prev => (prev < PROGRESS_MESSAGES.length - 1 ? prev + 1 : prev));
-    }, 500);
-
-    return () => clearInterval(messageInterval);
+useEffect(() => {
+    const t = setTimeout(() => {
+      requestAnimationFrame(() => router.replace('/(auth)/profile-setup'));
+    }, 2200);
+    return () => clearTimeout(t);
   }, []);
 
-  // Complete personalization after 1.5 seconds
-  useEffect(() => {
-    const redirectionTimeout = setTimeout(() => {
-      // Set authenticated session status to true
-      setLogin(true);
-      useAuthStore.getState().updateProfile({ isProfileComplete: true });
-
-      // Instantly replace navigation route to tabs reels feed
-      router.replace('/(tabs)');
-    }, 1600);
-
-    return () => clearTimeout(redirectionTimeout);
-  }, [setLogin, router]);
-
   return (
-    <View style={styles.container} className="bg-[#0B001A] flex-1 justify-center items-center px-6">
-      
-      {/* Visual Floating Mock Cards (Simulates feed downloading) */}
-      <View className="absolute top-20 flex-row space-x-4 w-full justify-center">
-        {MOCK_CREATOR_AVATARS.map((avatarUrl, idx) => {
-          const delay = idx * 200;
-          return (
-            <MotiView
-              key={idx}
-              from={{ opacity: 0, scale: 0.7, translateY: -20 }}
-              animate={{ opacity: 0.35, scale: 0.9, translateY: 0 }}
-              transition={{ type: 'spring', delay, duration: 800 }}
-              className="w-14 h-14 rounded-full border border-primary-pink/30 p-[2px]"
-            >
-              <Image 
-                source={{ uri: avatarUrl }} 
-                className="w-full h-full rounded-full"
-              />
-            </MotiView>
-          );
-        })}
-      </View>
+    <View style={{ flex: 1, backgroundColor: '#0D0015', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 }}>
+      <LinearGradient
+        colors={['#1a0030', '#0D0015', '#0D0015']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.5 }}
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+      />
 
-      {/* Main loading emblem */}
-      <View className="items-center justify-center relative my-8">
-        
-        {/* Breathing backdrop shimmer */}
-        <MotiView
-          from={{ opacity: 0.25, scale: 0.9 }}
-          animate={{ opacity: [0.25, 0.6, 0.25], scale: [0.9, 1.25, 0.9] }}
-          transition={{ loop: true, type: 'timing', duration: 1500 }}
-          className="absolute w-28 h-28 rounded-full bg-primary-purple/10 blur-xl"
-        />
-
-        {/* Outer glowing border ring */}
-        <MotiView
-          from={{ rotate: '0deg' }}
-          animate={{ rotate: '360deg' }}
-          transition={{ loop: true, type: 'timing', duration: 1500 }}
-          className="w-24 h-24 rounded-full border-2 border-dashed border-primary-pink/30 items-center justify-center"
-        />
-
-        {/* Center branding box */}
-        <MotiView
-          from={{ scale: 0.8 }}
-          animate={{ scale: 1 }}
-          className="absolute w-16 h-16 bg-gradient-to-tr from-primary-purple via-[#8B5CF6] to-primary-pink p-[2px] rounded-3xl shadow-xl shadow-primary-purple/30 items-center justify-center"
-        >
-          <View className="w-full h-full bg-[#110125] rounded-[22px] items-center justify-center">
-            <Play size={20} color="#D946EF" fill="#D946EF" className="ml-0.5" />
-          </View>
-        </MotiView>
-      </View>
-
-      {/* Progress Messaging */}
-      <View className="items-center space-y-3 mt-4 h-16 justify-center">
-        <MotiView
-          key={messageIndex}
-          from={{ opacity: 0, translateY: 10 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', duration: 250 }}
-          className="items-center"
-        >
-          <Text className="text-white font-extrabold text-base tracking-tight text-center">
-            {messageIndex === 1 ? `Finding Creators in ${currentCity}...` : PROGRESS_MESSAGES[messageIndex]}
-          </Text>
-        </MotiView>
-
-        <View className="flex-row items-center space-x-1.5 bg-primary-pink/10 px-3 py-1 rounded-full border border-primary-pink/10">
-          <Sparkles size={10} color="#EC4899" />
-          <Text className="text-primary-pink text-[9px] font-black uppercase tracking-wider">AI Personalization Enabled</Text>
+      {/* Big checkmark circle */}
+      <MotiView
+        from={{ scale: 0.4, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', damping: 14, stiffness: 120 }}
+        style={{ marginBottom: 28 }}
+      >
+        <View style={{
+          width: 110, height: 110, borderRadius: 55,
+          borderWidth: 3, borderColor: '#FF2D6B',
+          alignItems: 'center', justifyContent: 'center',
+          backgroundColor: 'rgba(255,45,107,0.1)',
+          shadowColor: '#FF2D6B', shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.5, shadowRadius: 24, elevation: 16,
+        }}>
+          <Check size={48} color="#FF2D6B" strokeWidth={2.5} />
         </View>
-      </View>
+      </MotiView>
 
+      {/* Title */}
+      <MotiView
+        from={{ opacity: 0, translateY: 16 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 400, delay: 300 }}
+        style={{ alignItems: 'center', marginBottom: 8 }}
+      >
+        <Text style={{ color: '#fff', fontSize: 30, fontWeight: '900', letterSpacing: -0.5 }}>{"You're In! 🎉"}</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
+          Your Popli account is ready.{'\n'}Upload your first video and start earning immediately.
+        </Text>
+      </MotiView>
+
+      {/* Progress bar */}
+      <MotiView
+        from={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ type: 'timing', duration: 400, delay: 500 }}
+        style={{ width: '100%', marginTop: 28, marginBottom: 8 }}
+      >
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Profile Setup Progress</Text>
+          <Text style={{ color: '#FF2D6B', fontSize: 12, fontWeight: '700' }}>40%</Text>
+        </View>
+        <View style={{ height: 6, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+          <MotiView
+            from={{ width: '0%' }}
+            animate={{ width: '40%' }}
+            transition={{ type: 'timing', duration: 800, delay: 600 }}
+            style={{ height: '100%', backgroundColor: '#FF2D6B', borderRadius: 3 }}
+          />
+        </View>
+        <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, marginTop: 4 }}>40% Complete</Text>
+      </MotiView>
+
+      {/* 3 step cards */}
+      <MotiView
+        from={{ opacity: 0, translateY: 20 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 400, delay: 700 }}
+        style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}
+      >
+        {[
+          { icon: Upload, label: 'Upload\nVideo' },
+          { icon: Eye, label: 'Get\nViews' },
+          { icon: DollarSign, label: 'Earn\nMoney' },
+        ].map(({ icon: Icon, label }, i) => (
+          <View key={i} style={{ flex: 1, alignItems: 'center', gap: 8 }}>
+            <View style={{
+              width: 48, height: 48, borderRadius: 14,
+              backgroundColor: 'rgba(255,45,107,0.1)',
+              borderWidth: 1, borderColor: 'rgba(255,45,107,0.2)',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Icon size={22} color="#FF2D6B" strokeWidth={1.8} />
+            </View>
+            {i < 2 && (
+              <View style={{ position: 'absolute', right: -8, top: 13, width: 16, height: 2, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+            )}
+            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'center', lineHeight: 16 }}>{label}</Text>
+          </View>
+        ))}
+      </MotiView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    ...Platform.select({
-      web: {
-        cursor: 'default',
-      } as any
-    })
+    ...Platform.select({ web: { cursor: 'default' } as any })
   }
 });

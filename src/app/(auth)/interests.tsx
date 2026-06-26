@@ -3,23 +3,23 @@ import { View, Text, Pressable, ScrollView, Platform, ActivityIndicator, Touchab
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { apiClient } from '../../api/client';
-import { ChevronLeft, Sparkles, ChevronRight, Check } from 'lucide-react-native';
-import { MotiView } from 'moti';
+import { Check, Cpu, Trophy, Music2, Palette, Gamepad2, Shirt, UtensilsCrossed, Laugh, Heart, PersonStanding, Wheat, Flame, Dumbbell } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const INTERESTS = [
-  { id: 'technology', label: 'Technology', emoji: '💻', description: 'Unboxing, tips & hacks' },
-  { id: 'sports', label: 'Sports', emoji: '🏏', description: 'Cricket, updates & plays' },
-  { id: 'music', label: 'Music', emoji: '🎵', description: 'Songs, covers & beats' },
-  { id: 'art', label: 'Art', emoji: '🎨', description: 'Painting, crafts & design' },
-  { id: 'gaming', label: 'Gaming', emoji: '🎮', description: 'Pubg, streaming & clips' },
-  { id: 'fashion', label: 'Fashion', emoji: '👗', description: 'Outfits, trends & beauty' },
-  { id: 'food', label: 'Food', emoji: '🥘', description: 'Recipes, street food & vlogs' },
-  { id: 'comedy', label: 'Comedy', emoji: '😂', description: 'Funny sketches & voiceovers' },
-  { id: 'emotional', label: 'Emotional', emoji: '😢', description: 'Drama, stories & poetry' },
-  { id: 'dance', label: 'Dance', emoji: '💃', description: 'Reels, trends & beats' },
-  { id: 'village_life', label: 'Village Life', emoji: '🌾', description: 'Desi vloggers & culture' },
-  { id: 'motivation', label: 'Motivation', emoji: '🔥', description: 'Success & daily quotes' },
-  { id: 'fitness', label: 'Fitness', emoji: '💪', description: 'Gym, workouts & health' },
+  { id: 'technology', label: 'Technology', icon: Cpu, description: 'Unboxing, tips & hacks' },
+  { id: 'sports', label: 'Sports', icon: Trophy, description: 'Cricket, updates & plays' },
+  { id: 'music', label: 'Music', icon: Music2, description: 'Songs, covers & beats' },
+  { id: 'art', label: 'Art', icon: Palette, description: 'Painting, crafts & design' },
+  { id: 'gaming', label: 'Gaming', icon: Gamepad2, description: 'Pubg, streaming & clips' },
+  { id: 'fashion', label: 'Fashion', icon: Shirt, description: 'Outfits, trends & beauty' },
+  { id: 'food', label: 'Food', icon: UtensilsCrossed, description: 'Recipes, street food & vlogs' },
+  { id: 'comedy', label: 'Comedy', icon: Laugh, description: 'Funny sketches & voiceovers' },
+  { id: 'emotional', label: 'Emotional', icon: Heart, description: 'Drama, stories & poetry' },
+  { id: 'dance', label: 'Dance', icon: PersonStanding, description: 'Reels, trends & beats' },
+  { id: 'village_life', label: 'Village Life', icon: Wheat, description: 'Desi vloggers & culture' },
+  { id: 'motivation', label: 'Motivation', icon: Flame, description: 'Success & daily quotes' },
+  { id: 'fitness', label: 'Fitness', icon: Dumbbell, description: 'Gym, workouts & health' },
 ];
 
 export default function InterestsScreen() {
@@ -32,29 +32,12 @@ export default function InterestsScreen() {
     apiClient.get('/interests')
       .then(res => {
         if (res.data && res.data.length > 0) {
-          const EMOJI_MAP: Record<string, string> = {
-            technology: '💻',
-            tech: '💻',
-            sports: '🏏',
-            music: '🎵',
-            art: '🎨',
-            gaming: '🎮',
-            fashion: '👗',
-            comedy: '😂',
-            emotional: '😢',
-            dance: '💃',
-            'village life': '🌾',
-            motivation: '🔥',
-            fitness: '💪',
-            food: '🥘',
-          };
-
-          const mapped = res.data.map((i: any) => {
+       const mapped = res.data.map((i: any) => {
             const localMatch = INTERESTS.find(local => local.label.toLowerCase() === i.name.toLowerCase());
             return {
-              id: i.id, // backend UUID
+              id: i.id,
               label: i.name,
-              emoji: i.emoji || EMOJI_MAP[i.name.toLowerCase()] || localMatch?.emoji || '✨',
+              icon: localMatch?.icon || Flame,
               description: i.description || localMatch?.description || ''
             };
           });
@@ -99,10 +82,9 @@ export default function InterestsScreen() {
         selectedInterests: selectedIds, // Save all interests dynamically
       } as any);
 
-      setIsSaving(false);
-      // Navigate smoothly to location configuration page after render cycle
+   setIsSaving(false);
       setTimeout(() => {
-        router.push('/(auth)/location');
+        router.replace('/(auth)/location');
       }, 0);
     } catch (error) {
       setIsSaving(false);
@@ -114,85 +96,79 @@ export default function InterestsScreen() {
   const isMinSelected = selectedIds.length >= 3;
   const remaining = 3 - selectedIds.length;
 
-  return (
-    <View className="flex-1 bg-[#0B001A] justify-between py-8 px-6" style={{ paddingTop: Platform.OS === 'ios' ? 60 : 40 }}>
-      
-      {/* Top Navigation Row */}
-      <View className="flex-row items-center justify-between w-full h-12">
-        <Pressable 
-          onPress={() => router.back()}
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/5 items-center justify-center active:scale-[0.9]"
-        >
-          <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
-        </Pressable>
-        <View className="flex-row items-center gap-2 bg-primary-pink/15 px-3 py-1.5 rounded-full border border-primary-pink/20">
-          <Sparkles size={11} color="#EC4899" />
-          <Text className="text-primary-pink text-[9px] font-black uppercase tracking-wider">Step 2 of 4</Text>
-        </View>
-      </View>
+return (
+    <View style={{ flex: 1, backgroundColor: '#0D0015', paddingTop: Platform.OS === 'ios' ? 56 : 36 }}>
+      <LinearGradient
+        colors={['#1a0030', '#0D0015', '#0D0015']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.5 }}
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+      />
 
-      {/* Main Container */}
-      <View className="flex-1 justify-center my-4">
-        <View className="gap-2 mb-4">
-          <Text className="text-white font-black text-3xl tracking-tight">Choose Interests</Text>
-          <Text className="text-white/50 text-xs">
-            {isMinSelected 
-              ? 'Great choices! Select more if you wish.' 
-              : `Select at least ${remaining} more genre${remaining > 1 ? 's' : ''} to unlock personalized reels.`
-            }
-          </Text>
+      <View style={{ flex: 1, paddingHorizontal: 20 }}>
+
+    {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#FF2D6B', fontSize: 26, fontWeight: '900', letterSpacing: -0.5 }}>popli</Text>
+          </View>
+          <View style={{ backgroundColor: 'rgba(255,45,107,0.12)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,45,107,0.2)' }}>
+            <Text style={{ color: '#FF2D6B', fontSize: 10, fontWeight: '800' }}>
+              {selectedIds.length}/5 selected
+            </Text>
+          </View>
         </View>
 
-        {/* Categories Scrollable grid with customized layout */}
-        <ScrollView 
-          className="flex-grow-0 h-[380px]"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 10 }}
-        >
-          <View className="flex-row flex-wrap gap-3 py-2 justify-between">
+        <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800', marginBottom: 4 }}>Pick Your Interests</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginBottom: 20 }}>
+          {isMinSelected
+            ? 'Great choices! Select more if you wish.'
+            : `Choose at least ${remaining} more topic${remaining > 1 ? 's' : ''} you love.`}
+        </Text>
+
+        {/* Grid */}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
             {interests.map((item) => {
               const isSelected = selectedIds.includes(item.id);
-              
+              const IconComponent = item.icon;
               return (
                 <Pressable
                   key={item.id}
                   onPress={() => handleToggleInterest(item.id)}
-                  style={{ width: '48%' }}
-                  className={`p-4 rounded-3xl border relative justify-between h-28 active:scale-[0.96] transition-all overflow-hidden ${
-                    isSelected 
-                      ? 'bg-primary-purple/20 border-primary-pink/70 shadow-lg shadow-primary-pink/20' 
-                      : 'bg-[#190C2C]/50 border-white/5'
-                  }`}
+                  style={{
+                    width: '30.5%',
+                    paddingVertical: 14,
+                    paddingHorizontal: 10,
+                    borderRadius: 16,
+                    borderWidth: 1.5,
+                    borderColor: isSelected ? '#FF2D6B' : 'rgba(255,255,255,0.08)',
+                    backgroundColor: isSelected ? 'rgba(255,45,107,0.12)' : 'rgba(255,255,255,0.04)',
+                    alignItems: 'center',
+                    gap: 8,
+                    position: 'relative',
+                  }}
                 >
-                  {/* Decorative background glow for active card */}
                   {isSelected && (
-                    <MotiView
-                      from={{ scale: 0.8, opacity: 0.1 }}
-                      animate={{ scale: 1.5, opacity: 0.25 }}
-                      transition={{ type: 'timing', duration: 300 }}
-                      className="absolute -right-4 -bottom-4 w-16 h-16 rounded-full bg-primary-pink/30 blur-md"
-                    />
+                    <View style={{
+                      position: 'absolute', top: 6, right: 6,
+                      width: 16, height: 16, borderRadius: 8,
+                      backgroundColor: '#FF2D6B',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Check size={9} color="#fff" strokeWidth={3} />
+                    </View>
                   )}
-
-                  <View className="flex-row justify-between items-start">
-                    <Text className="text-3xl">{item.emoji}</Text>
-                    {isSelected && (
-                      <MotiView
-                        from={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="w-5 h-5 rounded-full bg-primary-pink items-center justify-center border border-white/20"
-                      >
-                        <Check size={10} color="#FFFFFF" strokeWidth={4} />
-                      </MotiView>
-                    )}
+                  <View style={{
+                    width: 40, height: 40, borderRadius: 12,
+                    backgroundColor: isSelected ? 'rgba(255,45,107,0.2)' : 'rgba(255,255,255,0.06)',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <IconComponent size={20} color={isSelected ? '#FF2D6B' : 'rgba(255,255,255,0.5)'} strokeWidth={1.8} />
                   </View>
-
-                  <View className="gap-1">
-                    <Text className="text-white font-black text-sm">{item.label}</Text>
-                    <Text className="text-white/40 text-[9px] font-medium" numberOfLines={1}>
-                      {item.description}
-                    </Text>
-                  </View>
+                  <Text style={{ color: isSelected ? '#fff' : 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>
+                    {item.label}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -200,27 +176,29 @@ export default function InterestsScreen() {
         </ScrollView>
       </View>
 
-      {/* Footer Navigation CTA */}
-      <View className="w-full">
+      {/* Footer CTA */}
+      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, paddingBottom: Platform.OS === 'ios' ? 36 : 20, backgroundColor: 'rgba(13,0,21,0.95)' }}>
         <TouchableOpacity
           onPress={handleNext}
-          disabled={!isMinSelected}
+          disabled={!isMinSelected || isSaving}
           activeOpacity={0.8}
-          className="py-4 rounded-2xl items-center justify-center flex-row gap-2 bg-primary-purple"
+          style={{
+            backgroundColor: isMinSelected ? '#FF2D6B' : 'rgba(255,255,255,0.08)',
+            borderRadius: 14,
+            paddingVertical: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           {isSaving ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator color="#fff" />
           ) : (
-            <>
-              <Text className="text-white text-sm font-bold uppercase tracking-wider text-center" numberOfLines={1}>
-                {isMinSelected ? 'Continue to Location' : `Choose ${remaining} More`}
-              </Text>
-              {isMinSelected && <Text className="text-white font-bold text-lg">{'>'}</Text>}
-            </>
+            <Text style={{ color: isMinSelected ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 16, fontWeight: '800' }}>
+              {isMinSelected ? 'Continue' : `Choose ${remaining} More`}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
-
     </View>
   );
 }

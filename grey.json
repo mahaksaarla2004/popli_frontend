@@ -30,28 +30,6 @@
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-      ],
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "popli.app",
-              "pathPrefix": "/"
-            },
-            {
-              "scheme": "http",
-              "host": "popli.app",
-              "pathPrefix": "/"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
       ]
     },
     "web": {
@@ -99,8 +77,7 @@
         }
       ],
       "expo-asset",
-      "expo-image",
-      "@react-native-google-signin/google-signin"
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -109,12 +86,12 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "bd246bc6-f0c2-48e6-9b4f-4942292d1f38"
+        "projectId": "5cb6a89e-146c-48b1-bb36-9dd8a80634ca"
       }
     },
     "assetBundlePatterns": [
       "**/*"
     ],
-    "owner": "mahakcode"
+    "owner": "greyhacker"
   }
 }

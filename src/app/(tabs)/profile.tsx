@@ -112,9 +112,12 @@ export default function ProfileScreen() {
 
         {/* 2. AVATAR & BIO BLOCK */}
         <View className="items-center px-4 py-6">
-          <View className="mb-4">
-            <StoryRing userId={displayProfile.username} avatarUrl={displayProfile.avatar} size={96} />
-          </View>
+    <StoryRing 
+  userId={displayProfile.username} 
+  avatarUrl={displayProfile.avatar} 
+  size={96} 
+  onPress={() => router.push('/edit-profile')}
+/>
 
           <Text className="text-white font-bold text-lg mb-1">@{displayProfile.username}</Text>
           <Text className="text-neutral-grey text-[11px] mb-1">{displayProfile.roles}</Text>
@@ -149,8 +152,8 @@ export default function ProfileScreen() {
               <Text className="text-white font-black text-[15px]">{formatSocialCount(displayProfile.followers)}</Text>
               <Text className="text-neutral-grey text-[9px] font-bold uppercase mt-1">Followers</Text>
             </Pressable>
-            <View className="items-center">
-              <Text className="text-white font-black text-[15px]">₹{totalEarnings}</Text>
+           <View className="items-center">
+              <Text className="text-white font-black text-[15px]">₹{Number(totalEarnings).toFixed(2)}</Text>
               <Text className="text-neutral-grey text-[9px] font-bold uppercase mt-1">Earnings</Text>
             </View>
           </View>
@@ -168,7 +171,7 @@ export default function ProfileScreen() {
           
           <View className="flex-row items-center gap-2">
             <View className="items-end">
-              <Text className="text-[#10B981] font-black text-[15px]">₹{totalEarnings}</Text>
+             <Text className="text-[#10B981] font-black text-[15px]">₹{Number(totalEarnings).toFixed(2)}</Text>
               <Text className="text-white/50 text-[9px]">earned</Text>
             </View>
             <Text className="text-[#D946EF] font-bold text-lg ml-1">›</Text>

@@ -8,7 +8,7 @@ import { TAB_BAR_HEIGHT } from '../../components/layout/SafeScreen';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const bottomPadding = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'android' ? 16 : 20);
+ const bottomPadding = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'android' ? 8 : 20);
 
   return (
     <Tabs

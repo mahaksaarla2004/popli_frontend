@@ -36,7 +36,7 @@ export default function PermissionsScreen() {
       mic: true,
     });
 
-    setTimeout(() => {
+setTimeout(() => {
       router.push('/(auth)/personalization-loader');
     }, 450);
   };
@@ -44,7 +44,6 @@ export default function PermissionsScreen() {
   const handleNext = () => {
     router.push('/(auth)/personalization-loader');
   };
-
   return (
     <View className="flex-1 bg-[#0B001A] justify-between py-8 px-6" style={{ paddingTop: Platform.OS === 'ios' ? 60 : 40 }}>
       

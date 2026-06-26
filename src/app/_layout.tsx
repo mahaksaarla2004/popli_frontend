@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useEffect } from 'react';
 import { Stack, router, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -118,21 +119,29 @@ export default function RootLayout() {
       const isProfileComplete = useAuthStore.getState().userProfile?.isProfileComplete;
 
       // ENFORCEMENT: Block incomplete profiles from Feed/Chats
-      if (!isProfileComplete) {
-        const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions', 'personalization-loader'];
-        if (!inAuthGroup || !allowedAuthRoutes.includes(segments[1] as string)) {
-          setTimeout(() => router.replace('/(auth)/profile-setup'), 0);
+if (!isProfileComplete) {
+        const allowedAuthRoutes = ['interests', 'personalization-loader', 'profile-setup', 'location', 'permissions'];
+        const currentSegment = segments[1] as string;
+        if (!inAuthGroup || !allowedAuthRoutes.includes(currentSegment)) {
+          if (currentSegment !== 'interests') {
+            setTimeout(() => router.replace('/(auth)/interests'), 0);
+          }
         }
         return; // Stop further navigation checks
       }
 
-      // Profile is complete. Keep them out of auth (login/signup) pages
+ // Profile is complete. Keep them out of auth (login/signup) pages
       if (inAuthGroup) {
-        const allowedAuthRoutes = ['profile-setup', 'interests', 'location', 'permissions', 'personalization-loader'];
-        if (allowedAuthRoutes.includes(segments[1] as string)) {
+        const setupRoutesToKickOutOf = ['profile-setup', 'interests', 'location', 'permissions', 'personalization-loader'];
+        const exemptRoutes = ['change-phone-otp'];
+        const currentSegment = segments[1] as string;
+
+        if (exemptRoutes.includes(currentSegment)) {
+          // Leave this screen alone entirely
+        } else if (setupRoutesToKickOutOf.includes(currentSegment)) {
           // They are on a setup page but profile is complete, kick them out to tabs!
           setTimeout(() => router.replace('/(tabs)'), 0);
-        } else if (!allowedAuthRoutes.includes(segments[1] as string)) {
+        } else {
           if (useAuthStore.getState().isFirstLogin) {
             useAuthStore.getState().setFirstLogin(false);
             setTimeout(() => router.replace('/kyc'), 0);
@@ -165,7 +174,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardProvider>
         <SafeAreaProvider>
-          <SafeAreaView style={{ flex: 1, backgroundColor: '#0B001A' }} edges={['left', 'right']}>
+       <SafeAreaView style={{ flex: 1, backgroundColor: '#0B001A' }} edges={['left', 'right']}>
             <StatusBar style="light" />
           <Stack
             screenOptions={{

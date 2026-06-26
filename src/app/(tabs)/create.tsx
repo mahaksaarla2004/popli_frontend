@@ -128,14 +128,20 @@ export default function CreateScreen() {
 
   const toggleSpeed = () => setSpeedMultiplier(prev => prev === 1 ? 2 : prev === 2 ? 3 : 1);
 
-  const takePhoto = async () => {
+const takePhoto = async () => {
     if (!cameraRef.current) return;
     try {
+      if (activeMode === 'STORY') {
+        // video mode mein picture nahi le sakta, short record karo
+        const video = await cameraRef.current.recordAsync({ maxDuration: 0.5 });
+        cameraRef.current.stopRecording();
+        if (video) {
+          router.push({ pathname: '/(create)/story-editor', params: { uri: video.uri, type: 'photo', mode: activeMode, challengeId } });
+        }
+        return;
+      }
       const photo = await cameraRef.current.takePictureAsync();
       if (photo) {
-        // if (cameraSettings.saveOriginals) {
-        //   try { await MediaLibrary.saveToLibraryAsync(photo.uri); } catch(e) {}
-        // }
         router.push({ pathname: '/(create)/story-editor', params: { uri: photo.uri, type: 'photo', mode: activeMode, challengeId } });
       }
     } catch (err) {
@@ -145,7 +151,7 @@ export default function CreateScreen() {
 
   const startRecording = async () => {
     if (!cameraRef.current || isRecording) return;
-    setIsRecording(true);
+   setIsRecording(true);
     setRecordingTime(0);
     recordingTimeRef.current = 0;
     player?.seekTo(0);
@@ -160,7 +166,7 @@ export default function CreateScreen() {
     }, 1000);
 
     try {
-      const video = await cameraRef.current.recordAsync({ maxDuration: 60 });
+      const video = await cameraRef.current.recordAsync({ maxDuration: activeMode === 'STORY' ? 15 : 60 });
       if (recordingInterval.current) clearInterval(recordingInterval.current);
       setIsRecording(false);
 
@@ -204,7 +210,7 @@ export default function CreateScreen() {
     }
   };
 
-  const handleCapture = async () => {
+const handleCapture = async () => {
     if (activeMode === 'REEL') {
       if (isRecording) {
         stopRecording();
@@ -214,13 +220,17 @@ export default function CreateScreen() {
       return;
     }
 
+    // STORY: tap = photo, long press handles video separately
     if (activeMode === 'STORY') {
       if (isRecording) {
         stopRecording();
         return;
       }
+      takePhoto();
+      return;
     }
 
+    // POST: timer support
     if (timerDelay > 0 && !isRecording) {
       setTimerCountdown(timerDelay);
       let count = timerDelay;
@@ -297,7 +307,8 @@ export default function CreateScreen() {
     <View className="flex-1 bg-black" style={{ paddingBottom: Math.max(insets.bottom, 0) }}>
       <View className="flex-1 rounded-b-3xl overflow-hidden relative">
         {isFocused && (
-          <CameraView 
+         <CameraView 
+            key={activeMode}
             ref={cameraRef}
             style={{ flex: 1 }} 
             facing={facing} 
@@ -429,10 +440,10 @@ export default function CreateScreen() {
                </View>
             )}
 
-            <Pressable 
+           <Pressable 
               onPress={handleCapture} 
-              onLongPress={startRecording}
-              onPressOut={stopRecording}
+              onLongPress={activeMode === 'STORY' ? startRecording : undefined}
+              onPressOut={activeMode === 'STORY' && isRecording ? stopRecording : undefined}
               delayLongPress={300}
               className="items-center justify-center"
             >

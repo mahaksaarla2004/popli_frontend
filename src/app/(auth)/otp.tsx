@@ -135,11 +135,11 @@ export default function OTPScreen() {
               isProfileComplete: false
             });
 
-            setIsVerifying(false);
+        setIsVerifying(false);
             setIsSuccess(true);
-
             setLogin(true);
             setFirstLogin(false);
+            setTimeout(() => router.replace('/(auth)/interests'), 800);
           } catch (profileError) {
             console.error('Failed to process user profile:', profileError);
             setIsVerifying(false);
@@ -215,7 +215,7 @@ export default function OTPScreen() {
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: 2,
-            borderColor: isFocused ? '#A78BFA' : isFilled ? 'rgba(167, 139, 250, 0.6)' : '#3E2B5C',
+           borderColor: isFocused ? '#FF2D6B' : isFilled ? 'rgba(255,45,107,0.6)' : 'rgba(255,255,255,0.12)',
             transform: isFocused ? [{ scale: 1.05 }] : [{ scale: 1 }]
           }}
         >
@@ -247,24 +247,35 @@ export default function OTPScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
+ <KeyboardAvoidingView
       behavior="padding"
-      className="flex-1 bg-[#0B001A]"
+      style={{ flex: 1, backgroundColor: '#0D0015' }}
     >
+      <LinearGradient
+        colors={['#1a0030', '#0D0015', '#0D0015']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.5 }}
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+      />
       {/* 1. Header completely isolated outside main body container for zIndex safety */}
       <View
         className="absolute top-12 left-6 right-6 h-12 flex-row items-center justify-between"
         style={{ zIndex: 999, elevation: 999 }}
         pointerEvents="box-none"
       >
-        <Pressable
+     <Pressable
           onPress={handleBack}
           hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           style={({ pressed }) => ({
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            alignItems: 'center',
+            justifyContent: 'center',
             opacity: pressed ? 0.6 : 1,
             transform: [{ scale: pressed ? 0.95 : 1 }]
           })}
-          className="w-11 h-11 rounded-full bg-[#2D1B4E] items-center justify-center active:scale-[0.9]"
         >
           <ChevronLeft size={24} color="#FFFFFF" strokeWidth={2.5} />
         </Pressable>
@@ -290,21 +301,21 @@ export default function OTPScreen() {
               animate={{ scale: 1, opacity: 1 }}
               className="items-center gap-4"
             >
-              <View className="w-18 h-18 bg-[#10B981]/20 border border-[#10B981]/30 rounded-full items-center justify-center">
-                <Text className="text-[#10B981] text-3xl font-bold">✓</Text>
+             <View style={{ width: 72, height: 72, backgroundColor: 'rgba(74,222,128,0.15)', borderWidth: 1, borderColor: 'rgba(74,222,128,0.3)', borderRadius: 36, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#4ADE80', fontSize: 30, fontWeight: 'bold' }}>✓</Text>
               </View>
-              <Text className="text-white font-black text-2xl tracking-tight">Code Verified!</Text>
+              <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>Code Verified!</Text> 
               <Text className="text-white/60 text-xs text-center px-8">
                 {isResetMode ? 'Setting up secure password reset...' : 'Creating your custom creator profile...'}
               </Text>
             </MotiView>
           ) : (
             <>
-              <View className="gap-2 mb-2">
-                <Text className="text-white font-bold text-[28px] tracking-tight">
+            <View style={{ gap: 8, marginBottom: 8 }}>
+                <Text style={{ color: '#fff', fontSize: 26, fontWeight: '800', marginBottom: 6 }}>
                   {isResetMode && isEmailType ? 'Enter Reset Code' : 'Enter OTP'}
                 </Text>
-                <Text className="text-white/60 text-[14px] mt-1">
+                <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14 }}>
                   {isEmailType
                     ? `Verify the code sent to your email ${targetLabel}`
                     : `Verify your number ${targetLabel}`
@@ -324,7 +335,7 @@ export default function OTPScreen() {
                     style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   >
-                    <Text className={`text-[13px] font-bold ${timerSeconds > 0 ? 'text-[#A78BFA]' : 'text-[#A78BFA] hover:underline'}`}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#FF2D6B' }}>
                       {timerSeconds > 0
                         ? `Resend OTP in ${Math.floor(timerSeconds / 60)}:${(timerSeconds % 60).toString().padStart(2, '0')}`
                         : 'Resend Verification Code'
@@ -344,15 +355,14 @@ export default function OTPScreen() {
                       triggerVerification();
                     }
                   }}
-                  style={{
-                    backgroundColor: isOtpComplete ? '#A855F7' : '#1D1037',
+                 style={{
+                    backgroundColor: isOtpComplete ? '#FF2D6B' : 'rgba(255,255,255,0.08)',
                     height: 56,
-                    borderRadius: 28,
+                    borderRadius: 14,
                     justifyContent: 'center',
                     alignItems: 'center',
                     opacity: !isOtpComplete ? 0.5 : 1,
                   }}
-                  className="shadow-lg shadow-[#A855F7]/40 active:scale-[0.98] transition-all"
                   disabled={!isOtpComplete || isVerifying || isSuccess}
                 >
                   {isVerifying ? (

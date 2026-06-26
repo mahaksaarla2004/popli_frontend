@@ -322,8 +322,8 @@ export const useFeedStore = create<FeedState>()(
           };
         });
         
-        try {
-          await apiClient.post(`/reels/${reelId}/view`);
+     try {
+          await apiClient.post(`/reels/${reelId}/view`, { watchDuration: 10000 });
         } catch (e) {
           console.error("Failed to register view:", e);
         }

@@ -1,13 +1,13 @@
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { firebase } from '@react-native-firebase/app';
 import { Platform } from 'react-native';
 
-export const firebaseAuth = Platform.OS === 'web' ? ({} as any) : firebase.app().auth();
+export const getFirebaseAuth = () => Platform.OS === 'web' ? ({} as any) : auth();
+export const firebaseAuth = { signOut: async () => { if (Platform.OS !== 'web') await auth().signOut(); } };
 
 let confirmationResult: FirebaseAuthTypes.ConfirmationResult | null = null;
 
 export async function sendFirebaseOTP(phoneNumber: string) {
-  try {
+  try { 
     confirmationResult = await auth().signInWithPhoneNumber(phoneNumber);
     return true;
   } catch (error) {

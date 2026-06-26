@@ -6,13 +6,15 @@ import { ChevronLeft, Compass, Sparkles, Navigation, ChevronRight, Check } from 
 import { MotiView } from 'moti';
 import * as Location from 'expo-location';
 
+import { MumbaiIcon, DelhiIcon, BengaluruIcon, KolkataIcon, ChennaiIcon, IndoreIcon } from '../../components/icons/CityIcons';
+
 const FALLBACK_CITIES = [
-  { name: 'Indore', lat: 22.7196, lon: 75.8577, label: '🌾 Indore' },
-  { name: 'Bengaluru', lat: 12.9716, lon: 77.5946, label: '🚀 Bengaluru' },
-  { name: 'Mumbai', lat: 19.0760, lon: 72.8777, label: '🎬 Mumbai' },
-  { name: 'Delhi', lat: 28.7041, lon: 77.1025, label: '🏰 Delhi' },
-  { name: 'Kolkata', lat: 22.5726, lon: 88.3639, label: '🎨 Kolkata' },
-  { name: 'Chennai', lat: 13.0827, lon: 80.2707, label: '🌊 Chennai' },
+  { name: 'Indore', lat: 22.7196, lon: 75.8577, label: 'Indore', Icon: IndoreIcon },
+  { name: 'Bengaluru', lat: 12.9716, lon: 77.5946, label: 'Bengaluru', Icon: BengaluruIcon },
+  { name: 'Mumbai', lat: 19.0760, lon: 72.8777, label: 'Mumbai', Icon: MumbaiIcon },
+  { name: 'Delhi', lat: 28.7041, lon: 77.1025, label: 'Delhi', Icon: DelhiIcon },
+  { name: 'Kolkata', lat: 22.5726, lon: 88.3639, label: 'Kolkata', Icon: KolkataIcon },
+  { name: 'Chennai', lat: 13.0827, lon: 80.2707, label: 'Chennai', Icon: ChennaiIcon },
 ];
 
 export default function LocationScreen() {
@@ -83,8 +85,14 @@ export default function LocationScreen() {
       
       {/* Top Navigation Row */}
       <View className="flex-row items-center justify-between w-full h-12">
-        <Pressable 
-          onPress={() => router.back()}
+     <Pressable 
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(auth)/interests');
+            }
+          }}
           className="w-10 h-10 rounded-full bg-white/5 border border-white/5 items-center justify-center active:scale-[0.9]"
         >
           <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
@@ -172,7 +180,7 @@ export default function LocationScreen() {
               {FALLBACK_CITIES.map((city) => {
                 const isSelected = selectedCity === city.name;
                 return (
-                  <Pressable
+            <Pressable
                     key={city.name}
                     onPress={() => handleSelectCity(city)}
                     style={{ width: '48%' }}
@@ -182,7 +190,10 @@ export default function LocationScreen() {
                         : 'bg-[#190C2C]/50 border-white/5'
                     }`}
                   >
-                    <Text className="text-white font-bold text-xs">{city.label}</Text>
+                    <View className="flex-row items-center gap-2">
+                      <city.Icon size={18} color={isSelected ? '#EC4899' : '#ffffff80'} />
+                      <Text className="text-white font-bold text-xs">{city.label}</Text>
+                    </View>
                     {isSelected && (
                       <MotiView
                         from={{ scale: 0.5 }}
