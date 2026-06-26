@@ -1,57 +1,42 @@
 {
   "project_info": {
-    "project_number": "212781099362",
-    "project_id": "popli-5ffeb",
-    "storage_bucket": "popli-5ffeb.firebasestorage.app"
+    "project_number": "576573661357",
+    "project_id": "popli-48dcc",
+    "storage_bucket": "popli-48dcc.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:212781099362:android:b20f82665fb7d4fea1e43b",
+        "mobilesdk_app_id": "1:576573661357:android:d34600463f433c2304e624",
         "android_client_info": {
           "package_name": "com.mahak2004.popliapp"
         }
       },
       "oauth_client": [
         {
-          "client_id": "212781099362-tisth3ni6d1gnh824d9b7sn1bt5dv4aa.apps.googleusercontent.com",
+          "client_id": "576573661357-g3dvj04cs8jic049m41sids9u03msl2a.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.mahak2004.popliapp",
-            "certificate_hash": "4fbc9642331624c5413a2931568727384d16c40f"
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
           }
         },
         {
-          "client_id": "212781099362-ugi7ft432fpt57cmj8k0apdn9tgqgc0k.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.mahak2004.popliapp",
-            "certificate_hash": "937f13922b21709e0f4c576f44548d649ff20663"
-          }
-        },
-        {
-          "client_id": "212781099362-rfcbe91v0s795phjjsgckik7bvbcuam5.apps.googleusercontent.com",
+          "client_id": "576573661357-huruthf92t81ohv6k1l2el6cm9q32ip5.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAug20VLqmo1-LRomU24PQqj7p2T0t1eXc"
+          "current_key": "AIzaSyDwW_4ykuDzTAxkOyV4-NtdGau41XBI_G4"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "212781099362-rfcbe91v0s795phjjsgckik7bvbcuam5.apps.googleusercontent.com",
+              "client_id": "576573661357-huruthf92t81ohv6k1l2el6cm9q32ip5.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "212781099362-ol99fgb67df1flregs4io5cprn1f74bg.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.mahak2004.popliapp"
-              }
             }
           ]
         }
