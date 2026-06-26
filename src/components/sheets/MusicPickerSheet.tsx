@@ -4,6 +4,7 @@ import { Search, Play, Pause } from 'lucide-react-native';
 import { useAudioPlayer } from 'expo-audio';
 
 interface MusicPickerSheetProps {
+  visible: boolean;
   onClose: () => void;
   onSelect: (song: any) => void;
 }
@@ -16,13 +17,27 @@ const TRENDING_SONGS = [
   { id: '5', title: 'Strangers', artist: 'Kenya Grace', duration: '2:52', cover: 'https://picsum.photos/100?5', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3' },
 ];
 
-export default function MusicPickerSheet({ onClose, onSelect }: MusicPickerSheetProps) {
+export default function MusicPickerSheet({ visible, onClose, onSelect }: MusicPickerSheetProps) {
   const [search, setSearch] = useState('');
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [songs, setSongs] = useState<any[]>(TRENDING_SONGS);
   const [loading, setLoading] = useState(false);
 
   const player = useAudioPlayer();
+
+  // Clean up audio when sheet is hidden or unmounted
+  useEffect(() => {
+    if (!visible) {
+      player?.pause();
+      setPlayingId(null);
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    return () => {
+      try { player?.pause(); } catch(e) {}
+    };
+  }, []);
 
   const fetchSongs = async (query: string) => {
     if (!query.trim()) {
@@ -31,16 +46,21 @@ export default function MusicPickerSheet({ onClose, onSelect }: MusicPickerSheet
     }
     setLoading(true);
     try {
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=15`);
+      // Added country=in for Bollywood/Hindi songs and increased limit for better results
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=40&country=in`);
       const data = await res.json();
-      const formatted = data.results.map((track: any) => ({
-        id: track.trackId.toString(),
-        title: track.trackName,
-        artist: track.artistName,
-        duration: '0:30', 
-        cover: track.artworkUrl100,
-        audioUrl: track.previewUrl
-      }));
+      
+      const formatted = data.results
+        .filter((track: any) => track.previewUrl) // Only show songs that have a playable preview
+        .map((track: any) => ({
+          id: track.trackId.toString(),
+          title: track.trackName,
+          artist: track.artistName,
+          duration: '0:30', 
+          cover: track.artworkUrl100,
+          audioUrl: track.previewUrl
+        }));
+        
       setSongs(formatted);
     } catch (e) {
       console.warn("iTunes API Error:", e);
@@ -52,7 +72,7 @@ export default function MusicPickerSheet({ onClose, onSelect }: MusicPickerSheet
   useEffect(() => {
     const timeout = setTimeout(() => {
       fetchSongs(search);
-    }, 500);
+    }, 300);
     return () => clearTimeout(timeout);
   }, [search]);
 
@@ -71,6 +91,8 @@ export default function MusicPickerSheet({ onClose, onSelect }: MusicPickerSheet
     player?.pause();
     onSelect(song);
   };
+
+  if (!visible) return null;
 
   return (
     <View className="absolute bottom-0 left-0 right-0 bg-[#1A0E2C] rounded-t-3xl border-t border-white/10 z-50 h-[85%]">

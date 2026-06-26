@@ -34,7 +34,7 @@ export type EditorLayer = {
 
 export default function StoryEditorScreen() {
   const router = useRouter();
-  const { uri, mode, type, speed, effect, musicId, originalStoryId, originalOwnerId, originalOwnerUsername, returnTo, challengeId } = useLocalSearchParams<{ 
+  const { uri, mode, type, speed, effect, musicId, originalStoryId, originalOwnerId, originalOwnerUsername, returnTo, challengeId, musicUrl, musicName } = useLocalSearchParams<{ 
     uri: string; 
     mode: string; 
     type?: string;
@@ -640,7 +640,7 @@ export default function StoryEditorScreen() {
       {showMusicSheet && (
         <>
           <Pressable onPress={() => setShowMusicSheet(false)} className="absolute inset-0 bg-black/50 z-40" />
-          <MusicPickerSheet onClose={() => setShowMusicSheet(false)} onSelect={handleMusicSelect} />
+          <MusicPickerSheet visible={true} onClose={() => setShowMusicSheet(false)} onSelect={handleMusicSelect} />
         </>
       )}
 
