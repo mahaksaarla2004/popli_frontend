@@ -31,12 +31,14 @@ export default function CreateScreen() {
 
   // States
   const [activeMode, setActiveMode] = useState<CameraMode>('STORY');
+
   const [facing, setFacing] = useState<CameraType>(cameraSettings.mirrorFront ? 'front' : 'back');
   const [flash, setFlash] = useState<FlashMode>(cameraSettings.autoFlash ? 'auto' : 'off');
   const [isRecording, setIsRecording] = useState(false);
   const [timerDelay, setTimerDelay] = useState<0 | 3 | 10>(0);
   const [timerCountdown, setTimerCountdown] = useState<number | null>(null);
-  const [isFocused, setIsFocused] = useState(true);
+const [isFocused, setIsFocused] = useState(true);
+  const [isCameraReady, setIsCameraReady] = useState(false);
   
   // New States for functional sweep
   const [speedMultiplier, setSpeedMultiplier] = useState<1 | 2 | 3>(1);
@@ -60,7 +62,7 @@ export default function CreateScreen() {
   // Audio Player
   const player = useAudioPlayer(selectedMusicUrl || null);
 
-  const cameraRef = useRef<CameraView>(null);
+const cameraRef = useRef<CameraView>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
 
@@ -70,7 +72,8 @@ export default function CreateScreen() {
       setIsFocused(true);
       return () => {
         // Screen blurred
-        setIsFocused(false);
+      setIsFocused(false);
+        setIsCameraReady(false);
         try { player?.pause(); } catch(e) {}
       };
     }, [player])
@@ -92,7 +95,9 @@ export default function CreateScreen() {
   }, [cameraPermission, micPermission]);
 
   const toggleFacing = () => setFacing(prev => prev === 'back' ? 'front' : 'back');
-  const toggleFlash = () => setFlash(prev => prev === 'off' ? 'on' : prev === 'on' ? 'auto' : 'off');
+const toggleFlash = () => {
+    setFlash(prev => prev === 'off' ? 'on' : prev === 'on' ? 'auto' : 'off');
+  };
   const toggleTimer = () => setTimerDelay(prev => prev === 0 ? 3 : prev === 3 ? 10 : 0);
 
   const handleClose = () => {
@@ -129,17 +134,8 @@ export default function CreateScreen() {
   const toggleSpeed = () => setSpeedMultiplier(prev => prev === 1 ? 2 : prev === 2 ? 3 : 1);
 
 const takePhoto = async () => {
-    if (!cameraRef.current) return;
+    if (!cameraRef.current || !isCameraReady) return;
     try {
-      if (activeMode === 'STORY') {
-        // video mode mein picture nahi le sakta, short record karo
-        const video = await cameraRef.current.recordAsync({ maxDuration: 0.5 });
-        cameraRef.current.stopRecording();
-        if (video) {
-          router.push({ pathname: '/(create)/story-editor', params: { uri: video.uri, type: 'photo', mode: activeMode, challengeId } });
-        }
-        return;
-      }
       const photo = await cameraRef.current.takePictureAsync();
       if (photo) {
         router.push({ pathname: '/(create)/story-editor', params: { uri: photo.uri, type: 'photo', mode: activeMode, challengeId } });
@@ -149,25 +145,38 @@ const takePhoto = async () => {
     }
   };
 
-  const startRecording = async () => {
-    if (!cameraRef.current || isRecording) return;
-   setIsRecording(true);
+const isRecordingRef = useRef(false);
+
+const startRecording = async () => {
+    const cam = cameraRef.current;
+    if (!cam || isRecordingRef.current || !isCameraReady) return;
+    await new Promise(resolve => setTimeout(resolve, 100));
+    if (isRecordingRef.current) return;
+    isRecordingRef.current = true;
     setRecordingTime(0);
     recordingTimeRef.current = 0;
-    player?.seekTo(0);
-    player?.play();
-    
-    if (recordingInterval.current) clearInterval(recordingInterval.current);
-    recordingInterval.current = setInterval(() => {
-      setRecordingTime(prev => {
-        recordingTimeRef.current = prev + 1;
-        return prev + 1;
-      });
-    }, 1000);
 
     try {
-      const video = await cameraRef.current.recordAsync({ maxDuration: activeMode === 'STORY' ? 15 : 60 });
+   const recordPromise = cam?.recordAsync({ maxDuration: activeMode === 'STORY' ? 15 : 60 });
+      
+      // Small delay to ensure camera has actually started recording
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setIsRecording(true);
+      player?.seekTo(0);
+      player?.play();
+      
       if (recordingInterval.current) clearInterval(recordingInterval.current);
+      recordingInterval.current = setInterval(() => {
+        setRecordingTime(prev => {
+          recordingTimeRef.current = prev + 1;
+          return prev + 1;
+        });
+      }, 1000);
+
+      const video = await recordPromise;
+     if (recordingInterval.current) clearInterval(recordingInterval.current);
+      isRecordingRef.current = false;
       setIsRecording(false);
 
       if (video) {
@@ -200,16 +209,17 @@ const takePhoto = async () => {
       player?.pause();
     }
   };
-
-  const stopRecording = () => {
-    if (cameraRef.current && isRecording) {
-      cameraRef.current.stopRecording();
+const stopRecording = () => {
+    const cam = cameraRef.current;
+    if (cam && isRecordingRef.current) {
+      try { cam.stopRecording(); } catch(e) {}
+      isRecordingRef.current = false;
       setIsRecording(false);
       if (recordingInterval.current) clearInterval(recordingInterval.current);
       player?.pause();
+    
     }
   };
-
 const handleCapture = async () => {
     if (activeMode === 'REEL') {
       if (isRecording) {
@@ -306,17 +316,17 @@ const handleCapture = async () => {
   return (
     <View className="flex-1 bg-black" style={{ paddingBottom: Math.max(insets.bottom, 0) }}>
       <View className="flex-1 rounded-b-3xl overflow-hidden relative">
-        {isFocused && (
-         <CameraView 
-            key={activeMode}
+  {isFocused && (
+          <CameraView
             ref={cameraRef}
-            style={{ flex: 1 }} 
-            facing={facing} 
-            flash={flash}
-            mode={activeMode === 'POST' ? 'picture' : 'video'}
+            style={{ flex: 1 }}
+            facing={facing}
+          flash={flash}
+            mode={activeMode === 'REEL' ? 'video' : 'picture'}
             videoQuality={cameraSettings.videoResolution === '4K' ? '2160p' : '1080p'}
             videoStabilizationMode={cameraSettings.stabilization ? 'auto' : 'off'}
             mirror={facing === 'front' ? cameraSettings.mirrorFront : false}
+            onCameraReady={() => setIsCameraReady(true)}
           />
         )}
 
@@ -383,7 +393,7 @@ const handleCapture = async () => {
           </Pressable>
           
           <Pressable onPress={toggleFlash} className="items-center p-2 rounded-full bg-black/20 backdrop-blur-sm">
-            {flash === 'on' ? <Zap size={24} color="#FFFFFF" /> : flash === 'auto' ? <Zap size={24} color="#A855F7" /> : <ZapOff size={24} color="#FFFFFF" />}
+        {flash === 'on' ? <Zap size={24} color="#FFFFFF" /> : flash === 'auto' ? <Zap size={24} color="#A855F7" /> : <ZapOff size={24} color="#FFFFFF" />}
           </Pressable>
           
           {activeMode === 'REEL' && (
@@ -440,11 +450,9 @@ const handleCapture = async () => {
                </View>
             )}
 
-           <Pressable 
+<Pressable 
               onPress={handleCapture} 
-              onLongPress={activeMode === 'STORY' ? startRecording : undefined}
-              onPressOut={activeMode === 'STORY' && isRecording ? stopRecording : undefined}
-              delayLongPress={300}
+              delayLongPress={200}
               className="items-center justify-center"
             >
               {activeMode === 'REEL' ? (

@@ -1,8 +1,10 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView, Image, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Search, Play, Pause, Bookmark, Music, Flame, Star, Clock, User } from 'lucide-react-native';
 import { useAudioPlayer } from 'expo-audio';
+import { fetchTrendingTracks, fetchPopularTracks, fetchRecentTracks, searchJamendoTracks, JamendoTrack } from '../../lib/jamendo';
 
 const CATEGORIES = [
   { id: 'trending', label: 'Trending', icon: Flame },
@@ -13,54 +15,57 @@ const CATEGORIES = [
   { id: 'creator', label: 'Creator Sounds', icon: User },
 ];
 
-const PRESET_LIBRARY = [
-  { id: '1', title: 'Paint The Town Red', artist: 'Doja Cat', duration: '3:51', cover: 'https://picsum.photos/100?1', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', uses: '2.4M Reels' },
-  { id: '2', title: 'Water', artist: 'Tyla', duration: '3:20', cover: 'https://picsum.photos/100?2', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', uses: '1.8M Reels' },
-  { id: '3', title: 'Greedy', artist: 'Tate McRae', duration: '2:11', cover: 'https://picsum.photos/100?3', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', uses: '900K Reels' },
-  { id: '4', title: 'Cruel Summer', artist: 'Taylor Swift', duration: '2:58', cover: 'https://picsum.photos/100?4', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', uses: '4.2M Reels' },
-  { id: '5', title: 'Strangers', artist: 'Kenya Grace', duration: '2:52', cover: 'https://picsum.photos/100?5', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', uses: '1.1M Reels' },
-];
-
 export default function MusicPickerScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('trending');
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const [savedIds, setSavedIds] = useState<string[]>(['2', '4']);
-  const [songs, setSongs] = useState<any[]>(PRESET_LIBRARY);
+const [playingId, setPlayingId] = useState<string | null>(null);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [savedTracksData, setSavedTracksData] = useState<JamendoTrack[]>([]);
+  const [songs, setSongs] = useState<JamendoTrack[]>([]);
   const [loading, setLoading] = useState(false);
 
   const player = useAudioPlayer();
 
-  const fetchSongs = async (query: string) => {
-    if (!query.trim()) {
-      setSongs(PRESET_LIBRARY);
+  const loadCategory = async (category: string) => {
+    if (category === 'saved') {
+      setSongs(savedTracksData);
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=25`);
-      const data = await res.json();
-      const formatted = data.results.map((track: any) => ({
-        id: track.trackId.toString(),
-        title: track.trackName,
-        artist: track.artistName,
-        duration: '0:30', 
-        cover: track.artworkUrl100,
-        uses: 'iTunes Search',
-        audioUrl: track.previewUrl
-      }));
-      setSongs(formatted);
+      let data: JamendoTrack[] = [];
+      if (category === 'trending') data = await fetchTrendingTracks();
+      else if (category === 'recent') data = await fetchRecentTracks();
+      else data = await fetchPopularTracks();
+      setSongs(data);
     } catch (e) {
-      console.warn("iTunes API Error:", e);
+      console.warn("Jamendo API Error:", e);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      fetchSongs(search);
+    if (search.trim()) return;
+    loadCategory(activeCategory);
+  }, [activeCategory]);
+
+  useEffect(() => {
+    const timeout = setTimeout(async () => {
+      if (!search.trim()) {
+        loadCategory(activeCategory);
+        return;
+      }
+      setLoading(true);
+      try {
+        const data = await searchJamendoTracks(search);
+        setSongs(data);
+      } catch (e) {
+        console.warn("Jamendo API Error:", e);
+      } finally {
+        setLoading(false);
+      }
     }, 500);
     return () => clearTimeout(timeout);
   }, [search]);
@@ -76,8 +81,9 @@ export default function MusicPickerScreen() {
     }
   };
 
-  const toggleSave = (id: string) => {
-    setSavedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+const toggleSave = (song: JamendoTrack) => {
+    setSavedIds(prev => prev.includes(song.id) ? prev.filter(x => x !== song.id) : [...prev, song.id]);
+    setSavedTracksData(prev => prev.some(s => s.id === song.id) ? prev.filter(s => s.id !== song.id) : [...prev, song]);
   };
 
   const handleSelect = (song: any) => {
@@ -144,7 +150,7 @@ export default function MusicPickerScreen() {
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#A855F7" />
-          <Text className="text-white mt-4 font-bold">Searching iTunes...</Text>
+        <Text className="text-white mt-4 font-bold">Loading sounds...</Text>
         </View>
       ) : (
         <FlatList
@@ -163,7 +169,7 @@ export default function MusicPickerScreen() {
               </Pressable>
 
               <View className="flex-row items-center gap-4">
-                <Pressable onPress={() => toggleSave(item.id)} className="w-10 h-10 items-center justify-center">
+               <Pressable onPress={() => toggleSave(item)} className="w-10 h-10 items-center justify-center">
                   <Bookmark 
                     size={22} 
                     color={savedIds.includes(item.id) ? '#A855F7' : '#FFFFFF'} 
