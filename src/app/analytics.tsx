@@ -37,12 +37,14 @@ export default function AnalyticsScreen() {
   const totalEarnings = viewEarnings + giftEarnings + referralEarnings;
 
   // Sorted list for Breakdown
+  const effectiveRate = allTimeViews > 0 ? (viewEarnings / allTimeViews) : 0;
+
   const sortedReels = [...userReels].sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
   const allPerformingPosts = sortedReels.length > 0 ? sortedReels.map(r => ({
     id: r.id,
     title: r.description || 'My Video',
     views: r.viewsCount || 0,
-    earnings: ((r.viewsCount || 0) * 0.005).toFixed(2),
+    earnings: ((r.viewsCount || 0) * effectiveRate).toFixed(2),
     isMonetized: r.isMonetized !== false
   })) : [
     { id: '1', title: 'No posts yet', views: 0, earnings: '0.00', isMonetized: false }
@@ -206,7 +208,7 @@ export default function AnalyticsScreen() {
               </View>
               <View className="items-end">
                 <Text className="text-[#10B981] font-bold text-base">₹{post.earnings}</Text>
-                {post.views > 0 && <Text className="text-white/40 text-[9px]">@ ₹0.005/v</Text>}
+                {post.views > 0 && <Text className="text-white/40 text-[9px]">@ ₹{effectiveRate.toFixed(3)}/v</Text>}
               </View>
             </View>
           ))}
