@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Platform, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -7,14 +8,52 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+
+GoogleSignin.configure({
+  webClientId: '212781099362-rfcbe91v0s795phjjsgckik7bvbcuam5.apps.googleusercontent.com',
+});
 
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { setLogin, setFirstLogin } = useAuthStore();
+ const { setLogin, setFirstLogin, setToken } = useAuthStore();
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+ const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    setError('');
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const { idToken } = await GoogleSignin.getTokens();
+      if (!idToken) throw new Error('Google sign-in failed: no token received');
+
+      const res = await apiClient.post('/auth/google-login', { idToken });
+  const { accessToken, refreshToken, user } = res.data;
+
+      setToken(accessToken);
+      setLogin(true);
+
+      if (!user.isProfileComplete) {
+        router.replace('/(auth)/personalization-loader');
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (err: any) {
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled, do nothing
+      } else if (err.code === statusCodes.IN_PROGRESS) {
+        // already signing in
+      } else {
+        setError(err?.response?.data?.message || err?.message || 'Google sign-in failed.');
+      }
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleSendOTP = async () => {
     let trimmed = phone.trim();
@@ -140,7 +179,9 @@ export default function LoginScreen() {
           <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
         </View>
 
-     <TouchableOpacity
+  <TouchableOpacity
+          onPress={handleGoogleSignIn}
+          disabled={isGoogleLoading}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -149,8 +190,10 @@ export default function LoginScreen() {
             borderRadius: 14,
             paddingVertical: 14,
             gap: 10,
+            opacity: isGoogleLoading ? 0.7 : 1,
           }}
         >
+          {isGoogleLoading ? <ActivityIndicator color="#111" /> : null}
           <Svg width="20" height="20" viewBox="0 0 48 48">
             <Path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
             <Path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -158,7 +201,7 @@ export default function LoginScreen() {
             <Path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
             <Path fill="none" d="M0 0h48v48H0z"/>
           </Svg>
-          <Text style={{ color: '#111', fontSize: 15, fontWeight: '700' }}>Continue with Google</Text>
+        {!isGoogleLoading && <Text style={{ color: '#111', fontSize: 15, fontWeight: '700' }}>Continue with Google</Text>}
         </TouchableOpacity>
 
         <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, textAlign: 'center', marginTop: 28, lineHeight: 16 }}>

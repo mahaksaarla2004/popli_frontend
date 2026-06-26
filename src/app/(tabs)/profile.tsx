@@ -152,8 +152,8 @@ export default function ProfileScreen() {
               <Text className="text-white font-black text-[15px]">{formatSocialCount(displayProfile.followers)}</Text>
               <Text className="text-neutral-grey text-[9px] font-bold uppercase mt-1">Followers</Text>
             </Pressable>
-            <View className="items-center">
-              <Text className="text-white font-black text-[15px]">₹{totalEarnings}</Text>
+           <View className="items-center">
+              <Text className="text-white font-black text-[15px]">₹{Number(totalEarnings).toFixed(2)}</Text>
               <Text className="text-neutral-grey text-[9px] font-bold uppercase mt-1">Earnings</Text>
             </View>
           </View>
@@ -171,7 +171,7 @@ export default function ProfileScreen() {
           
           <View className="flex-row items-center gap-2">
             <View className="items-end">
-              <Text className="text-[#10B981] font-black text-[15px]">₹{totalEarnings}</Text>
+             <Text className="text-[#10B981] font-black text-[15px]">₹{Number(totalEarnings).toFixed(2)}</Text>
               <Text className="text-white/50 text-[9px]">earned</Text>
             </View>
             <Text className="text-[#D946EF] font-bold text-lg ml-1">›</Text>
