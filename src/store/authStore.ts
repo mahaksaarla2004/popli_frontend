@@ -221,22 +221,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       logout: async () => {
-        try {
-          // Sign out from Firebase
-          const { firebaseAuth } = require('../lib/firebase');
-          await firebaseAuth.signOut().catch(() => {});
-
-          const SecureStore = require('expo-secure-store');
-          const refreshToken = await SecureStore.getItemAsync('refreshToken');
-          if (refreshToken) {
-            await apiClient.post('/auth/logout', { refreshToken }).catch(() => {});
-            await SecureStore.deleteItemAsync('refreshToken');
-          }
-        } catch (e) {
-          console.error('Logout error', e);
-        }
-
-        // Fully reset auth state
+        // 1. INSTANT UI LOGOUT (Optimistic update to prevent lag)
         set({ 
           isLoggedIn: false, 
           followingIds: [], 
@@ -258,19 +243,43 @@ export const useAuthStore = create<AuthState>()(
           preferences: { isPrivateProfile: false }
         });
 
-        // Trigger feedStore wipe
+        // Trigger feedStore wipe instantly
         try {
           // eslint-disable-next-line @typescript-eslint/no-require-imports
           const { useFeedStore } = require('./feedStore');
           useFeedStore.getState().clearCache();
         } catch(e) {}
         
-        // Trigger storyStore wipe
+        // Trigger storyStore wipe instantly
         try {
           // eslint-disable-next-line @typescript-eslint/no-require-imports
           const { useStoryStore } = require('./storyStore');
           useStoryStore.getState().clearCache();
         } catch(e) {}
+
+        // 2. BACKGROUND NETWORK CLEANUP
+        try {
+          // Sign out from Firebase
+          const { firebaseAuth } = require('../lib/firebase');
+          await firebaseAuth.signOut().catch(() => {});
+
+          // Sign out from Google (Native Session)
+          try {
+            const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+            await GoogleSignin.signOut();
+          } catch (googleError) {
+            console.log('Google signout error (might not be logged in via Google):', googleError);
+          }
+
+          const SecureStore = require('expo-secure-store');
+          const refreshToken = await SecureStore.getItemAsync('refreshToken');
+          if (refreshToken) {
+            await apiClient.post('/auth/logout', { refreshToken }).catch(() => {});
+            await SecureStore.deleteItemAsync('refreshToken');
+          }
+        } catch (e) {
+          console.error('Logout error', e);
+        }
       }
     }),
     {

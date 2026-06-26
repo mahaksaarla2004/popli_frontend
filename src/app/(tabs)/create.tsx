@@ -66,10 +66,10 @@ export default function CreateScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      // Screen focused
-      setIsFocused(true);
+      // Wait for navigation transition to finish before mounting Camera
+      const timer = setTimeout(() => setIsFocused(true), 150);
       return () => {
-        // Screen blurred
+        clearTimeout(timer);
         setIsFocused(false);
         try { player?.pause(); } catch(e) {}
       };
@@ -128,18 +128,11 @@ export default function CreateScreen() {
 
   const toggleSpeed = () => setSpeedMultiplier(prev => prev === 1 ? 2 : prev === 2 ? 3 : 1);
 
-const takePhoto = async () => {
+  const [pendingRecording, setPendingRecording] = useState(false);
+
+  const takePhoto = async () => {
     if (!cameraRef.current) return;
     try {
-      if (activeMode === 'STORY') {
-        // video mode mein picture nahi le sakta, short record karo
-        const video = await cameraRef.current.recordAsync({ maxDuration: 0.5 });
-        cameraRef.current.stopRecording();
-        if (video) {
-          router.push({ pathname: '/(create)/story-editor', params: { uri: video.uri, type: 'photo', mode: activeMode, challengeId } });
-        }
-        return;
-      }
       const photo = await cameraRef.current.takePictureAsync();
       if (photo) {
         router.push({ pathname: '/(create)/story-editor', params: { uri: photo.uri, type: 'photo', mode: activeMode, challengeId } });
@@ -151,12 +144,25 @@ const takePhoto = async () => {
 
   const startRecording = async () => {
     if (!cameraRef.current || isRecording) return;
-   setIsRecording(true);
+    setIsRecording(true);
     setRecordingTime(0);
     recordingTimeRef.current = 0;
     player?.seekTo(0);
     player?.play();
     
+    if (activeMode === 'STORY') {
+      // In STORY mode, we start in 'picture' mode to allow tapping for photos.
+      // Long press switches state to 'isRecording', changing Camera mode to 'video'.
+      // We must wait briefly for the native camera to switch modes before recording.
+      setPendingRecording(true);
+      return;
+    }
+
+    // REEL mode is already 'video'
+    executeRecording();
+  };
+
+  const executeRecording = async () => {
     if (recordingInterval.current) clearInterval(recordingInterval.current);
     recordingInterval.current = setInterval(() => {
       setRecordingTime(prev => {
@@ -166,20 +172,15 @@ const takePhoto = async () => {
     }, 1000);
 
     try {
-      const video = await cameraRef.current.recordAsync({ maxDuration: activeMode === 'STORY' ? 15 : 60 });
+      const video = await cameraRef.current?.recordAsync({ maxDuration: activeMode === 'STORY' ? 30 : 60 });
       if (recordingInterval.current) clearInterval(recordingInterval.current);
       setIsRecording(false);
 
       if (video) {
-        // Enforce 10 seconds minimum for Reels
         if (activeMode === 'REEL' && recordingTimeRef.current < 10) {
           Alert.alert('Too Short', 'Reels must be at least 10 seconds long.');
           return;
         }
-
-        // if (cameraSettings.saveOriginals) {
-        //   try { await MediaLibrary.saveToLibraryAsync(video.uri); } catch(e) {}
-        // }
         router.push({ 
           pathname: '/(create)/story-editor', 
           params: { 
@@ -201,16 +202,28 @@ const takePhoto = async () => {
     }
   };
 
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (pendingRecording && isRecording) {
+      timer = setTimeout(() => {
+        executeRecording();
+        setPendingRecording(false);
+      }, 600); // Wait 600ms for CameraView to switch to video mode
+    }
+    return () => clearTimeout(timer);
+  }, [pendingRecording, isRecording]);
+
   const stopRecording = () => {
     if (cameraRef.current && isRecording) {
       cameraRef.current.stopRecording();
       setIsRecording(false);
+      setPendingRecording(false);
       if (recordingInterval.current) clearInterval(recordingInterval.current);
       player?.pause();
     }
   };
 
-const handleCapture = async () => {
+  const handleCapture = async () => {
     if (activeMode === 'REEL') {
       if (isRecording) {
         stopRecording();
@@ -220,7 +233,6 @@ const handleCapture = async () => {
       return;
     }
 
-    // STORY: tap = photo, long press handles video separately
     if (activeMode === 'STORY') {
       if (isRecording) {
         stopRecording();
@@ -230,7 +242,6 @@ const handleCapture = async () => {
       return;
     }
 
-    // POST: timer support
     if (timerDelay > 0 && !isRecording) {
       setTimerCountdown(timerDelay);
       let count = timerDelay;
@@ -310,10 +321,11 @@ const handleCapture = async () => {
          <CameraView 
             key={activeMode}
             ref={cameraRef}
-            style={{ flex: 1 }} 
+            style={{ position: 'absolute', width: '100%', height: '100%' }} 
             facing={facing} 
             flash={flash}
-            mode={activeMode === 'POST' ? 'picture' : 'video'}
+            enableTorch={flash === 'on'}
+            mode={activeMode === 'POST' ? 'picture' : activeMode === 'REEL' ? 'video' : (isRecording ? 'video' : 'picture')}
             videoQuality={cameraSettings.videoResolution === '4K' ? '2160p' : '1080p'}
             videoStabilizationMode={cameraSettings.stabilization ? 'auto' : 'off'}
             mirror={facing === 'front' ? cameraSettings.mirrorFront : false}
@@ -443,7 +455,6 @@ const handleCapture = async () => {
            <Pressable 
               onPress={handleCapture} 
               onLongPress={activeMode === 'STORY' ? startRecording : undefined}
-              onPressOut={activeMode === 'STORY' && isRecording ? stopRecording : undefined}
               delayLongPress={300}
               className="items-center justify-center"
             >
@@ -476,7 +487,7 @@ const handleCapture = async () => {
                 <View className="w-20 h-20 items-center justify-center relative">
                   <View className="absolute inset-0 rounded-full border-4 border-white/30" />
                   <Svg width={80} height={80} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
-                    <Circle cx={40} cy={40} r={37} stroke="#A855F7" strokeWidth={6} fill="none" strokeDasharray={2 * Math.PI * 37} strokeDashoffset={2 * Math.PI * 37 - (recordingTime / 60) * (2 * Math.PI * 37)} strokeLinecap="round" />
+                    <Circle cx={40} cy={40} r={37} stroke="#A855F7" strokeWidth={6} fill="none" strokeDasharray={2 * Math.PI * 37} strokeDashoffset={2 * Math.PI * 37 - (recordingTime / 30) * (2 * Math.PI * 37)} strokeLinecap="round" />
                   </Svg>
                   <View className="bg-[#A855F7] w-8 h-8 rounded-lg transition-all duration-300 ease-out" />
                 </View>

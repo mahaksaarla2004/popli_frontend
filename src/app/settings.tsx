@@ -61,7 +61,6 @@ export default function SettingsScreen() {
           onPress: () => {
             logout();
             resetKYC();
-            router.replace('/login');
           } 
         }
       ]

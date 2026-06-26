@@ -11,7 +11,7 @@ import Svg, { Path } from 'react-native-svg';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 GoogleSignin.configure({
-  webClientId: '212781099362-rfcbe91v0s795phjjsgckik7bvbcuam5.apps.googleusercontent.com',
+  webClientId: '576573661357-huruthf92t81ohv6k1l2el6cm9q32ip5.apps.googleusercontent.com',
 });
 
 export default function LoginScreen() {
