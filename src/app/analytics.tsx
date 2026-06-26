@@ -1,12 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Heart, MessageCircle, Share2, Play, Eye } from 'lucide-react-native';
 import { apiClient } from '../api/client';
 import { useAuthStore, useFeedStore } from '../store';
 
 export default function AnalyticsScreen() {
   const router = useRouter();
+  const { videoId } = useLocalSearchParams<{ videoId?: string }>();
   const [loading, setLoading] = useState(true);
 
   const { userProfile } = useAuthStore();
@@ -24,22 +25,27 @@ export default function AnalyticsScreen() {
     }, [userProfile?.id])
   );
 
-  // Calculate real metrics
-  const allTimeViews = userReels.reduce((sum, r) => sum + (r.viewsCount || 0), 0);
-  const likes = userReels.reduce((sum, r) => sum + (r.likesCount || 0), 0);
-  const comments = userReels.reduce((sum, r) => sum + (r.commentsCount || 0), 0);
-  const shares = userReels.reduce((sum, r) => sum + (r.sharesCount || 0), 0);
+  // If videoId is provided, focus only on that video
+  const targetReels = videoId ? userReels.filter(r => r.id === videoId) : userReels;
 
-  // Dynamic earnings from backend wallet + calculated views
-  const viewEarnings = wallet?.viewEarnings ?? (allTimeViews * 0.005);
-  const giftEarnings = wallet?.giftEarnings ?? 0;
-  const referralEarnings = wallet?.referralEarnings ?? 0;
+  // Calculate real metrics
+  const allTimeViews = targetReels.reduce((sum, r) => sum + (r.viewsCount || 0), 0);
+  const likes = targetReels.reduce((sum, r) => sum + (r.likesCount || 0), 0);
+  const comments = targetReels.reduce((sum, r) => sum + (r.commentsCount || 0), 0);
+  const shares = targetReels.reduce((sum, r) => sum + (r.sharesCount || 0), 0);
+
+  // Overall effective rate based on ALL reels (to keep it accurate)
+  const totalGlobalViews = userReels.reduce((sum, r) => sum + (r.viewsCount || 0), 0);
+  const totalGlobalViewEarnings = wallet?.viewEarnings ?? (totalGlobalViews * 0.005);
+  const effectiveRate = totalGlobalViews > 0 ? (totalGlobalViewEarnings / totalGlobalViews) : 0;
+
+  // Dynamic earnings for the current context (overall or single video)
+  const viewEarnings = videoId ? (allTimeViews * effectiveRate) : totalGlobalViewEarnings;
+  const giftEarnings = videoId ? 0 : (wallet?.giftEarnings ?? 0); // Hide gifts/referrals for single video
+  const referralEarnings = videoId ? 0 : (wallet?.referralEarnings ?? 0);
   const totalEarnings = viewEarnings + giftEarnings + referralEarnings;
 
-  // Sorted list for Breakdown
-  const effectiveRate = allTimeViews > 0 ? (viewEarnings / allTimeViews) : 0;
-
-  const sortedReels = [...userReels].sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
+  const sortedReels = [...targetReels].sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
   const allPerformingPosts = sortedReels.length > 0 ? sortedReels.map(r => ({
     id: r.id,
     title: r.description || 'My Video',
@@ -65,7 +71,9 @@ export default function AnalyticsScreen() {
         <Pressable onPress={() => router.back()} className="absolute left-4 top-0 p-2 -ml-2 active:opacity-70">
           <ArrowLeft color="#FFFFFF" size={24} />
         </Pressable>
-        <Text className="text-white font-bold text-lg tracking-tight">Analytics</Text>
+        <Text className="text-white font-bold text-lg tracking-tight">
+          {videoId ? 'Video Insights' : 'Analytics'}
+        </Text>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
@@ -150,7 +158,9 @@ export default function AnalyticsScreen() {
 
         {/* Total Earnings */}
         <View className="bg-[#1A0E2C] border border-white/5 rounded-[24px] p-5 mb-6">
-          <Text className="text-white font-extrabold text-lg mb-3">Total Earnings</Text>
+          <Text className="text-white font-extrabold text-lg mb-3">
+            {videoId ? 'Video Earnings' : 'Total Earnings'}
+          </Text>
           <Text className="text-[#F59E0B] font-black text-4xl mb-8 tracking-tight">₹{totalEarnings.toFixed(2)}</Text>
           
           <View className="gap-y-4">
@@ -162,27 +172,32 @@ export default function AnalyticsScreen() {
               <Text className="text-[#A855F7] font-bold text-sm">₹{viewEarnings.toFixed(2)}</Text>
             </View>
 
-            <View className="flex-row justify-between items-center">
-              <View className="flex-row items-center gap-3">
-                <View className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
-                <Text className="text-white font-bold text-sm">Gifts & Tips</Text>
-              </View>
-              <Text className="text-[#F59E0B] font-bold text-sm">₹{giftEarnings.toFixed(2)}</Text>
-            </View>
+            {!videoId && (
+              <>
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center gap-3">
+                    <View className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+                    <Text className="text-white font-bold text-sm">Gifts & Tips</Text>
+                  </View>
+                  <Text className="text-[#F59E0B] font-bold text-sm">₹{giftEarnings.toFixed(2)}</Text>
+                </View>
 
-            <View className="flex-row justify-between items-center">
-              <View className="flex-row items-center gap-3">
-                <View className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
-                <Text className="text-white font-bold text-sm">Referrals</Text>
-              </View>
-              <Text className="text-[#10B981] font-bold text-sm">₹{referralEarnings.toFixed(2)}</Text>
-            </View>
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center gap-3">
+                    <View className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
+                    <Text className="text-white font-bold text-sm">Referrals</Text>
+                  </View>
+                  <Text className="text-[#10B981] font-bold text-sm">₹{referralEarnings.toFixed(2)}</Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
-        {/* Video Earnings Breakdown */}
-        <View className="bg-[#1A0E2C] border border-white/5 rounded-[24px] p-5 mb-6">
-          <Text className="text-white font-bold text-lg mb-6">Video Earnings Breakdown</Text>
+        {/* Video Earnings Breakdown (Only show for overall analytics) */}
+        {!videoId && (
+          <View className="bg-[#1A0E2C] border border-white/5 rounded-[24px] p-5 mb-6">
+            <Text className="text-white font-bold text-lg mb-6">Video Earnings Breakdown</Text>
           
           {allPerformingPosts.map((post: any, index: number) => (
             <View key={post.id || index} className={`flex-row items-center justify-between ${index < allPerformingPosts.length - 1 ? 'mb-6' : ''}`}>
@@ -213,6 +228,7 @@ export default function AnalyticsScreen() {
             </View>
           ))}
         </View>
+        )}
 
       </ScrollView>
     </View>

@@ -9,6 +9,7 @@ import CameraSettingsSheet from '../../components/CameraSettingsSheet';
 import EffectsSheet from '../../components/sheets/EffectsSheet';
 import { useCameraSettingsStore } from '../../store';
 import { useAudioPlayer } from 'expo-audio';
+import MusicPickerSheet from '../../components/sheets/MusicPickerSheet';
 import Svg, { Circle, Line } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -42,6 +43,9 @@ export default function CreateScreen() {
   const [speedMultiplier, setSpeedMultiplier] = useState<1 | 2 | 3>(1);
   const [selectedEffect, setSelectedEffect] = useState<any>({ name: 'None' });
   const [showEffectsSheet, setShowEffectsSheet] = useState(false);
+  
+  const [showMusicPicker, setShowMusicPicker] = useState(false);
+  const [selectedMusicTrack, setSelectedMusicTrack] = useState<any>(null);
 
   // Recording Timer State
   const [recordingTime, setRecordingTime] = useState(0);
@@ -135,7 +139,17 @@ export default function CreateScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync();
       if (photo) {
-        router.push({ pathname: '/(create)/story-editor', params: { uri: photo.uri, type: 'photo', mode: activeMode, challengeId } });
+        router.push({ 
+          pathname: '/(create)/story-editor', 
+          params: { 
+            uri: photo.uri, 
+            type: 'photo', 
+            mode: activeMode, 
+            challengeId,
+            musicUrl: selectedMusicTrack?.audioUrl || null,
+            musicName: selectedMusicTrack ? `${selectedMusicTrack.title} - ${selectedMusicTrack.artist}` : null
+          } 
+        });
       }
     } catch (err) {
       console.warn('Failed to take photo', err);
@@ -149,6 +163,16 @@ export default function CreateScreen() {
     recordingTimeRef.current = 0;
     player?.seekTo(0);
     player?.play();
+    
+    // Play selected music during recording (Karaoke mode)
+    if (selectedMusicTrack?.audioUrl) {
+      try {
+        player?.replace(selectedMusicTrack.audioUrl);
+        player?.play();
+      } catch (err) {
+        console.warn('Failed to play music during recording', err);
+      }
+    }
     
     if (activeMode === 'STORY') {
       // In STORY mode, we start in 'picture' mode to allow tapping for photos.
@@ -189,7 +213,8 @@ export default function CreateScreen() {
             mode: activeMode,
             speed: speedMultiplier.toString(),
             effect: selectedEffect.name,
-            musicId: selectedMusicId,
+            musicId: selectedMusicTrack?.id || selectedMusicId,
+            musicName: selectedMusicTrack ? `${selectedMusicTrack.title} - ${selectedMusicTrack.artist}` : selectedMusicTitle,
             challengeId
           } 
         });
@@ -367,16 +392,18 @@ export default function CreateScreen() {
           </View>
 
           <View className="flex-1 items-center">
-            {(activeMode === 'STORY' || activeMode === 'REEL') && !selectedMusicId && (
-              <Pressable onPress={() => router.push('/(create)/music-picker')} className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full flex-row items-center gap-2 border border-white/10 min-h-[44px]">
+            {(activeMode === 'STORY' || activeMode === 'REEL') && !selectedMusicTrack && !selectedMusicId && (
+              <Pressable onPress={() => setShowMusicPicker(true)} className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full flex-row items-center gap-2 border border-white/10 min-h-[44px]">
                 <Music size={16} color="#FFFFFF" />
                 <Text className="text-white text-xs font-semibold">Pick Music</Text>
               </Pressable>
             )}
-            {(activeMode === 'STORY' || activeMode === 'REEL') && selectedMusicId && (
-              <Pressable onPress={() => router.push('/(create)/music-picker')} className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full flex-row items-center gap-2 border border-white/10 min-h-[44px]">
+            {(activeMode === 'STORY' || activeMode === 'REEL') && (selectedMusicTrack || selectedMusicId) && (
+              <Pressable onPress={() => setShowMusicPicker(true)} className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full flex-row items-center gap-2 border border-white/10 min-h-[44px]">
                 <Music size={16} color="#FFFFFF" />
-                <Text className="text-white text-xs font-semibold">{selectedMusicTitle} - {selectedMusicArtist}</Text>
+                <Text className="text-white text-xs font-semibold max-w-[150px]" numberOfLines={1}>
+                  {selectedMusicTrack ? `${selectedMusicTrack.title}` : selectedMusicTitle}
+                </Text>
               </Pressable>
             )}
           </View>
@@ -559,6 +586,13 @@ export default function CreateScreen() {
           }} />
         </>
       )}
+
+      {/* Music Picker Sheet */}
+      <MusicPickerSheet 
+        visible={showMusicPicker} 
+        onClose={() => setShowMusicPicker(false)} 
+        onSelect={(track) => setSelectedMusicTrack(track)} 
+      />
 
     </View>
   );

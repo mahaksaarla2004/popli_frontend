@@ -46,6 +46,8 @@ export default function StoryEditorScreen() {
     originalOwnerUsername?: string;
     returnTo?: string;
     challengeId?: string;
+    musicUrl?: string;
+    musicName?: string;
   }>();
 
   const setEditorData = useEditorStore(state => state.setEditorData);
@@ -101,6 +103,41 @@ export default function StoryEditorScreen() {
     }, [videoPlayer, audioPlayer, isVideo, selectedMusic, isPlayingMusic, isVideoMuted])
   );
 
+  // Auto-populate music if passed from create screen (Karaoke style)
+  useEffect(() => {
+    if (musicUrl && musicName && !selectedMusic) {
+      const musicData: MusicLayerData = {
+        id: musicId || 'custom',
+        title: musicName.split(' - ')[0] || musicName,
+        artist: musicName.split(' - ')[1] || 'Unknown',
+        audioUrl: musicUrl,
+        style: 'sticker'
+      };
+      
+      setSelectedMusic(musicData);
+      
+      // If it's a photo, play the music in the editor
+      if (!isVideo) {
+        setIsPlayingMusic(true);
+        audioPlayer?.replace(musicUrl);
+        audioPlayer?.play();
+      } else {
+        // For video, audio is already baked in via mic recording. Don't play it again.
+        setIsPlayingMusic(false);
+      }
+      
+      setLayers(prev => [...prev.filter(l => l.type !== 'music'), {
+        id: 'music-layer',
+        type: 'music',
+        content: musicData,
+        x: 0,
+        y: -200,
+        scale: 1,
+        rotation: 0
+      }]);
+    }
+  }, [musicUrl, musicName]);
+
   // Sync state changes explicitly
   useEffect(() => {
     if (videoPlayer) {
@@ -140,9 +177,9 @@ export default function StoryEditorScreen() {
       params: { 
         uri, type, target, text: storyText, mode, speed, effect, 
         musicId: selectedMusic?.id || musicId,
-        musicTitle: selectedMusic?.title,
-        musicArtist: selectedMusic?.artist,
-        musicUrl: selectedMusic?.audioUrl,
+        musicTitle: selectedMusic?.title || musicName?.split(' - ')[0],
+        musicArtist: selectedMusic?.artist || musicName?.split(' - ')[1],
+        musicUrl: selectedMusic?.audioUrl || musicUrl,
         isStory: 'true',
         originalStoryId,
         originalOwnerId,
