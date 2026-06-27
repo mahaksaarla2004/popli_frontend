@@ -114,10 +114,11 @@ export default function StoryEditorScreen() {
         style: 'sticker'
       };
       
-      setSelectedMusic(musicData);
+      setTimeout(() => setSelectedMusic(musicData), 0);
       
       // If it's a photo, play the music in the editor
       if (!isVideo) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsPlayingMusic(true);
         audioPlayer?.replace(musicUrl);
         audioPlayer?.play();
@@ -149,18 +150,20 @@ export default function StoryEditorScreen() {
   // If this is a 'Mention Back' (repost), automatically add a Mention sticker for the original creator!
   useEffect(() => {
     if (originalOwnerUsername) {
-      setLayers(prev => {
-        if (prev.some(l => l.id === 'repost-mention')) return prev;
-        return [...prev, {
-          id: 'repost-mention',
-          type: 'interactive',
-          content: { type: 'mention', text: originalOwnerUsername, styleVariant: 0 },
-          x: 0,
-          y: -150, // Position it nicely in the upper half
-          scale: 1,
-          rotation: 0
-        }];
-      });
+      setTimeout(() => {
+        setLayers(prev => {
+          if (prev.some(l => l.id === 'repost-mention')) return prev;
+          return [...prev, {
+            id: 'repost-mention',
+            type: 'interactive',
+            content: { type: 'mention', text: originalOwnerUsername, styleVariant: 0 },
+            x: 0,
+            y: -150, // Position it nicely in the upper half
+            scale: 1,
+            rotation: 0
+          }];
+        });
+      }, 0);
     }
   }, [originalOwnerUsername]);
 
@@ -544,7 +547,7 @@ export default function StoryEditorScreen() {
                     timelineData,
                     musicData: selectedMusic
                   });
-                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId, challengeId, isVideoMuted: isVideoMuted ? 'true' : 'false' } });
+                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId, musicName: selectedMusic?.title || musicName, musicUrl: selectedMusic?.audioUrl || musicUrl, challengeId, isVideoMuted: isVideoMuted ? 'true' : 'false' } });
                 }}
                 className="bg-[#A855F7] px-6 py-2.5 rounded-full active:scale-95 transition-transform shadow-lg shadow-purple-500/40"
               >
@@ -608,7 +611,7 @@ export default function StoryEditorScreen() {
                     timelineData,
                     musicData: selectedMusic
                   });
-                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId, challengeId, isVideoMuted: isVideoMuted ? 'true' : 'false' } });
+                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId, musicName: selectedMusic?.title || musicName, musicUrl: selectedMusic?.audioUrl || musicUrl, challengeId, isVideoMuted: isVideoMuted ? 'true' : 'false' } });
                 }}
                 className="items-center justify-center bg-[#A855F7] px-8 py-3.5 rounded-[20px] flex-row gap-2 shadow-xl shadow-purple-500/30 ml-3 active:scale-95 transition-transform"
               >

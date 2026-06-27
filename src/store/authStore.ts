@@ -107,7 +107,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Also update the feedStore so reels instantly show the new name/username/avatar
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
+           
           const { useFeedStore } = require('./feedStore');
           useFeedStore.getState().updateCreatorInfo(useAuthStore.getState().userProfile.id, profile);
           
@@ -245,14 +245,14 @@ export const useAuthStore = create<AuthState>()(
 
         // Trigger feedStore wipe instantly
         try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
+           
           const { useFeedStore } = require('./feedStore');
           useFeedStore.getState().clearCache();
         } catch(e) {}
         
         // Trigger storyStore wipe instantly
         try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
+           
           const { useStoryStore } = require('./storyStore');
           useStoryStore.getState().clearCache();
         } catch(e) {}

@@ -72,7 +72,7 @@ export const useChatStore = create<ChatState>()(
           socket = null;
         }
         
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+         
           const { useAuthStore } = require('./authStore');
         const token = useAuthStore.getState().token;
         if (!token) return;
@@ -348,7 +348,7 @@ export const useChatStore = create<ChatState>()(
       },
       reactToMessage: async (chatId, messageId, emoji) => {
         // Optimistic update
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+         
         const { useAuthStore } = require('./authStore');
         const userId = useAuthStore.getState().userProfile?.id;
         

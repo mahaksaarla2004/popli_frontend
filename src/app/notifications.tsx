@@ -43,8 +43,9 @@ export default function NotificationsScreen() {
     const now = new Date();
     const msInDay = 24 * 60 * 60 * 1000;
 
+    const nowMs = now.getTime();
     notifications.forEach(n => {
-      const nDate = new Date(n.createdAt || Date.now());
+      const nDate = new Date(n.createdAt || nowMs);
       const diffMs = now.getTime() - nDate.getTime();
       const diffDays = diffMs / msInDay;
 
@@ -248,7 +249,7 @@ export default function NotificationsScreen() {
               <Heart size={24} color="#9CA3AF" />
             </View>
             <Text className="text-white/60 font-semibold">Activity On Your Posts</Text>
-            <Text className="text-white/40 text-[13px] mt-2">When someone likes or comments on one of your posts, you'll see it here.</Text>
+            <Text className="text-white/40 text-[13px] mt-2">When someone likes or comments on one of your posts, you&apos;ll see it here.</Text>
           </View>
         ) : (
           <FlashList

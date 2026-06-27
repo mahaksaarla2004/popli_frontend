@@ -17,19 +17,6 @@ export default function TagPeopleSheet({ onComplete, onClose, initialSelectedUse
   const [isLoading, setIsLoading] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<any[]>(initialSelectedUsers);
 
-  useEffect(() => {
-    if (!query) {
-      setResults([]);
-      return;
-    }
-
-    const delayDebounceFn = setTimeout(() => {
-      searchUsers(query);
-    }, 300);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [query]);
-
   const searchUsers = async (q: string) => {
     try {
       setIsLoading(true);
@@ -44,6 +31,19 @@ export default function TagPeopleSheet({ onComplete, onClose, initialSelectedUse
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!query) {
+      setTimeout(() => setResults([]), 0);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(() => {
+      searchUsers(query);
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [query]);
 
   const toggleUserSelection = (user: any) => {
     const isSelected = selectedUsers.some(u => u.id === user.id);
@@ -153,7 +153,7 @@ export default function TagPeopleSheet({ onComplete, onClose, initialSelectedUse
 
             {query.length > 0 && results.length === 0 && !isLoading && (
               <View className="py-8 items-center">
-                <Text className="text-[#9CA3AF]">No users found for "{query}"</Text>
+                <Text className="text-[#9CA3AF]">No users found for &quot;{query}&quot;</Text>
               </View>
             )}
           </View>

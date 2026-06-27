@@ -7,6 +7,28 @@ import { CheckCircle } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
 import * as FileSystem from 'expo-file-system/legacy';
 
+const encodeBase64Url = (str: string) => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let output = '';
+  let i = 0;
+  while (i < str.length) {
+    let chr1 = str.charCodeAt(i++);
+    let chr2 = str.charCodeAt(i++);
+    let chr3 = str.charCodeAt(i++);
+    let enc1 = chr1 >> 2;
+    let enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+    let enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+    let enc4 = chr3 & 63;
+    if (isNaN(chr2)) { enc3 = enc4 = 64; }
+    else if (isNaN(chr3)) { enc4 = 64; }
+    output = output + (enc1 < 64 ? chars.charAt(enc1) : '') 
+                  + (enc2 < 64 ? chars.charAt(enc2) : '') 
+                  + (enc3 < 64 ? chars.charAt(enc3) : '') 
+                  + (enc4 < 64 ? chars.charAt(enc4) : '');
+  }
+  return output.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+};
+
 export default function ShareStoryScreen() {
   const router = useRouter();
   const { uri, type, text, target, mode, speed, effect, musicId, musicTitle, musicArtist, musicUrl, targetUserIds, originalStoryId, originalOwnerId, originalOwnerUsername, isStory, city, taggedUserIds, isMonetized, returnTo, challengeId, isVideoMuted, category, allowGifting, visibility, allowComments, allowDuet, location } = useLocalSearchParams<{ 
@@ -125,6 +147,14 @@ export default function ShareStoryScreen() {
           if (effect === 'B&W') transformations.push('e_grayscale');
           if (effect === 'Blur') transformations.push('e_blur:300');
           if (isVideoMuted === 'true') transformations.push('e_volume:mute');
+          if (musicUrl) {
+            try {
+              const b64Url = encodeBase64Url(musicUrl);
+              transformations.push(`l_fetch:${b64Url},fl_layer_apply`);
+            } catch (e) {
+              console.warn("Failed to encode music URL", e);
+            }
+          }
 
           if (transformations.length > 0) {
             finalUrl = finalUrl.replace('/upload/', `/upload/${transformations.join(',')}/`);
@@ -246,6 +276,14 @@ export default function ShareStoryScreen() {
             if (effect === 'B&W') transformations.push('e_grayscale');
             if (effect === 'Blur') transformations.push('e_blur:300');
             if (isVideoMuted === 'true') transformations.push('e_volume:mute');
+            if (musicUrl) {
+              try {
+                const b64Url = encodeBase64Url(musicUrl);
+                transformations.push(`l_fetch:${b64Url},fl_layer_apply`);
+              } catch (e) {
+                console.warn("Failed to encode music URL", e);
+              }
+            }
 
             if (transformations.length > 0) {
               finalUrl = finalUrl.replace('/upload/', `/upload/${transformations.join(',')}/`);

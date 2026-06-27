@@ -33,6 +33,8 @@ export default function HomeFeedScreen() {
   const [hasMoreReels, setHasMoreReels] = useState(true);
   const flashListRef = useRef<any>(null);
   
+  const [refreshCount, setRefreshCount] = useState(0);
+
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
@@ -238,8 +240,6 @@ export default function HomeFeedScreen() {
       />
     );
   }, [filteredReels, handleOpenComments, handleOpenSend, handleOpenGifts, handleOpenProfile]);
-
-  const [refreshCount, setRefreshCount] = useState(0);
 
   const keyExtractor = useCallback((item: Reel) => `${item.id}-${refreshCount}`, [refreshCount]);
 

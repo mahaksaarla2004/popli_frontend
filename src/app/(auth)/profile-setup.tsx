@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Platform, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
@@ -109,7 +109,8 @@ export default function ProfileSetupScreen() {
       avatar,
       bio: bio.trim() || 'Indian video creator 🚀',
       category,
-    });
+      manualComplete: true
+    } as any);
     setIsUploading(false);
 
     if (result && !result.success) {
@@ -117,8 +118,7 @@ export default function ProfileSetupScreen() {
       return;
     }
 
-setLanguage(selectedLang);
-    await updateProfile({ manualComplete: true } as any);
+    setLanguage(selectedLang);
 
     setTimeout(() => {
       router.replace('/(tabs)');
@@ -302,7 +302,11 @@ return (
 
    <TouchableOpacity
           onPress={async () => {
-            await updateProfile({ manualComplete: true } as any);
+            const res = await updateProfile({ manualComplete: true } as any);
+            if (res && !res.success) {
+              alert('Failed to skip. Please try again.');
+              return;
+            }
             router.replace('/(tabs)');
           }}
           style={{ alignItems: 'center', paddingVertical: 12 }}

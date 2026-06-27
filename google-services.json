@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "576573661357-g3dvj04cs8jic049m41sids9u03msl2a.apps.googleusercontent.com",
+          "client_id": "576573661357-bl9c7ut8l55iauus159rpf4uuabp739n.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.mahak2004.popliapp",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+            "certificate_hash": "1b76ab4f5133ec84c35c197dfc345682c2d6785e"
           }
         },
         {

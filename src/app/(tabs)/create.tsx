@@ -37,8 +37,7 @@ export default function CreateScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [timerDelay, setTimerDelay] = useState<0 | 3 | 10>(0);
   const [timerCountdown, setTimerCountdown] = useState<number | null>(null);
-  const [isFocused, setIsFocused] = useState(true);
-  
+  const [isFocused, setIsFocused] = useState(false);
   // New States for functional sweep
   const [speedMultiplier, setSpeedMultiplier] = useState<1 | 2 | 3>(1);
   const [selectedEffect, setSelectedEffect] = useState<any>({ name: 'None' });

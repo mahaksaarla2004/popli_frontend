@@ -301,9 +301,9 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
             <View className="w-16 h-16 rounded-full bg-red-500/20 items-center justify-center mb-4">
               <Coins size={32} color="#EF4444" />
             </View>
-            <Text className="text-white text-xl font-black mb-2 text-center">Insufficient Balance</Text>
-            <Text className="text-white/60 text-xs text-center leading-5 mb-6 px-4">
-              You need {selectedGift.cost - coinBalance} more coins to send this {selectedGift.name}.
+            <Text className="text-white font-bold text-center mt-6">You don&apos;t have enough coins</Text>
+            <Text className="text-[#9CA3AF] text-center mt-2 px-6">
+              You need {selectedGift.price - Number(wallet?.coinBalance || 0)} more coins to send this {selectedGift.name}.
             </Text>
             <TouchableOpacity 
               onPress={() => {
@@ -362,7 +362,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
             </View>
             <Text className="text-white text-xl font-black mb-2 text-center">Transfer Failed</Text>
             <Text className="text-white/60 text-xs text-center leading-5 mb-6 px-4">
-              We couldn't process your gift. Please try again.
+              We couldn&apos;t process your gift. Please try again.
             </Text>
             <TouchableOpacity 
               onPress={() => setShowErrorModal(false)}

@@ -8,6 +8,10 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 import auth from '@react-native-firebase/auth';
 import { apiClient } from '../../api/client';
 
+GoogleSignin.configure({
+  webClientId: '576573661357-huruthf92t81ohv6k1l2el6cm9q32ip5.apps.googleusercontent.com',
+});
+
 export default function OnboardingScreen() {
   const { setOnboardingComplete, setLogin, setToken } = useAuthStore();
   const router = useRouter();
@@ -98,7 +102,7 @@ export default function OnboardingScreen() {
             <Text style={{ color: '#FF2D6B', fontSize: 22, marginLeft: 3 }}>{'>'}</Text>
           </View>
           <View style={{ backgroundColor: '#FF2D6B', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20 }}>
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Rs.4</Text>
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Rs.5</Text>
             <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, textAlign: 'center', marginTop: 1 }}>Per 1000 Views</Text>
           </View>
         </View>
@@ -131,7 +135,7 @@ export default function OnboardingScreen() {
           Turn Your{'\n'}Content Into{'\n'}<Text style={{ color: '#FF2D6B' }}>Income</Text>
         </Text>
         <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, marginTop: 10, lineHeight: 19 }}>
-          Upload videos and earn Rs.4 for every 1000 qualified views.{'\n'}Start earning from your very first post.
+          Upload videos and earn Rs.5 for every 1000 qualified views.{'\n'}Start earning from your very first post.
         </Text>
       </View>
 

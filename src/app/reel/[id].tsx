@@ -3,6 +3,7 @@ import { View, Pressable, ActivityIndicator, Dimensions, StyleSheet, Text, ViewT
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
+// eslint-disable-next-line import/namespace
 import { ReelItem } from '../../components/feed/ReelItem';
 import { CommentsSheet } from '../../components/sheets/CommentsSheet';
 import { GiftSheet } from '../../components/sheets/GiftSheet';
@@ -38,26 +39,32 @@ export default function ReelViewerScreen() {
 
   useEffect(() => {
     if (commentId && activeReelId) {
-      setSelectedReelId(activeReelId);
+      setTimeout(() => setSelectedReelId(activeReelId), 0);
       setTimeout(() => setIsCommentsOpen(true), 0);
     }
   }, [commentId, activeReelId]);
 
   useEffect(() => {
     let sourceReels = mainReels;
+    let hasSource = false;
+    
     if (source === 'hashtag' && hashtagName) {
       sourceReels = hashtagReels[hashtagName] || [];
+      hasSource = true;
     } else if (source === 'profile' && profileUsername) {
       sourceReels = profileReels[profileUsername] || [];
+      hasSource = true;
     } else if (source === 'userReels') {
       sourceReels = userReels;
+      hasSource = true;
     } else if (source === 'likedReels') {
       sourceReels = likedReels;
+      hasSource = true;
     }
 
-    const storeReelIndex = sourceReels.findIndex(r => r.id === id);
-    if (storeReelIndex >= 0) {
-      setSwipableReels(sourceReels);
+    if (hasSource) {
+      setTimeout(() => setSwipableReels(sourceReels), 0);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
     } else {
       // Fallback: fetch single reel if not in store (e.g. from a deep link)
@@ -90,6 +97,7 @@ export default function ReelViewerScreen() {
           }]);
         } catch (err) {
           console.error('Error fetching reel:', err);
+          setSwipableReels([]);
         } finally {
           setLoading(false);
         }

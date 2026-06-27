@@ -93,8 +93,8 @@ export default function SettingsScreen() {
               )}
             </View>
             <View className="flex-1">
-              <Text className="text-white font-bold text-base">{userProfile?.name || 'Alex Rivera'}</Text>
-              <Text className="text-neutral-grey text-xs mt-1">@{userProfile?.username?.toUpperCase() || 'ALEX_CURATES'}</Text>
+              <Text className="text-white font-bold text-base">{userProfile?.name || 'User'}</Text>
+              <Text className="text-neutral-grey text-xs mt-1">@{userProfile?.username?.toUpperCase() || 'USER'}</Text>
             </View>
           </Pressable>
           <Pressable 

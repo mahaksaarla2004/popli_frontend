@@ -16,9 +16,22 @@ export default function LocationPickerSheet({ onSelect, onClose, currentLocation
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const searchLocations = async (q: string) => {
+    try {
+      setIsLoading(true);
+      const res = await apiClient.get(`/search/locations?q=${encodeURIComponent(q)}`);
+      setResults(res.data || []);
+    } catch (err) {
+      console.warn("Failed to search locations", err);
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!query) {
-      setResults([]);
+      setTimeout(() => setResults([]), 0);
       return;
     }
 
@@ -28,19 +41,6 @@ export default function LocationPickerSheet({ onSelect, onClose, currentLocation
 
     return () => clearTimeout(delayDebounceFn);
   }, [query]);
-
-  const searchLocations = async (q: string) => {
-    try {
-      setIsLoading(true);
-      const res = await apiClient.get(`/search/locations?q=${encodeURIComponent(q)}`);
-      setResults(res.data || []);
-    } catch (err) {
-      console.warn("Failed to search locations:", err);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <View className="flex-1 bg-[#12081E]" style={{ paddingTop: Math.max(insets.top, 16) }}>
@@ -121,7 +121,7 @@ export default function LocationPickerSheet({ onSelect, onClose, currentLocation
 
             {query.length > 0 && results.length === 0 && !isLoading && (
               <View className="py-8 items-center">
-                <Text className="text-[#9CA3AF]">No places found for "{query}"</Text>
+                <Text className="text-[#9CA3AF]">No locations found for &quot;{query}&quot;</Text>
               </View>
             )}
           </View>

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Modal , Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Landmark, Clock, CheckCircle2, History } from 'lucide-react-native';
 import { apiClient } from '../api/client';
 import { SafeScreen } from '../components/layout/SafeScreen';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
-import { Platform } from 'react-native';
 
 export default function WithdrawScreen() {
   const router = useRouter();

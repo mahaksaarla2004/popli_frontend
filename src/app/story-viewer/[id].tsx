@@ -172,7 +172,7 @@ export default function StoryViewerScreen() {
   const [showViewersSheet, setShowViewersSheet] = useState(false);
   const [viewersList, setViewersList] = useState<any[]>([]);
   const [isLoadingViewers, setIsLoadingViewers] = useState(false);
-  const sheetAnim = useRef(new Animated.Value(height)).current;
+  const [sheetAnim] = useState(() => new Animated.Value(height));
 
   const [progressAnim] = useState(() => new Animated.Value(0));
 
@@ -244,7 +244,7 @@ export default function StoryViewerScreen() {
         } else {
           // The story is missing (maybe because we don't follow them or it's a direct link)
           // Try fetching it specifically
-          setIsFetchingSingleStory(true);
+          setTimeout(() => setIsFetchingSingleStory(true), 0);
           useStoryStore.getState().fetchStoryById(storyId).then((fetchedStory) => {
             if (fetchedStory) {
               // Wait for the store to update, then we can find it

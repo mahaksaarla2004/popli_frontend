@@ -29,7 +29,7 @@ export default function MusicPickerSheet({ visible, onClose, onSelect }: MusicPi
   useEffect(() => {
     if (!visible) {
       player?.pause();
-      setPlayingId(null);
+      setTimeout(() => setPlayingId(null), 0);
     }
   }, [visible]);
 

@@ -143,7 +143,7 @@ export default function ChatScreen() {
           keyExtractor={(item: any) => item.id.toString()}
           inverted={true}
           showsVerticalScrollIndicator={false}
-          onViewableItemsChanged={onViewableItemsChanged.current}
+          onViewableItemsChanged={(info) => onViewableItemsChanged.current && onViewableItemsChanged.current(info)}
           viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
           contentContainerStyle={{ paddingHorizontal: 0, paddingBottom: 20, paddingTop: 10 }}
           ListEmptyComponent={() => (

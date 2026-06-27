@@ -42,6 +42,8 @@ const DoubleTapHeart = React.memo(({ x, y }: { x: number, y: number }) => {
   );
 });
 
+DoubleTapHeart.displayName = 'DoubleTapHeart';
+
 const MemoizedLikeButton = React.memo(({ 
   isLiked, 
   likesCount, 
@@ -69,6 +71,8 @@ const MemoizedLikeButton = React.memo(({
     </Pressable>
   );
 });
+
+MemoizedLikeButton.displayName = 'MemoizedLikeButton';
 
 interface ReelItemProps {
   item: Reel;
@@ -136,7 +140,7 @@ const ActiveAudioPlayer = ({ url, isMuted, isActive, isHeldPaused }: { url: stri
     if (audioPlayer && url) {
       // eslint-disable-next-line react-hooks/immutability
       audioPlayer.loop = true;
-      // eslint-disable-next-line react-hooks/immutability
+       
       audioPlayer.muted = isMuted;
       if (isActive && !isHeldPaused) {
         audioPlayer.play();

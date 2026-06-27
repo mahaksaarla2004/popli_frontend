@@ -11,10 +11,6 @@ export default function ReelAnalyticsScreen() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [id]);
-
   const fetchAnalytics = async () => {
     try {
       const res = await apiClient.get(`/analytics/reels/${id}`);
@@ -25,6 +21,11 @@ export default function ReelAnalyticsScreen() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAnalytics();
+  }, [id]);
 
   if (loading) {
     return (

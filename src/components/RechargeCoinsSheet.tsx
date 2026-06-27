@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, Dimensions, Alert } from 'react-native';
 import { X, Lock, CheckCircle2, Zap, Coins } from 'lucide-react-native';
+import { useWalletStore } from '../store';
 
 interface RechargeCoinsSheetProps {
   visible: boolean;
@@ -9,7 +10,6 @@ interface RechargeCoinsSheetProps {
 }
 
 const { width } = Dimensions.get('window');
-import { useWalletStore } from '../store';
 
 export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: RechargeCoinsSheetProps) {
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null);

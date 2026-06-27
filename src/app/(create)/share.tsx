@@ -10,7 +10,7 @@ import TagPeopleSheet from '../../components/sheets/TagPeopleSheet';
 
 export default function ShareScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ uri: string, type: string, mode: string, musicId?: string, challengeId?: string, isStory?: string }>();
+  const params = useLocalSearchParams<{ uri: string, type: string, mode: string, musicId?: string, musicName?: string, musicUrl?: string, challengeId?: string, isStory?: string, isVideoMuted?: string }>();
   const insets = useSafeAreaInsets();
   
   const [caption, setCaption] = useState('');
@@ -62,8 +62,11 @@ export default function ShareScreen() {
         allowComments: String(allowComments),
         allowDuet: String(allowDuet),
         musicId: params.musicId,
+        musicTitle: params.musicName,
+        musicUrl: params.musicUrl,
         challengeId: params.challengeId,
         isStory: params.isStory || 'false',
+        isVideoMuted: params.isVideoMuted || 'false',
         location: location ? JSON.stringify(location) : undefined,
         taggedUserIds: taggedUsers.length > 0 ? JSON.stringify(taggedUsers.map(u => u.id)) : undefined,
       }

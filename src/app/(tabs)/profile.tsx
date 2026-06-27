@@ -44,8 +44,8 @@ export default function ProfileScreen() {
 
   const displayProfile = {
     username: userProfile.username,
-    roles: userProfile.category ? userProfile.category.toUpperCase() + ' CREATOR' : 'CREATOR',
-    bio: userProfile.bio || 'Living the life your style with your rules',
+    roles: userProfile.category ? userProfile.category.toUpperCase() + ' CREATOR' : '',
+    bio: userProfile.bio || '',
     socialLinks: userProfile.socialLinks || [],
     posts: userReels.length, // Real stat
     following: followingIds.length || 0,
@@ -136,8 +136,8 @@ export default function ProfileScreen() {
     />
 
           <Text className="text-white font-bold text-lg mb-1">@{displayProfile.username}</Text>
-          <Text className="text-neutral-grey text-[11px] mb-1">{displayProfile.roles}</Text>
-          <Text className="text-white/60 text-[10px] mb-1 text-center">{displayProfile.bio}</Text>
+          {displayProfile.roles ? <Text className="text-neutral-grey text-[11px] mb-1">{displayProfile.roles}</Text> : null}
+          {displayProfile.bio ? <Text className="text-white/60 text-[10px] mb-1 text-center">{displayProfile.bio}</Text> : null}
           
           {displayProfile.socialLinks.length > 0 && (
             <Pressable onPress={handleLinkPress} className="mt-1">
