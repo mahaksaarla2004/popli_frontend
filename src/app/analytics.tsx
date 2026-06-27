@@ -14,15 +14,19 @@ export default function AnalyticsScreen() {
   const { userReels, fetchUserReels } = useFeedStore();
 
   const [wallet, setWallet] = useState<any>(null);
+  const [videoAnalytics, setVideoAnalytics] = useState<any>(null);
 
   useFocusEffect(
     useCallback(() => {
       if (userProfile?.id) {
         fetchUserReels(userProfile.id);
         apiClient.get('/wallet').then(res => setWallet(res.data)).catch(console.error);
+        if (videoId) {
+          apiClient.get(`/analytics/reels/${videoId}`).then(res => setVideoAnalytics(res.data)).catch(console.error);
+        }
       }
       setLoading(false);
-    }, [userProfile?.id])
+    }, [userProfile?.id, videoId])
   );
 
   // If videoId is provided, focus only on that video
@@ -41,7 +45,7 @@ export default function AnalyticsScreen() {
 
   // Dynamic earnings for the current context (overall or single video)
   const viewEarnings = videoId ? (allTimeViews * effectiveRate) : totalGlobalViewEarnings;
-  const giftEarnings = videoId ? 0 : (wallet?.giftEarnings ?? 0); // Hide gifts/referrals for single video
+  const giftEarnings = videoId ? (videoAnalytics?.earnings?.giftEarnings || 0) : (wallet?.giftEarnings ?? 0);
   const referralEarnings = videoId ? 0 : (wallet?.referralEarnings ?? 0);
   const totalEarnings = viewEarnings + giftEarnings + referralEarnings;
 
@@ -191,8 +195,35 @@ export default function AnalyticsScreen() {
                 </View>
               </>
             )}
+
+            {videoId && giftEarnings > 0 && (
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center gap-3">
+                  <View className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+                  <Text className="text-white font-bold text-sm">Gifts & Tips</Text>
+                </View>
+                <Text className="text-[#F59E0B] font-bold text-sm">₹{giftEarnings.toFixed(2)}</Text>
+              </View>
+            )}
           </View>
         </View>
+
+        {/* Top Gifters for Single Video */}
+        {videoId && videoAnalytics?.topGifters && videoAnalytics.topGifters.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-white font-bold text-lg mb-4 px-1">Top Gifters</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+              {videoAnalytics.topGifters.map((gifter: any, index: number) => (
+                <View key={index} className="bg-[#1A0E2C] p-4 rounded-2xl border border-white/5 items-center w-32">
+                  <Image source={{ uri: gifter.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full mb-2" />
+                  <Text className="text-white font-bold text-sm text-center" numberOfLines={1}>{gifter.username}</Text>
+                  <Text className="text-[#F59E0B] font-bold text-xs mt-1">{gifter.totalGiftCoins} Coins</Text>
+                  <Text className="text-white/40 text-[10px] mt-0.5">{gifter.giftCount} Gifts sent</Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Video Earnings Breakdown (Only show for overall analytics) */}
         {!videoId && (
