@@ -115,6 +115,7 @@ export default function ShareStoryScreen() {
               // @ts-ignore
               uploadType: 1, 
               fieldName: 'file',
+              mimeType: type === 'video' ? 'video/mp4' : 'image/jpeg',
               parameters: {
                 api_key: String(apiKey || ''),
                 timestamp: String(timestamp || ''),
@@ -147,15 +148,9 @@ export default function ShareStoryScreen() {
           if (effect === 'B&W') transformations.push('e_grayscale');
           if (effect === 'Blur') transformations.push('e_blur:300');
           if (isVideoMuted === 'true') transformations.push('e_volume:mute');
-          if (musicUrl) {
-            try {
-              const b64Url = encodeBase64Url(musicUrl);
-              transformations.push(`l_fetch:${b64Url},fl_layer_apply`);
-            } catch (e) {
-              console.warn("Failed to encode music URL", e);
-            }
-          }
-
+          // Note: We intentionally skip adding musicUrl transformation to Cloudinary. 
+          // Cloudinary synchronous video+audio transcoding fails or takes too long, causing a black screen on the client.
+          // ReelItem.tsx already plays the music locally from layersData anyway.
           if (transformations.length > 0) {
             finalUrl = finalUrl.replace('/upload/', `/upload/${transformations.join(',')}/`);
           }
@@ -211,7 +206,8 @@ export default function ShareStoryScreen() {
             isFollowed: false, // You cannot follow yourself, but it satisfies the Reel type
             category: backendReel.category || 'comedy',
             isMonetized: backendReel.isMonetized !== undefined ? backendReel.isMonetized : true,
-            location: location ? JSON.parse(location as string) : (city ? { city } : undefined)
+            location: location ? JSON.parse(location as string) : (city ? { city } : undefined),
+            layersData: backendReel.layersData || JSON.stringify(metadata)
           };
 
           console.log(`[SHARE STORY] Reel Uploaded successfully. ID: ${formattedReel.id}`);
@@ -244,6 +240,7 @@ export default function ShareStoryScreen() {
                 // @ts-ignore
                 uploadType: 1, // FileSystemUploadType.MULTIPART
                 fieldName: 'file',
+                mimeType: type === 'video' ? 'video/mp4' : 'image/jpeg',
                 parameters: {
                   api_key: String(apiKey || ''),
                   timestamp: String(timestamp || ''),
@@ -276,14 +273,8 @@ export default function ShareStoryScreen() {
             if (effect === 'B&W') transformations.push('e_grayscale');
             if (effect === 'Blur') transformations.push('e_blur:300');
             if (isVideoMuted === 'true') transformations.push('e_volume:mute');
-            if (musicUrl) {
-              try {
-                const b64Url = encodeBase64Url(musicUrl);
-                transformations.push(`l_fetch:${b64Url},fl_layer_apply`);
-              } catch (e) {
-                console.warn("Failed to encode music URL", e);
-              }
-            }
+            // Cloudinary synchronous video+audio transcoding fails or takes too long, causing a black screen on the client.
+            // StoryViewer / ReelItem already plays the music locally from layersData anyway.
 
             if (transformations.length > 0) {
               finalUrl = finalUrl.replace('/upload/', `/upload/${transformations.join(',')}/`);

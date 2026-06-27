@@ -51,8 +51,8 @@ export default function EditProfileScreen() {
 
   const [username, setUsername] = useState(userProfile.username);
   const [fullName, setFullName] = useState(userProfile.name);
-  const [email, setEmail] = useState(''); // not in store currently
-  const [phone, setPhone] = useState(''); // not in store currently
+  const [email, setEmail] = useState(userProfile.email || '');
+  const [phone, setPhone] = useState(userProfile.phone?.startsWith('G-') ? '' : (userProfile.phone || ''));
   const [bio, setBio] = useState(userProfile.bio || '');
   const [socialLinks, setSocialLinks] = useState<{title: string, url: string}[]>(userProfile.socialLinks || []);
   const [avatarUri, setAvatarUri] = useState(userProfile.avatar || '');
@@ -105,6 +105,7 @@ const result = await updateProfile({
         bio: bio,
         avatar: finalAvatarUrl,
         email: email || undefined,
+        phone: phone || undefined,
         socialLinks: socialLinks,
         gender: gender,
         category: category,
@@ -171,7 +172,9 @@ const result = await updateProfile({
      <View className="mb-4">
           <Text className="text-white/60 text-[9px] font-bold uppercase tracking-widest pl-1 mb-2">PHONE NUMBER</Text>
           <View className="bg-[#1A0E2C] border border-white/5 rounded-2xl flex-row items-center justify-between px-4 h-[52px]">
-            <Text className="text-white font-medium text-sm">{userProfile.phone || 'Not set'}</Text>
+            <Text className="text-white font-medium text-sm">
+              {userProfile.phone?.startsWith('G-') ? 'Not set' : (userProfile.phone || 'Not set')}
+            </Text>
          <Pressable
               onPress={() => router.push('/(auth)/change-phone-otp')}
             >

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, Image, Platform, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Pressable, Image, Platform, Dimensions, Animated, PanResponder } from 'react-native';
 import { useAudioPlayer } from 'expo-audio';
 import { ChevronLeft, Check, Music } from 'lucide-react-native';
 
@@ -25,6 +25,44 @@ export default function MusicEditorOverlay({ song, onComplete }: MusicEditorOver
   const [style, setStyle] = useState<'cover' | 'waveform'>('cover');
   const [startTime, setStartTime] = useState(0); // in seconds
   const player = useAudioPlayer(song?.audioUrl);
+
+  const SLIDER_WIDTH = width - 32;
+  const SELECTOR_WIDTH = 96;
+  const MAX_TRANSLATE_X = SLIDER_WIDTH - SELECTOR_WIDTH;
+  
+  const panX = useRef(new Animated.Value(0)).current;
+  const totalDuration = 60; // Mock 60 seconds length for calculation
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: Animated.event([null, { dx: panX }], { useNativeDriver: false }),
+      onPanResponderGrant: () => {
+        panX.setOffset((panX as any)._value);
+        panX.setValue(0);
+      },
+      onPanResponderRelease: () => {
+        panX.flattenOffset();
+        let currentValue = (panX as any)._value;
+        
+        if (currentValue < 0) {
+          currentValue = 0;
+          Animated.spring(panX, { toValue: 0, useNativeDriver: false }).start();
+        } else if (currentValue > MAX_TRANSLATE_X) {
+          currentValue = MAX_TRANSLATE_X;
+          Animated.spring(panX, { toValue: MAX_TRANSLATE_X, useNativeDriver: false }).start();
+        }
+
+        const percentage = Math.max(0, Math.min(1, currentValue / MAX_TRANSLATE_X));
+        const newStartTime = percentage * Math.max(0, totalDuration - 15);
+        setStartTime(newStartTime);
+        
+        if (player) {
+          player.seekTo(newStartTime * 1000);
+        }
+      }
+    })
+  ).current;
 
   useEffect(() => {
     if (player) {
@@ -113,16 +151,20 @@ export default function MusicEditorOverlay({ song, onComplete }: MusicEditorOver
           </Pressable>
         </View>
 
-        {/* Pseudo Timeline Slider (Visual mock for now, actual implementation requires advanced pan handler) */}
-        <View className="bg-white/10 h-16 rounded-xl flex-row items-center justify-center relative overflow-hidden border border-white/20">
+        {/* Timeline Slider */}
+        <View className="bg-white/10 h-16 rounded-xl flex-row items-center relative overflow-hidden border border-white/20">
           <View className="absolute inset-0 flex-row items-center justify-between px-2 opacity-50">
              {Array.from({length: 40}).map((_, i) => (
                 <View key={i} className="w-1 bg-white rounded-full" style={{ height: Math.max(4, ((i * 13) % 28) + 4) }} />
              ))}
           </View>
-          <View className="w-24 h-full bg-white/20 border-x-2 border-white absolute z-10 shadow-lg" />
+          <Animated.View 
+            {...panResponder.panHandlers}
+            className="w-24 h-full bg-white/20 border-x-2 border-white absolute z-10 shadow-lg" 
+            style={{ transform: [{ translateX: panX }] }}
+          />
         </View>
-        <Text className="text-white/50 text-xs text-center mt-3 font-medium">Drag to select 15s segment (Mock)</Text>
+        <Text className="text-white/50 text-xs text-center mt-3 font-medium">Drag to select 15s segment</Text>
 
       </View>
     </View>

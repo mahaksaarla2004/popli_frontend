@@ -13,7 +13,7 @@ GoogleSignin.configure({
 });
 
 export default function OnboardingScreen() {
-  const { setOnboardingComplete, setLogin, setToken } = useAuthStore();
+  const { setOnboardingComplete, setLogin, setToken, fetchProfile } = useAuthStore();
   const router = useRouter();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
@@ -34,6 +34,7 @@ export default function OnboardingScreen() {
 
       setOnboardingComplete(true);
       setToken(accessToken);
+      await fetchProfile(); // Ensure Zustand state gets the latest profile flag
       setLogin(true);
 
       if (!user.isProfileComplete) {

@@ -315,7 +315,7 @@ export default function DiscoverScreen() {
                         </View>
                       </View>
                       <Text className={`${earnings === 0 ? 'text-[#10B981]/50' : 'text-[#10B981]'} font-bold text-[15px]`}>
-                        ₹{earnings > 1000 ? (earnings/1000).toFixed(1) + 'K' : earnings}
+                        ₹{earnings > 1000 ? (earnings/1000).toFixed(1) + 'K' : Number(earnings.toFixed(3))}
                       </Text>
                     </Pressable>
                   );

@@ -14,8 +14,10 @@ export default function ChangePhoneOtpScreen() {
   const insets = useSafeAreaInsets();
   const { userProfile } = useAuthStore();
 
-  const [step, setStep] = useState<Step>('current-otp');
-  const [currentOtp, setCurrentOtp] = useState('');
+  const isGoogleOrNotSet = !userProfile.phone || userProfile.phone.startsWith('G-');
+
+  const [step, setStep] = useState<Step>(isGoogleOrNotSet ? 'new-phone' : 'current-otp');
+  const [currentOtp, setCurrentOtp] = useState(isGoogleOrNotSet ? '1234' : '');
   const [newPhone, setNewPhone] = useState('');
   const [newOtp, setNewOtp] = useState('');
   const [error, setError] = useState('');
@@ -101,7 +103,10 @@ const handleSubmitNewPhone = async () => {
         <Pressable
           onPress={() => {
             if (step === 'current-otp') router.back();
-            else if (step === 'new-phone') setStep('current-otp');
+            else if (step === 'new-phone') {
+              if (isGoogleOrNotSet) router.back();
+              else setStep('current-otp');
+            }
             else setStep('new-phone');
           }}
           style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}

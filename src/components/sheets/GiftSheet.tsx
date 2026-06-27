@@ -303,7 +303,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
             </View>
             <Text className="text-white font-bold text-center mt-6">You don&apos;t have enough coins</Text>
             <Text className="text-[#9CA3AF] text-center mt-2 px-6">
-              You need {selectedGift.price - Number(wallet?.coinBalance || 0)} more coins to send this {selectedGift.name}.
+              You need {selectedGift.cost - coinBalance} more coins to send this {selectedGift.name}.
             </Text>
             <TouchableOpacity 
               onPress={() => {

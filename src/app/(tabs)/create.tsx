@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, Dimensions, Image, Alert, Platform } from 'react-native';
+import { View, Text, Pressable, ScrollView, Dimensions, Image, Alert, Platform, AppState } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { CameraView, useCameraPermissions, useMicrophonePermissions, CameraType, FlashMode } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -38,6 +38,7 @@ export default function CreateScreen() {
   const [timerDelay, setTimerDelay] = useState<0 | 3 | 10>(0);
   const [timerCountdown, setTimerCountdown] = useState<number | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [cameraKey, setCameraKey] = useState(0);
   // New States for functional sweep
   const [speedMultiplier, setSpeedMultiplier] = useState<1 | 2 | 3>(1);
   const [selectedEffect, setSelectedEffect] = useState<any>({ name: 'None' });
@@ -69,8 +70,13 @@ export default function CreateScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      // Wait for navigation transition to finish before mounting Camera
-      const timer = setTimeout(() => setIsFocused(true), 150);
+      const onFocus = () => {
+        setCameraKey(Date.now());
+        setIsFocused(true);
+      };
+      
+      const timer = setTimeout(onFocus, 400);
+
       return () => {
         clearTimeout(timer);
         setIsFocused(false);
@@ -227,7 +233,7 @@ export default function CreateScreen() {
   };
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (pendingRecording && isRecording) {
       timer = setTimeout(() => {
         executeRecording();
@@ -285,16 +291,21 @@ export default function CreateScreen() {
   };
 
   const openGallery = async () => {
+    // Explicitly unmount camera before launching intent to free hardware on Android
+    setIsFocused(false);
+    await new Promise(resolve => setTimeout(resolve, 100)); // wait for flush
+
     const mediaType = activeMode === 'REEL' ? ['videos'] : 
                       activeMode === 'POST' ? ['images'] : ['images', 'videos'];
     
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: mediaType as any,
-      allowsEditing: true,
-      quality: 1,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: mediaType as any,
+        allowsEditing: true,
+        quality: 1,
+      });
 
-    if (!result.canceled && result.assets.length > 0) {
+      if (!result.canceled && result.assets.length > 0) {
       const asset = result.assets[0];
       
       // Enforce 10 seconds minimum for Reels from gallery
@@ -312,6 +323,13 @@ export default function CreateScreen() {
           challengeId
         } 
       });
+    }
+    } finally {
+      // Remount camera if user cancels gallery
+      setTimeout(() => {
+        setCameraKey(Date.now());
+        setIsFocused(true);
+      }, 500);
     }
   };
 
@@ -343,15 +361,15 @@ export default function CreateScreen() {
       <View className="flex-1 rounded-b-3xl overflow-hidden relative">
         {isFocused && (
          <CameraView 
-            key={activeMode}
+            key={`cam-${cameraKey}`}
             ref={cameraRef}
             style={{ position: 'absolute', width: '100%', height: '100%' }} 
             facing={facing} 
             flash={flash}
             enableTorch={flash === 'on'}
             mode={activeMode === 'POST' ? 'picture' : activeMode === 'REEL' ? 'video' : (isRecording ? 'video' : 'picture')}
-            videoQuality={cameraSettings.videoResolution === '4K' ? '2160p' : '1080p'}
-            videoStabilizationMode={cameraSettings.stabilization ? 'auto' : 'off'}
+            videoQuality={facing === 'front' ? '720p' : (cameraSettings.videoResolution === '4K' ? '2160p' : '1080p')}
+            videoStabilizationMode={Platform.OS === 'ios' && cameraSettings.stabilization ? 'auto' : 'off'}
             mirror={facing === 'front' ? cameraSettings.mirrorFront : false}
           />
         )}

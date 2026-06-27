@@ -111,7 +111,9 @@ export default function StoryEditorScreen() {
         title: musicName.split(' - ')[0] || musicName,
         artist: musicName.split(' - ')[1] || 'Unknown',
         audioUrl: musicUrl,
-        style: 'sticker'
+        style: 'cover',
+        startTime: 0,
+        duration: 15000
       };
       
       setTimeout(() => setSelectedMusic(musicData), 0);
@@ -168,6 +170,7 @@ export default function StoryEditorScreen() {
   }, [originalOwnerUsername]);
 
   const navigateToShare = (target: 'your_story' | 'close_friends' | 'share', targetUserIds?: string[]) => {
+    setIsPlayingMusic(false);
     try { audioPlayer?.pause(); } catch(e) {}
     try { videoPlayer?.pause(); } catch(e) {}
     setEditorData({

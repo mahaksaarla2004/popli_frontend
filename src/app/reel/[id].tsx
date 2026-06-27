@@ -63,8 +63,7 @@ export default function ReelViewerScreen() {
     }
 
     if (hasSource) {
-      setTimeout(() => setSwipableReels(sourceReels), 0);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSwipableReels(sourceReels);
       setLoading(false);
     } else {
       // Fallback: fetch single reel if not in store (e.g. from a deep link)

@@ -87,10 +87,10 @@ interface ReelItemProps {
   isAdjacent?: boolean;
 }
 
-const ActiveVideoPlayer = ({ url, isMuted, isActive, isHeldPaused, width, height, onLoaded }: { url: string, isMuted: boolean, isActive: boolean, isHeldPaused: boolean, width: number, height: number, onLoaded: () => void }) => {
+const ActiveVideoPlayer = ({ url, isMuted, isActive, isHeldPaused, width, height, onLoaded, hasMusicOverlay }: { url: string, isMuted: boolean, isActive: boolean, isHeldPaused: boolean, width: number, height: number, onLoaded: () => void, hasMusicOverlay?: boolean }) => {
   const player = useVideoPlayer(url, player => {
     player.loop = true;
-    player.muted = isMuted;
+    player.muted = isMuted || !!hasMusicOverlay;
     if (isActive && !isHeldPaused) {
       player.play();
     } else {
@@ -112,8 +112,8 @@ const ActiveVideoPlayer = ({ url, isMuted, isActive, isHeldPaused, width, height
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/immutability
-    player.muted = isMuted;
-  }, [isMuted, player]);
+    player.muted = isMuted || !!hasMusicOverlay;
+  }, [isMuted, player, hasMusicOverlay]);
 
   useEffect(() => {
     if (isActive && !isHeldPaused) {
@@ -382,13 +382,13 @@ export const ReelItem = React.memo(({
           <>
             {isAdjacent ? (
               <ActiveVideoPlayer 
-
                 url={safeVideoUrl} 
                 isMuted={isGlobalMuted} 
                 isActive={isActive} 
                 isHeldPaused={isHeldPaused}
                 width={width} 
                 height={height} 
+                hasMusicOverlay={!!musicAudioUrl}
                 onLoaded={() => {
                   if (!isLoaded) setTimeout(() => setIsLoaded(true), 0);
                 }}

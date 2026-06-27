@@ -18,7 +18,7 @@ GoogleSignin.configure({
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
- const { setLogin, setFirstLogin, setToken } = useAuthStore();
+ const { setLogin, setFirstLogin, setToken, fetchProfile } = useAuthStore();
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -40,6 +40,7 @@ export default function LoginScreen() {
   const { accessToken, refreshToken, user } = res.data;
 
       setToken(accessToken);
+      await fetchProfile(); // Ensure Zustand state gets the latest profile flag BEFORE setting login state
       setLogin(true);
 
       if (!user.isProfileComplete) {
