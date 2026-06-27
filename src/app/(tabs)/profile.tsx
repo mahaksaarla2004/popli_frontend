@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, Pressable, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Image, Pressable, Dimensions, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Settings, AlignLeft, LayoutGrid, Heart, Play, Plus, BarChart2 } from 'lucide-react-native';
 import { useAuthStore, useFeedStore, useStoryHighlightStore } from '../../store';
@@ -113,11 +113,27 @@ export default function ProfileScreen() {
         {/* 2. AVATAR & BIO BLOCK */}
         <View className="items-center px-4 py-6">
     <StoryRing 
-  userId={displayProfile.username} 
-  avatarUrl={displayProfile.avatar} 
-  size={96} 
-  onPress={() => router.push('/edit-profile')}
-/>
+      userId={displayProfile.username} 
+      avatarUrl={displayProfile.avatar} 
+      size={96} 
+      onPress={() => {
+        Alert.alert(
+          "Profile Options",
+          "What would you like to do?",
+          [
+            { 
+              text: "View Story", 
+              onPress: () => router.push(`/story-viewer/${displayProfile.username}`) 
+            },
+            { 
+              text: "Edit Profile", 
+              onPress: () => router.push('/edit-profile') 
+            },
+            { text: "Cancel", style: "cancel" }
+          ]
+        );
+      }}
+    />
 
           <Text className="text-white font-bold text-lg mb-1">@{displayProfile.username}</Text>
           <Text className="text-neutral-grey text-[11px] mb-1">{displayProfile.roles}</Text>
