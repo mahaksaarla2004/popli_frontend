@@ -415,7 +415,7 @@ export default function StoryViewerScreen() {
 
             {/* Render Text, Stickers, and Interactives */}
             <View className="absolute inset-0 z-10" pointerEvents="box-none">
-              {parsedLayersData.layers.filter((l: any) => l.type !== 'drawing' && l.type !== 'music').map((layer: any) => {
+              {parsedLayersData.layers.filter((l: any) => l.type !== 'drawing').map((layer: any) => {
                 const transform = [
                   { translateX: layer.x },
                   { translateY: layer.y },
