@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, G } from 'react-native-svg';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import auth from '@react-native-firebase/auth';
 import { apiClient } from '../../api/client';
 
 export default function OnboardingScreen() {
@@ -20,7 +21,11 @@ export default function OnboardingScreen() {
       const { idToken } = await GoogleSignin.getTokens();
       if (!idToken) throw new Error('No token received');
 
-      const res = await apiClient.post('/auth/google-login', { idToken });
+      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const userCredential = await auth().signInWithCredential(googleCredential);
+      const firebaseIdToken = await userCredential.user.getIdToken(true);
+
+      const res = await apiClient.post('/auth/google-login', { idToken: firebaseIdToken });
       const { accessToken, refreshToken, user } = res.data;
 
       setOnboardingComplete(true);

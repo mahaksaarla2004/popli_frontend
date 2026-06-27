@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import auth from '@react-native-firebase/auth';
 
 GoogleSignin.configure({
   webClientId: '576573661357-huruthf92t81ohv6k1l2el6cm9q32ip5.apps.googleusercontent.com',
@@ -31,7 +32,11 @@ export default function LoginScreen() {
       const { idToken } = await GoogleSignin.getTokens();
       if (!idToken) throw new Error('Google sign-in failed: no token received');
 
-      const res = await apiClient.post('/auth/google-login', { idToken });
+      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const userCredential = await auth().signInWithCredential(googleCredential);
+      const firebaseIdToken = await userCredential.user.getIdToken(true);
+
+      const res = await apiClient.post('/auth/google-login', { idToken: firebaseIdToken });
   const { accessToken, refreshToken, user } = res.data;
 
       setToken(accessToken);
