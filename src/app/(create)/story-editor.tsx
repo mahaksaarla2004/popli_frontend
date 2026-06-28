@@ -540,23 +540,6 @@ export default function StoryEditorScreen() {
                 </Pressable>
               )}
             </View>
-            {mode === 'POST' && (
-              <Pressable 
-                onPress={() => {
-                  try { audioPlayer?.pause(); } catch(e) {}
-                  try { videoPlayer?.pause(); } catch(e) {}
-                  setEditorData({
-                    layers,
-                    timelineData,
-                    musicData: selectedMusic
-                  });
-                  router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId, musicName: selectedMusic?.title || musicName, musicUrl: selectedMusic?.audioUrl || musicUrl, challengeId, isVideoMuted: isVideoMuted ? 'true' : 'false' } });
-                }}
-                className="bg-[#A855F7] px-6 py-2.5 rounded-full active:scale-95 transition-transform shadow-lg shadow-purple-500/40"
-              >
-                <Text className="text-white font-bold text-sm tracking-wide">Next</Text>
-              </Pressable>
-            )}
           </View>
         )}
 
@@ -622,6 +605,19 @@ export default function StoryEditorScreen() {
                 <ChevronRight size={18} color="#FFFFFF" strokeWidth={3} />
               </Pressable>
             </>
+          ) : mode === 'POST' ? (
+            <Pressable 
+              onPress={() => {
+                try { audioPlayer?.pause(); } catch(e) {}
+                try { if (videoPlayer) { videoPlayer.pause(); videoPlayer.muted = true; } } catch(e) {}
+                setEditorData({ layers, timelineData, musicData: selectedMusic });
+                router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId, musicName: selectedMusic?.title || musicName, musicUrl: selectedMusic?.audioUrl || musicUrl, challengeId, isVideoMuted: isVideoMuted ? 'true' : 'false' } });
+              }}
+              className="flex-1 items-center justify-center bg-[#A855F7] px-6 py-4 rounded-[24px] flex-row gap-2 shadow-xl shadow-purple-500/30 active:scale-95 transition-transform"
+            >
+              <Text className="text-white text-[15px] font-black tracking-wide">Next</Text>
+              <ChevronRight size={18} color="#FFFFFF" strokeWidth={3} />
+            </Pressable>
           ) : (
             <>
               <Pressable onPress={() => navigateToShare('your_story')} className="flex-1 items-center justify-center bg-[#190C2C]/90 backdrop-blur-xl px-6 py-4 rounded-[24px] flex-row gap-3 border border-[#8B5CF6]/30 mr-2 active:scale-95 transition-all shadow-lg shadow-purple-900/20">

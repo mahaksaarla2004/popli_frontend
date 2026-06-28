@@ -102,7 +102,7 @@ export default function ShareStoryScreen() {
           mimeType = type === 'video' ? `video/${fileType}` : `image/${fileType}`;
         }
 
-        if (mode === 'REEL' && isStory !== 'true') {
+        if ((mode === 'REEL' || mode === 'POST') && isStory !== 'true') {
           // Cloudinary Upload
           const sigResponse = await apiClient.get('/upload/signature?folder=reels');
           const { timestamp, signature, cloudName, apiKey, folder } = sigResponse.data;

@@ -216,43 +216,45 @@ export default function ShareScreen() {
           </View>
 
           {/* MONETISATION & REWARDS */}
-          <View className="p-4 border-b border-white/5 gap-6">
-            <Text className="text-[#9CA3AF] text-xs font-bold tracking-wider uppercase">Monetisation & Rewards</Text>
-            
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
-                <IndianRupee size={22} color="#10B981" />
-                <View>
-                  <Text className="text-white font-bold text-base">Monetisation</Text>
-                  <Text className="text-[#9CA3AF] text-xs mt-1">Earn from views ₹5 per 1,000 views</Text>
+          {params.mode !== 'POST' && (
+            <View className="p-4 border-b border-white/5 gap-6">
+              <Text className="text-[#9CA3AF] text-xs font-bold tracking-wider uppercase">Monetisation & Rewards</Text>
+              
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center gap-3">
+                  <IndianRupee size={22} color="#10B981" />
+                  <View>
+                    <Text className="text-white font-bold text-base">Monetisation</Text>
+                    <Text className="text-[#9CA3AF] text-xs mt-1">Earn from views ₹5 per 1,000 views</Text>
+                  </View>
                 </View>
+                <Switch
+                  trackColor={{ false: "#3E2B5C", true: "#10B981" }}
+                  thumbColor="#FFFFFF"
+                  ios_backgroundColor="#3E2B5C"
+                  onValueChange={setIsMonetized}
+                  value={isMonetized}
+                />
               </View>
-              <Switch
-                trackColor={{ false: "#3E2B5C", true: "#10B981" }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor="#3E2B5C"
-                onValueChange={setIsMonetized}
-                value={isMonetized}
-              />
-            </View>
 
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
-                <Gift size={22} color="#F59E0B" />
-                <View>
-                  <Text className="text-white font-bold text-base">Allow Virtual Gifting</Text>
-                  <Text className="text-[#9CA3AF] text-xs mt-1">Receive gifts from fans</Text>
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center gap-3">
+                  <Gift size={22} color="#F59E0B" />
+                  <View>
+                    <Text className="text-white font-bold text-base">Allow Virtual Gifting</Text>
+                    <Text className="text-[#9CA3AF] text-xs mt-1">Receive gifts from fans</Text>
+                  </View>
                 </View>
+                <Switch
+                  trackColor={{ false: "#3E2B5C", true: "#A855F7" }}
+                  thumbColor="#FFFFFF"
+                  ios_backgroundColor="#3E2B5C"
+                  onValueChange={setAllowGifting}
+                  value={allowGifting}
+                />
               </View>
-              <Switch
-                trackColor={{ false: "#3E2B5C", true: "#A855F7" }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor="#3E2B5C"
-                onValueChange={setAllowGifting}
-                value={allowGifting}
-              />
             </View>
-          </View>
+          )}
 
           {/* VISIBILITY */}
           <View className="p-4 border-b border-white/5">
