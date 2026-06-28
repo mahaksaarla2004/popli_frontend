@@ -53,8 +53,10 @@ export default function DiscoverScreen() {
   // 1. Creators Near You (Fallback to all top creators if city not specified)
   const nearbyCreators = creators.slice(0, 10);
 
-  // 2. Filter Suggested reels list
-  const suggestedReels = reels.slice(0, 8); // seed suggested grid
+  // 2. Filter Suggested reels list (Sort by newest first)
+  const suggestedReels = [...reels]
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    .slice(0, 8); // seed suggested grid
 
   const handleJoinChallenge = () => {
     alert('Joined Challenge! 🏆 Win up to ₹50,000. Start recording your Cinematic City Walk now.');

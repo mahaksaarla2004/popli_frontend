@@ -371,6 +371,7 @@ export const useFeedStore = create<FeedState>()(
             category: r.category || 'lifestyle',
             isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
             layersData: r.layersData,
+            createdAt: r.createdAt,
             location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
 
@@ -446,6 +447,7 @@ export const useFeedStore = create<FeedState>()(
             category: r.category || 'lifestyle',
             isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
             layersData: r.layersData,
+            createdAt: r.createdAt,
             location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
 
@@ -504,6 +506,7 @@ export const useFeedStore = create<FeedState>()(
             isSaved: false,
             category: r.category || 'lifestyle',
             layersData: r.layersData,
+            createdAt: r.createdAt,
             location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
 
@@ -567,6 +570,7 @@ export const useFeedStore = create<FeedState>()(
             category: r.category || 'lifestyle',
             isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
             layersData: r.layersData,
+            createdAt: r.createdAt,
             location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
           set({ likedReels: fetchedReels });
@@ -612,6 +616,7 @@ export const useFeedStore = create<FeedState>()(
             category: r.category || 'lifestyle',
             isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
             layersData: r.layersData,
+            createdAt: r.createdAt,
             location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
           set({ watchHistory: fetchedReels });
@@ -658,6 +663,7 @@ export const useFeedStore = create<FeedState>()(
             category: r.category || 'lifestyle',
             isMonetized: r.isMonetized !== undefined ? r.isMonetized : true,
             layersData: r.layersData,
+            createdAt: r.createdAt,
             location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
 
