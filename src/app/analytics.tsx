@@ -47,7 +47,8 @@ export default function AnalyticsScreen() {
   const viewEarnings = videoId ? (allTimeViews * effectiveRate) : totalGlobalViewEarnings;
   const giftEarnings = videoId ? (videoAnalytics?.earnings?.giftEarnings || 0) : (wallet?.giftEarnings ?? 0);
   const referralEarnings = videoId ? 0 : (wallet?.referralEarnings ?? 0);
-  const totalEarnings = viewEarnings + giftEarnings + referralEarnings;
+  const bonusEarnings = videoId ? 0 : (wallet?.bonusEarnings ?? 0);
+  const totalEarnings = viewEarnings + giftEarnings + referralEarnings + bonusEarnings;
 
   const sortedReels = [...targetReels].sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
   const allPerformingPosts = sortedReels.length > 0 ? sortedReels.map(r => ({
@@ -193,6 +194,16 @@ export default function AnalyticsScreen() {
                   </View>
                   <Text className="text-[#10B981] font-bold text-sm">₹{referralEarnings.toFixed(2)}</Text>
                 </View>
+
+                {bonusEarnings > 0 && (
+                  <View className="flex-row justify-between items-center mt-4">
+                    <View className="flex-row items-center gap-3">
+                      <View className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" />
+                      <Text className="text-white font-bold text-sm">Bonus/Adjustments</Text>
+                    </View>
+                    <Text className="text-[#3B82F6] font-bold text-sm">₹{bonusEarnings.toFixed(2)}</Text>
+                  </View>
+                )}
               </>
             )}
 
