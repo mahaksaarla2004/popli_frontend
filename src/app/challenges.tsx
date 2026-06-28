@@ -23,8 +23,8 @@ export default function ChallengesScreen() {
   useEffect(() => {
     const fetchChallenges = async () => {
       try {
-        const res = await apiClient.get('/challenges/active');
-        setChallenges(res.data);
+      const res = await apiClient.get('/challenges');
+setChallenges(res.data);
       } catch (error) {
         console.error('Failed to fetch challenges', error);
       } finally {
