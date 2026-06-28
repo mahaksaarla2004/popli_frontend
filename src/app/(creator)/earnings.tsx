@@ -55,7 +55,7 @@ export default function EarningsHistoryScreen() {
           
           <View className="flex-row gap-4 border-t border-white/5 pt-4">
             <View className="flex-1">
-              <Text className="text-neutral-grey text-[10px] uppercase">Ads</Text>
+              <Text className="text-neutral-grey text-[10px] uppercase">Views</Text>
               <Text className="text-white font-bold mt-1">₹{viewEarnings.toFixed(2)}</Text>
             </View>
             <View className="flex-1 border-l border-white/5 pl-4">
