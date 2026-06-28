@@ -107,7 +107,9 @@ export default function OTPScreen() {
                 followingCount: fullProfile.followingCount || 0,
                 giftsReceivedCount: fullProfile.giftsReceivedCount || 0,
                 isVerified: fullProfile.isVerified || false,
-                isProfileComplete: true
+                isProfileComplete: true,
+                email: fullProfile.email || '',
+                phone: fullProfile.phone || ''
               });
             } catch (err) {
               updateProfile({
@@ -115,7 +117,9 @@ export default function OTPScreen() {
                 name: userFromBackend.name || 'Popli User',
                 username: userFromBackend.username,
                 avatar: userFromBackend.avatar || getDefaultAvatar(userFromBackend.username),
-                isProfileComplete: true
+                isProfileComplete: true,
+                email: userFromBackend.email || '',
+                phone: userFromBackend.phone || ''
               });
             }
 
@@ -130,11 +134,15 @@ export default function OTPScreen() {
           try {
             const signupName = params.name ? params.name.toString() : undefined;
             const signupUsername = params.username ? params.username.toString() : undefined;
+            const signupEmail = params.email ? params.email.toString() : undefined;
+            const signupPhone = params.phone ? params.phone.toString() : undefined;
             
             updateProfile({
               id: userFromBackend.id,
               name: signupName || userFromBackend.name || 'Popli User',
               username: signupUsername || userFromBackend.username,
+              email: signupEmail || userFromBackend.email || '',
+              phone: signupPhone || userFromBackend.phone || '',
               isProfileComplete: false
             });
 
