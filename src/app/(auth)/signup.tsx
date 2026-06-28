@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKYCStore, useAuthStore } from '../../store';
 import { ChevronLeft } from 'lucide-react-native';
@@ -234,7 +234,10 @@ return (
           <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 22 }}>←</Text>
         </TouchableOpacity>
 
-        <Text style={{ color: '#FF2D6B', fontSize: 32, fontWeight: '900', letterSpacing: -0.5, marginBottom: 8 }}>popli</Text>
+        <Image 
+          source={require('../../../assets/images/custom_logo.png')} 
+          style={{ width: 120, height: 40, resizeMode: 'contain', marginLeft: -6, marginBottom: 16 }}
+        />
         <Text style={{ color: '#fff', fontSize: 26, fontWeight: '800', marginBottom: 6 }}>Create Your Username</Text>
         <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, marginBottom: 32 }}>
           This will be your unique identity on Popli
@@ -276,29 +279,7 @@ return (
           ) : null}
         </View>
 
-        {/* Suggestions */}
-        <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginBottom: 10, marginTop: 4 }}>Suggestions for you</Text>
-        {[`popli_creator`, `creator_popli`, `popli_01`, `popli_star`].map((s) => (
-          <TouchableOpacity
-            key={s}
-            onPress={() => { setUsername(s); setErrors(prev => ({ ...prev, username: undefined })); }}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: 'rgba(255,255,255,0.04)',
-              borderRadius: 12,
-              paddingHorizontal: 16,
-              paddingVertical: 13,
-              marginBottom: 8,
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.07)',
-            }}
-          >
-            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14 }}>@ {s}</Text>
-            <Text style={{ color: '#FF2D6B', fontSize: 13, fontWeight: '700' }}>Use</Text>
-          </TouchableOpacity>
-        ))}
+
 
         <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginVertical: 20 }} />
 
