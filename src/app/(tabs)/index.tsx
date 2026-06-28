@@ -259,13 +259,13 @@ export default function HomeFeedScreen() {
       
       {/* Top Segmented Tabs Overlay & Notification Bell */}
       <View 
-        className="absolute left-0 right-0 z-50 flex-row justify-between items-center px-4"
+        className="absolute left-0 right-0 z-50 flex-row justify-between items-center px-3"
         style={{ top: insets.top > 0 ? insets.top + 10 : 30, elevation: 10 }}
         pointerEvents="box-none"
       >
-        <View className="w-[84px] h-10" />
+        <View className="flex-1 items-start" />
 
-        <View className="flex-row bg-black/40 rounded-full p-1 items-center">
+        <View className="flex-row bg-black/40 rounded-full p-1 items-center shrink-0">
           {(['for_you', 'following'] as const).map((tab) => {
             const isCurrent = activeTab === tab;
             const label = tab === 'for_you' ? 'For you' : 'Following';
@@ -273,10 +273,10 @@ export default function HomeFeedScreen() {
               <Pressable 
                 key={tab} 
                 onPress={() => setActiveTab(tab)} 
-                className={`items-center justify-center px-6 h-[38px] rounded-full ${isCurrent ? 'bg-white/30' : 'bg-transparent'}`}
+                className={`items-center justify-center px-4 sm:px-6 h-[38px] rounded-full ${isCurrent ? 'bg-white/30' : 'bg-transparent'}`}
               >
                 <Text 
-                  className={`text-[15px] ${isCurrent ? 'text-white font-bold' : 'text-white/70 font-semibold'}`}
+                  className={`text-[14px] sm:text-[15px] ${isCurrent ? 'text-white font-bold' : 'text-white/70 font-semibold'}`}
                   style={{ includeFontPadding: false, textAlignVertical: 'center' }}
                 >
                   {label}
@@ -286,15 +286,15 @@ export default function HomeFeedScreen() {
           })}
         </View>
 
-        <View className="flex-row items-center gap-2">
-          <Pressable onPress={() => router.push('/notifications')} className="w-10 h-10 items-center justify-center active:scale-95">
-            <Bell size={24} color="#FFFFFF" strokeWidth={2.5} />
+        <View className="flex-1 flex-row items-center justify-end gap-1.5 sm:gap-2">
+          <Pressable onPress={() => router.push('/notifications')} className="w-9 sm:w-10 h-9 sm:h-10 items-center justify-center active:scale-95">
+            <Bell size={22} color="#FFFFFF" strokeWidth={2.5} />
             {hasUnreadNotifications && (
-              <View className="absolute top-[8px] right-[8px] w-2.5 h-2.5 bg-[#D946EF] rounded-full border border-black" />
+              <View className="absolute top-[6px] right-[6px] w-2.5 h-2.5 bg-[#D946EF] rounded-full border border-black" />
             )}
           </Pressable>
-          <Pressable onPress={() => router.push('/(tabs)/inbox')} className="w-10 h-10 bg-black/40 rounded-full items-center justify-center active:scale-95">
-            <MessageSquare size={22} color="#FFFFFF" strokeWidth={2.5} className="mr-0.5 mt-0.5" />
+          <Pressable onPress={() => router.push('/(tabs)/inbox')} className="w-9 sm:w-10 h-9 sm:h-10 bg-black/40 rounded-full items-center justify-center active:scale-95">
+            <MessageSquare size={20} color="#FFFFFF" strokeWidth={2.5} className="mr-0.5 mt-0.5" />
             {unreadChatsCount > 0 && (
               <View className="absolute top-0 right-0 bg-[#D946EF] rounded-full px-[5px] py-[1px] border-[1.5px] border-black">
                 <Text className="text-white text-[8px] font-bold">{unreadChatsCount}</Text>
