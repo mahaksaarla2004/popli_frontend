@@ -451,6 +451,8 @@ export const useChatStore = create<ChatState>()(
           const formattedNotifs = rawNotifications.map((n: any) => ({
             id: n.id,
             type: n.type,
+            title: n.title,
+            body: n.body,
             actorId: n.actorId,
             actorName: n.actorName,
             actorAvatar: n.actorAvatar,
@@ -496,6 +498,8 @@ export const useChatStore = create<ChatState>()(
           const formattedNotifs = rawNotifications.map((n: any) => ({
             id: n.id,
             type: n.type,
+            title: n.title,
+            body: n.body,
             actorId: n.actorId,
             actorName: n.actorName,
             actorAvatar: n.actorAvatar,

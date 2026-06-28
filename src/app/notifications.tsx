@@ -166,6 +166,9 @@ export default function NotificationsScreen() {
     }
 
     const t = n.postThumbnail || n.reelThumbnail || n.storyThumbnail;
+    const isSystem = type === 'system';
+    const displayAvatar = isSystem ? 'https://ui-avatars.com/api/?name=Popli&background=1D1037&color=A855F7' : (n.actorAvatar || 'https://i.pravatar.cc/150');
+    const displayName = isSystem ? 'Popli System' : (n.actorName || 'User');
 
     return (
       <Pressable 
@@ -173,13 +176,13 @@ export default function NotificationsScreen() {
         className={`flex-row items-center justify-between p-3 active:bg-white/5 ${isNew ? 'bg-[#8B5CF6]/10' : 'bg-transparent'}`}
       >
         <View className="flex-row items-center gap-3 flex-1 pr-3">
-          <Pressable onPress={() => n.actorId && router.push(`/profile/${n.actorId}` as any)}>
-            <Image source={{ uri: n.actorAvatar || 'https://i.pravatar.cc/150' }} className="w-11 h-11 rounded-full bg-white/10" />
+          <Pressable onPress={() => !isSystem && n.actorId && router.push(`/profile/${n.actorId}` as any)}>
+            <Image source={{ uri: displayAvatar }} className="w-11 h-11 rounded-full bg-white/10" />
           </Pressable>
           
           <View className="flex-1 flex-col justify-center">
             <Text className="text-white text-[14px] leading-[18px]">
-              <Text className="font-bold">{n.actorName || 'User'}</Text>
+              <Text className="font-bold">{displayName}</Text>
               <Text className="text-white/80">{actionText}</Text>
               <Text className="text-white/50 ml-1"> {timeAgo()}</Text>
             </Text>
