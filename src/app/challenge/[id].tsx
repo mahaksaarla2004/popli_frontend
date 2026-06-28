@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, Image, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Trophy, Users, Clock, Info, ChevronDown, ChevronUp, Play, UploadCloud, CheckCircle } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MotiView } from 'moti';
@@ -16,6 +16,7 @@ const ITEM_WIDTH = (width - 48) / 2; // 2 columns with padding
 export default function ChallengeDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
   const challengeId = typeof id === 'string' ? id : '';
   
   const [challengeData, setChallengeData] = useState<Challenge | null>(null);
@@ -267,7 +268,7 @@ export default function ChallengeDetailScreen() {
       </ScrollView>
 
       {/* Floating Action / Toasts */}
-      <View className="absolute bottom-6 left-4 right-4 gap-4">
+      <View className="absolute left-4 right-4 gap-4" style={{ bottom: Math.max(insets.bottom + 20, 24) }}>
         {toastVisible && (
           <MotiView 
             from={{ opacity: 0, translateY: 20 }}
