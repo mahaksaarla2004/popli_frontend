@@ -56,7 +56,7 @@ export default function AboutScreen() {
 
         <View className="items-center mt-8 opacity-50">
           <Text className="text-neutral-grey text-xs text-center">
-            © 2026 The Neon Curator. All rights reserved.
+            © 2026 Popli. All rights reserved.
           </Text>
         </View>
       </ScrollView>

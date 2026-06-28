@@ -220,7 +220,6 @@ export default function SettingsScreen() {
 
           {/* FOOTER */}
           <View className="items-center pb-12 opacity-50">
-            <Text className="text-neutral-grey text-[10px] font-medium tracking-widest">THE NEON CURATOR</Text>
             <Text className="text-neutral-grey text-[9px] mt-1">v2.0.0 (Preview)</Text>
           </View>
 
