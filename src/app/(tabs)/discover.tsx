@@ -14,7 +14,7 @@ const { width } = Dimensions.get('window');
 
 export default function DiscoverScreen() {
   const router = useRouter();
-  const { creators, reels, fetchCreators } = useFeedStore();
+  const { creators, reels, fetchCreators, fetchExploreReels } = useFeedStore();
   const { followingIds, toggleFollow, userProfile } = useAuthStore();
   const { activeChallenges, fetchActiveChallenges } = useChallengeStore();
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,7 +22,8 @@ export default function DiscoverScreen() {
   useEffect(() => {
     fetchCreators();
     fetchActiveChallenges();
-  }, [fetchCreators, fetchActiveChallenges]);
+    fetchExploreReels();
+  }, [fetchCreators, fetchActiveChallenges, fetchExploreReels]);
 
   // Search State
   const [searchResults, setSearchResults] = useState<{ users: any[], reels: any[], hashtags?: any[] }>({ users: [], reels: [] });
