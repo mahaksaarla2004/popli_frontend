@@ -143,7 +143,9 @@ export default function NotificationsScreen() {
     let actionText = '';
     let boldText = '';
 
-    if (type === 'like') {
+    if (type === 'system') {
+      actionText = `: ${n.body || n.title || 'sent you a system notification.'}`;
+    } else if (type === 'like') {
       actionText = ' liked your reel.';
     } else if (type === 'comment_like') {
       actionText = ' liked your comment.';
