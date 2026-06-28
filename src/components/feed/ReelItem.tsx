@@ -774,12 +774,6 @@ export const ReelItem = React.memo(({
               <TrendingUp size={14} color="#A855F7" />
               <Text className="text-[#A855F7] text-xs font-bold uppercase tracking-wider">View Insights</Text>
             </Pressable>
-            
-            {item.isMonetized && (
-              <View className="flex-row items-center gap-1.5 bg-[#F59E0B]/20 px-2 py-0.5 rounded-sm">
-                <Text className="text-[#F59E0B] text-xs font-bold">₹{((item.viewsCount || 0) * 0.0045).toFixed(3)}</Text>
-              </View>
-            )}
           </View>
         )}
       </View>
