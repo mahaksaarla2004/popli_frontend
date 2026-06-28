@@ -4,6 +4,7 @@ import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Heart, MessageCircle, Share2, Play, Eye } from 'lucide-react-native';
 import { apiClient } from '../api/client';
 import { useAuthStore, useFeedStore } from '../store';
+import { calculateEstimatedVideoEarnings } from '../utils/earnings';
 
 export default function AnalyticsScreen() {
   const router = useRouter();
@@ -38,13 +39,11 @@ export default function AnalyticsScreen() {
   const comments = targetReels.reduce((sum, r) => sum + (r.commentsCount || 0), 0);
   const shares = targetReels.reduce((sum, r) => sum + (r.sharesCount || 0), 0);
 
-  // Overall effective rate based on ALL reels (to keep it accurate)
-  const totalGlobalViews = userReels.reduce((sum, r) => sum + (r.viewsCount || 0), 0);
-  const totalGlobalViewEarnings = wallet?.viewEarnings ?? (totalGlobalViews * 0.005);
-  const effectiveRate = totalGlobalViews > 0 ? (totalGlobalViewEarnings / totalGlobalViews) : 0;
-
   // Dynamic earnings for the current context (overall or single video)
-  const viewEarnings = videoId ? (allTimeViews * effectiveRate) : totalGlobalViewEarnings;
+  const viewEarnings = videoId 
+    ? calculateEstimatedVideoEarnings(allTimeViews) 
+    : (wallet?.viewEarnings ?? 0);
+    
   const giftEarnings = videoId ? (videoAnalytics?.earnings?.giftEarnings || 0) : (wallet?.giftEarnings ?? 0);
   const referralEarnings = videoId ? 0 : (wallet?.referralEarnings ?? 0);
   const bonusEarnings = videoId ? 0 : (wallet?.bonusEarnings ?? 0);
@@ -55,7 +54,7 @@ export default function AnalyticsScreen() {
     id: r.id,
     title: r.description || 'My Video',
     views: r.viewsCount || 0,
-    earnings: ((r.viewsCount || 0) * effectiveRate).toFixed(2),
+    earnings: calculateEstimatedVideoEarnings(r.viewsCount || 0).toFixed(2),
     isMonetized: r.isMonetized !== false
   })) : [
     { id: '1', title: 'No posts yet', views: 0, earnings: '0.00', isMonetized: false }
@@ -247,27 +246,19 @@ export default function AnalyticsScreen() {
                 <Text className="text-[#A855F7] font-bold text-lg w-6">#{index + 1}</Text>
                 <View className="w-12 h-12 bg-[#0B001A] rounded-xl items-center justify-center border border-white/5">
                   <Play size={20} color={index === 0 ? "#60A5FA" : "#9CA3AF"} opacity={0.8} />
+            <View key={post.id} className="flex-row items-center bg-[#1A1A1A] p-4 rounded-xl border border-white/5 mb-4">
+                <View className="w-10 h-10 bg-[#A855F7]/10 rounded-full items-center justify-center mr-4">
+                  <Play size={20} color="#A855F7" />
                 </View>
                 <View className="flex-1">
-                  <View className="flex-row items-center">
-                    <Text className="text-white font-bold text-base mb-1 shrink" numberOfLines={1}>{post.title}</Text>
-                    {post.isMonetized && post.views > 0 && (
-                      <View className="bg-[#10B981]/20 px-1.5 py-0.5 rounded ml-2 mb-1">
-                         <Text className="text-[#10B981] text-[8px] font-bold uppercase">Active</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View className="flex-row items-center gap-1">
-                    <Eye size={12} color="#9CA3AF" />
-                    <Text className="text-white/40 text-xs">{post.views} views</Text>
-                  </View>
+                  <Text className="text-white font-bold text-sm mb-1" numberOfLines={1}>{post.title}</Text>
+                  <Text className="text-neutral-silver text-xs">{post.views.toLocaleString()} views</Text>
+                </View>
+                <View className="items-end">
+                  <Text className="text-[#10B981] font-bold text-base">₹{calculateEstimatedVideoEarnings(post.views).toFixed(2)}</Text>
+                  {post.views > 0 && <Text className="text-white/40 text-[9px]">(Estimated)</Text>}
                 </View>
               </View>
-              <View className="items-end">
-                <Text className="text-[#10B981] font-bold text-base">₹{post.earnings}</Text>
-                {post.views > 0 && <Text className="text-white/40 text-[9px]">@ ₹{effectiveRate.toFixed(3)}/v</Text>}
-              </View>
-            </View>
           ))}
         </View>
         )}

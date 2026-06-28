@@ -4,6 +4,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Settings, AlignLeft, LayoutGrid, Heart, Play, Plus, BarChart2 } from 'lucide-react-native';
 import { useAuthStore, useFeedStore, useStoryHighlightStore } from '../../store';
 import { formatSocialCount, getDefaultAvatar } from '../../utils';
+import { calculateEstimatedVideoEarnings } from '../../utils/earnings';
 import StoryRing from '../../components/StoryRing';
 import { LinksSheet } from '../../components/sheets/LinksSheet';
 import { SafeScreen } from '../../components/layout/SafeScreen';
@@ -266,7 +267,7 @@ export default function ProfileScreen() {
                 {reel.isMonetized && activeTab === 'reels' && (
                   <View className="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded flex-row items-center border border-white/10">
                     <Text className="text-[#10B981] text-[9px] font-bold">
-                      ₹{((reel.viewsCount || 0) * 0.005) > 0 ? ((reel.viewsCount || 0) * 0.005).toFixed(2) : '0'}
+                      ₹{calculateEstimatedVideoEarnings(reel.viewsCount || 0) > 0 ? calculateEstimatedVideoEarnings(reel.viewsCount || 0).toFixed(2) : '0'}
                     </Text>
                   </View>
                 )}
