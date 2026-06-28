@@ -77,7 +77,7 @@ export default function EarningsHistoryScreen() {
                 <HistoryRow 
                   key={item.id}
                   source={item.description || item.source}
-                  amount={`₹${item.credit.toFixed(2)}`}
+                  amount={`₹${item.credit < 0.01 && item.credit > 0 ? item.credit.toFixed(4) : item.credit.toFixed(2)}`}
                   date={new Date(item.createdAt).toLocaleDateString('en-IN', {
                     year: 'numeric', month: 'short', day: 'numeric',
                     hour: '2-digit', minute: '2-digit'
