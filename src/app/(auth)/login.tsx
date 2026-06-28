@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Platform, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Pressable, Platform, Alert, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store';
 import { apiClient } from '../../api/client';
@@ -111,7 +111,12 @@ export default function LoginScreen() {
           <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 22 }}>←</Text>
         </TouchableOpacity>
 
-        <Text style={{ color: '#FF2D6B', fontSize: 32, fontWeight: '900', letterSpacing: -0.5, marginBottom: 8 }}>popli</Text>
+        <View style={{ alignItems: 'center', marginBottom: 24, marginTop: -20 }}>
+          <Image 
+            source={require('../../../assets/images/custom_logo.png')} 
+            style={{ width: 140, height: 50, resizeMode: 'contain' }}
+          />
+        </View>
 
         <Text style={{ color: '#fff', fontSize: 26, fontWeight: '800', marginBottom: 6 }}>Verify Your Number</Text>
         <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, marginBottom: 36 }}>

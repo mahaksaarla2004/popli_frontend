@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKYCStore, useAuthStore } from '../../store';
@@ -31,6 +31,43 @@ export default function SignupScreen() {
     agreeTerms?: string;
     api?: string;
   }>({});
+
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(false);
+
+  useEffect(() => {
+    const checkAvailability = async () => {
+      const usernameTrimmed = username.trim().toLowerCase();
+      if (usernameTrimmed.length < 3) {
+        setUsernameAvailable(false);
+        return;
+      }
+      
+      setIsCheckingUsername(true);
+      try {
+        const res = await apiClient.post('/auth/check-user', { username: usernameTrimmed });
+        if (res.data.exists && res.data.field === 'username') {
+           setErrors(prev => ({ ...prev, username: 'Username is already taken.' }));
+           setUsernameAvailable(false);
+        } else {
+           setErrors(prev => ({ ...prev, username: undefined }));
+           setUsernameAvailable(true);
+        }
+      } catch (error) {
+         setUsernameAvailable(false);
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    };
+
+    const delayDebounceFn = setTimeout(() => {
+      if (username) {
+        checkAvailability();
+      }
+    }, 600);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [username]);
 
   const validateDOB = (dobStr: string): string | null => {
     if (!dobStr) return 'Please enter your DOB (DD/MM/YYYY).';
@@ -228,9 +265,11 @@ return (
               autoCapitalize="none"
               style={{ flex: 1, color: '#fff', fontSize: 16, fontWeight: '600' }}
             />
-            {username.length >= 3 && !errors.username && (
-              <Text style={{ color: '#4ADE80', fontSize: 18 }}>✓</Text>
-            )}
+            {isCheckingUsername ? (
+              <ActivityIndicator size="small" color="#FF2D6B" />
+            ) : usernameAvailable && !errors.username ? (
+              <Text style={{ color: '#4ADE80', fontSize: 13, fontWeight: '700' }}>Available ✓</Text>
+            ) : null}
           </View>
           {errors.username ? (
             <Text style={{ color: '#FF4444', fontSize: 12, paddingLeft: 4 }}>{errors.username}</Text>

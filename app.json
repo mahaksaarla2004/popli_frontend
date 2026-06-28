@@ -109,12 +109,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "bd246bc6-f0c2-48e6-9b4f-4942292d1f38"
+        "projectId": "2c5afdb0-a7d5-4847-91fd-93dedfbfdf93"
       }
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "owner": "mahakcode"
+    "owner": "popli"
   }
 }

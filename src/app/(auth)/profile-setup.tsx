@@ -1,5 +1,5 @@
  
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Platform, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store';
@@ -30,14 +30,53 @@ const LANGUAGES: ('English' | 'Hindi' | 'Bengali' | 'Tamil')[] = ['English', 'Hi
 export default function ProfileSetupScreen() {
   const { userProfile, updateProfile, setLanguage } = useAuthStore();
 
- const [name, setName] = useState(userProfile?.name === 'Popli User' ? '' : (userProfile?.name || ''));
+  const [name, setName] = useState(userProfile?.name === 'Popli User' || userProfile?.name === 'Demo User' ? '' : (userProfile?.name || ''));
+  const defaultUsername = userProfile?.username?.startsWith('user_') ? '' : (userProfile?.username || '');
+  const [username, setUsername] = useState(defaultUsername);
   const [avatar, setAvatar] = useState(AVATAR_PRESETS[0]);
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [gender, setGender] = useState<string>('Male');
   const [category, setCategory] = useState<string>('comedy');
   const [selectedLang, setSelectedLang] = useState<'English' | 'Hindi' | 'Bengali' | 'Tamil'>('English');
   const [isUploading, setIsUploading] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | undefined>();
  
+  useEffect(() => {
+    const checkAvailability = async () => {
+      const usernameTrimmed = username?.trim().toLowerCase();
+      if (!usernameTrimmed || usernameTrimmed.length < 3) {
+        setUsernameAvailable(false);
+        setUsernameError(undefined);
+        return;
+      }
+      
+      setIsCheckingUsername(true);
+      try {
+        const res = await apiClient.post('/auth/check-user', { username: usernameTrimmed });
+        if (res.data.exists && res.data.field === 'username') {
+           setUsernameError('Username is already taken.');
+           setUsernameAvailable(false);
+        } else {
+           setUsernameError(undefined);
+           setUsernameAvailable(true);
+        }
+      } catch (error) {
+         setUsernameAvailable(false);
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    };
+
+    const delayDebounceFn = setTimeout(() => {
+      if (username) {
+        checkAvailability();
+      }
+    }, 600);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [username]);
 
   const pickImage = async () => {
     try {
@@ -96,16 +135,28 @@ export default function ProfileSetupScreen() {
   };
 
   const handleNext = async () => {
-  const currentName = name?.trim();
+    const currentName = name?.trim();
+    const currentUsername = username?.trim().toLowerCase();
 
     if (!currentName || currentName.length < 2) {
       alert("Please enter a valid full name (at least 2 characters).");
       return;
     }
 
+    if (!currentUsername || currentUsername.length < 3) {
+      alert("Please enter a valid username (at least 3 characters).");
+      return;
+    }
+    
+    if (usernameError) {
+      alert(usernameError);
+      return;
+    }
+
     setIsUploading(true);
     const result = await updateProfile({
       name: currentName,
+      username: currentUsername,
       avatar,
       bio: bio.trim() || 'Indian video creator 🚀',
       category,
@@ -185,6 +236,38 @@ return (
             )}
           </Pressable>
           <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 10 }}>Add your profile picture</Text>
+        </View>
+
+        {/* Username */}
+        <View style={{ marginBottom: 14 }}>
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14,
+            borderWidth: 1, borderColor: usernameError ? '#FF4444' : 'rgba(255,255,255,0.1)',
+            paddingHorizontal: 16, height: 54,
+          }}>
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 15, marginRight: 6 }}>@</Text>
+            <TextInput
+              value={username}
+              onChangeText={(text) => {
+                setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+                if (usernameError) setUsernameError(undefined);
+              }}
+              placeholder="rahul_123"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              autoCapitalize="none"
+              style={{ flex: 1, color: '#fff', fontSize: 15 }}
+            />
+            {isCheckingUsername ? (
+              <ActivityIndicator size="small" color="#FF2D6B" />
+            ) : usernameAvailable && !usernameError ? (
+              <Text style={{ color: '#4ADE80', fontSize: 13, fontWeight: '700' }}>Available ✓</Text>
+            ) : null}
+          </View>
+          {usernameError ? (
+            <Text style={{ color: '#FF4444', fontSize: 12, paddingLeft: 4, marginTop: 4 }}>{usernameError}</Text>
+          ) : null}
         </View>
 
         {/* Full Name */}

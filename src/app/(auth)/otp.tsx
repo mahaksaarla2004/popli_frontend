@@ -128,10 +128,13 @@ export default function OTPScreen() {
 
           // Existing User but profile not complete
           try {
+            const signupName = params.name ? params.name.toString() : undefined;
+            const signupUsername = params.username ? params.username.toString() : undefined;
+            
             updateProfile({
               id: userFromBackend.id,
-              name: userFromBackend.name || 'Popli User',
-              username: userFromBackend.username,
+              name: signupName || userFromBackend.name || 'Popli User',
+              username: signupUsername || userFromBackend.username,
               isProfileComplete: false
             });
 
