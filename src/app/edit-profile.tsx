@@ -165,7 +165,7 @@ const result = await updateProfile({
             label="EMAIL ID" 
             value={email} 
             onChange={setEmail} 
-            placeholder="Not set" 
+            placeholder="user@example.com" 
             keyboardType="email-address"
             autoCapitalize="none"
           />
