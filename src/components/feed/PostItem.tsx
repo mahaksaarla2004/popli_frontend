@@ -1,5 +1,6 @@
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { View, Text, Pressable, Dimensions, Animated, Modal, TouchableOpacity } from 'react-native';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Flag, Link as LinkIcon, X, Trash2 } from 'lucide-react-native';
@@ -64,16 +65,13 @@ export const PostItem = React.memo(({ item, isActive, onOpenComments, onOpenSend
   const heartScale = useRef(new Animated.Value(0.5)).current;
   const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleDoubleTap = useCallback(() => {
-    const DOUBLE_PRESS_DELAY = 450;
-    if (tapTimeoutRef.current) {
-      clearTimeout(tapTimeoutRef.current);
-      tapTimeoutRef.current = null;
-      
+ const doubleTapGesture = Gesture.Tap()
+    .numberOfTaps(2)
+    .runOnJS(true)
+    .onEnd(() => {
       if (!item.isLiked) {
         toggleLikeReel(item.id);
       }
-      
       setShowBigHeart(true);
       heartScale.setValue(0.5);
       Animated.spring(heartScale, {
@@ -81,7 +79,6 @@ export const PostItem = React.memo(({ item, isActive, onOpenComments, onOpenSend
         friction: 5,
         useNativeDriver: true,
       }).start();
-
       setTimeout(() => {
         Animated.timing(heartScale, {
           toValue: 0,
@@ -89,13 +86,7 @@ export const PostItem = React.memo(({ item, isActive, onOpenComments, onOpenSend
           useNativeDriver: true,
         }).start(() => setShowBigHeart(false));
       }, 800);
-    } else {
-      tapTimeoutRef.current = setTimeout(() => {
-        tapTimeoutRef.current = null;
-        // Optional: Single tap could pause/play if we exposed the player ref
-      }, DOUBLE_PRESS_DELAY);
-    }
-  }, [item.isLiked, item.id, toggleLikeReel, isVideo]);
+    });
 
   const copyLink = async () => {
     // In a real app, you'd use deep links. Assuming web fallback here.
@@ -133,8 +124,8 @@ export const PostItem = React.memo(({ item, isActive, onOpenComments, onOpenSend
         </Pressable>
       </View>
 
-      {/* Post Media (4:5 Aspect Ratio like Insta) */}
-      <Pressable onPress={handleDoubleTap}>
+    {/* Post Media (4:5 Aspect Ratio like Insta) */}
+      <GestureDetector gesture={doubleTapGesture}>
         <View style={{ width: windowWidth, height: windowWidth * 1.25, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
           {isVideo ? (
             <VideoPlayerComponent videoUrl={item.videoUrl} isActive={isActive} />
@@ -153,8 +144,8 @@ export const PostItem = React.memo(({ item, isActive, onOpenComments, onOpenSend
               <Heart size={100} color="white" fill="white" />
             </Animated.View>
           )}
-        </View>
-      </Pressable>
+       </View>
+      </GestureDetector>
 
       {/* Action Bar */}
       <View className="flex-row items-center justify-between px-4 py-3">

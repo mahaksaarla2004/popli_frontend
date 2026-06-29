@@ -16,12 +16,14 @@ export default function AnalyticsScreen() {
 
   const [wallet, setWallet] = useState<any>(null);
   const [videoAnalytics, setVideoAnalytics] = useState<any>(null);
+  const [dashboardAnalytics, setDashboardAnalytics] = useState<any>(null);
 
   useFocusEffect(
     useCallback(() => {
       if (userProfile?.id) {
         fetchUserReels(userProfile.id);
-        apiClient.get('/wallet').then(res => setWallet(res.data)).catch(console.error);
+       apiClient.get('/wallet').then(res => setWallet(res.data)).catch(console.error);
+        apiClient.get('/analytics/dashboard').then(res => setDashboardAnalytics(res.data)).catch(console.error);
         if (videoId) {
           apiClient.get(`/analytics/reels/${videoId}`).then(res => setVideoAnalytics(res.data)).catch(console.error);
         }
@@ -47,11 +49,11 @@ export default function AnalyticsScreen() {
   const totalEarnings = videoId ? (viewEarnings + giftEarnings) : (wallet?.totalEarnings ?? 0);
 
   const sortedReels = [...targetReels].sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
-  const allPerformingPosts = sortedReels.length > 0 ? sortedReels.map(r => ({
+ const allPerformingPosts = sortedReels.length > 0 ? sortedReels.map(r => ({
     id: r.id,
     title: r.description || 'My Video',
     views: r.viewsCount || 0,
-    earnings: calculateEstimatedVideoEarnings(r.viewsCount || 0).toFixed(2),
+    earnings: ((dashboardAnalytics?.reelEarnings?.[r.id] ?? 0) as number).toFixed(2),
     isMonetized: r.isMonetized !== false
   })) : [
     { id: '1', title: 'No posts yet', views: 0, earnings: '0.00', isMonetized: false }
@@ -260,7 +262,7 @@ export default function AnalyticsScreen() {
                 </View>
               </View>
               <View className="items-end">
-                <Text className="text-[#10B981] font-bold text-base">₹{calculateEstimatedVideoEarnings(post.views).toFixed(2)}</Text>
+               <Text className="text-[#10B981] font-bold text-base">₹{post.earnings}</Text>
                 {post.views > 0 && <Text className="text-white/40 text-[9px]">@ ₹0.005/v</Text>}
               </View>
             </View>
