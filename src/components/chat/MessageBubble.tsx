@@ -91,7 +91,9 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
       );
     }
 
-    if (msg.isReelShare) {
+    const isReelShare = msg.isReelShare || (msg.text && msg.text.includes('/reels/'));
+
+    if (isReelShare) {
       const reelIdMatch = msg.text?.match(/\/reels\/([a-zA-Z0-9-]+)/);
       const sharedReelId = reelIdMatch ? reelIdMatch[1] : null;
       
@@ -99,7 +101,7 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
         <View className="flex-col gap-2">
           {msg.text && (
             <Text className={`text-[15px] leading-5 ${isSent ? 'text-white' : 'text-white/90'} px-1`}>
-              {msg.text.split('/reels/')[0].trim()}
+              {msg.text.split('http')[0].trim()}
             </Text>
           )}
           <Pressable 

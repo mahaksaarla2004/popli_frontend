@@ -3,8 +3,7 @@ import { View, Text, Pressable, Dimensions, ViewToken, StyleSheet, useWindowDime
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { Bell, MessageSquare, Send, Search } from 'lucide-react-native';
-import { PostItem } from '../../components/feed/PostItem';
-import { StoriesBar } from '../../components/feed/StoriesBar';
+import { ReelItem } from '../../components/feed/ReelItem';
 import { CommentsSheet } from '../../components/sheets/CommentsSheet';
 import { GiftSheet } from '../../components/sheets/GiftSheet';
 import { SendSheet } from '../../components/sheets/SendSheet';
@@ -16,7 +15,7 @@ import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 type TopTabType = 'for_you' | 'following' | 'nearby' | 'trending';
 
-export default function HomeFeedScreen() {
+export default function ReelsScreen() {
   const router = useRouter();
   const { targetUsername } = useLocalSearchParams<{ targetUsername?: string }>();
   const { height, width } = useWindowDimensions();
@@ -158,11 +157,15 @@ export default function HomeFeedScreen() {
   }, [activeTab, followingIds.length]);
 
   const getFilteredReels = () => {
+    let baseReels = reels;
+    // In Reels tab, we ONLY want to show videos.
+    baseReels = reels.filter(r => r.mediaType === 'VIDEO' || (r.videoUrl && r.videoUrl.match(/\.(mp4|mov)$/i)));
+
     switch (activeTab) {
-      case 'following': return reels.filter((r) => followingIds.includes(r.creatorId));
-      case 'nearby': return reels.filter((r) => r.location?.city === (useFeedStore.getState().gpsCity || 'Indore'));
-      case 'trending': return reels.filter((r) => r.likesCount > 40000);
-      case 'for_you': default: return reels;
+      case 'following': return baseReels.filter((r) => followingIds.includes(r.creatorId));
+      case 'nearby': return baseReels.filter((r) => r.location?.city === (useFeedStore.getState().gpsCity || 'Indore'));
+      case 'trending': return baseReels.filter((r) => r.likesCount > 40000);
+      case 'for_you': default: return baseReels;
     }
   };
 
@@ -210,7 +213,13 @@ export default function HomeFeedScreen() {
 
   const handleOpenComments = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsCommentsOpen(true); }, []);
   const handleOpenSend = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsSendOpen(true); }, []);
+  const handleOpenGifts = useCallback((reel: Reel) => { setSelectedReel(reel); setIsGiftsOpen(true); }, []);
   const handleOpenProfile = useCallback((creatorUsername: string) => { router.push(`/user/${creatorUsername}`); }, [router]);
+
+  const handleGiftSendSuccess = (icon: string) => {
+    setBurstGift({ visible: true, icon });
+    setTimeout(() => setBurstGift({ visible: false, icon: '' }), 1500);
+  };
 
   const renderItem = useCallback(({ item, index, extraData }: { item: Reel; index: number, extraData?: any }) => {
     // CRITICAL FIX: FlashList requires using extraData instead of closure variables to trigger re-renders!
@@ -222,15 +231,19 @@ export default function HomeFeedScreen() {
     const isAdjacent = currentIsFocused && (index === activeIndex || index === activeIndex + 1);
 
     return (
-      <PostItem
+      <ReelItem
         item={item}
         isActive={currentIsFocused && item.id === currentActiveId}
+        isAdjacent={isAdjacent}
         onOpenComments={handleOpenComments}
         onOpenSend={handleOpenSend}
+        onOpenGifts={handleOpenGifts}
+        onOpenProfile={handleOpenProfile}
         windowWidth={extraData?.width || width}
+        windowHeight={extraData?.listHeight || listHeight}
       />
     );
-  }, [filteredReels, handleOpenComments, handleOpenSend]);
+  }, [filteredReels, handleOpenComments, handleOpenSend, handleOpenGifts, handleOpenProfile]);
 
   const keyExtractor = useCallback((item: Reel) => `${item.id}-${refreshCount}`, [refreshCount]);
 
@@ -262,7 +275,7 @@ export default function HomeFeedScreen() {
 
         <View className="flex-row items-center justify-center pointer-events-none absolute left-0 right-0 top-0 bottom-0">
           <Text 
-            className="text-white text-[28px] tracking-wide" 
+            className="text-white text-[28px] tracking-wide text-shadow-md shadow-black" 
             style={{ fontFamily: Platform.OS === 'ios' ? 'Snell Roundhand' : 'serif', fontStyle: 'italic', fontWeight: '800' }}
           >
             Popli
@@ -298,19 +311,18 @@ export default function HomeFeedScreen() {
           data={filteredReels}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
-          pagingEnabled={false}
+          pagingEnabled={true}
           showsVerticalScrollIndicator={false}
-          bounces={true}
+          bounces={false}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           // @ts-ignore
-          estimatedItemSize={width * 1.5}
+          estimatedItemSize={listHeight || 800}
           // @ts-ignore
           extraData={{ activeReelId, isFocused, listHeight, width }}
           onEndReached={loadMoreReels}
           onEndReachedThreshold={0.5}
-          ListHeaderComponent={StoriesBar}
-          contentContainerStyle={{ backgroundColor: '#12081E', paddingTop: insets.top > 0 ? insets.top + 60 : 80, paddingBottom: 100 }}
+          contentContainerStyle={{ backgroundColor: '#000' }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -326,6 +338,70 @@ export default function HomeFeedScreen() {
       {/* Sheets & Overlays */}
       <CommentsSheet reelId={selectedReelId} isOpen={isCommentsOpen} onClose={() => setIsCommentsOpen(false)} />
       <SendSheet reelId={selectedReelId} isOpen={isSendOpen} onClose={() => setIsSendOpen(false)} />
+      <GiftSheet reel={selectedReel} isOpen={isGiftsOpen} onClose={() => setIsGiftsOpen(false)} onSendSuccess={handleGiftSendSuccess} />
+
+      {burstGift.visible && (
+        <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-black/70 z-50" pointerEvents="none">
+          {/* Glowing Aura Behind */}
+          <MotiView
+            from={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: [1, 2.5], opacity: [0.8, 0] }}
+            transition={{ type: 'timing', duration: 1500, loop: true }}
+            style={{ position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(217, 70, 239, 0.4)' }}
+          />
+
+          {/* Floating Confetti Elements */}
+          {[
+            { x: -100, y: -150, d: 0, s: '✨' },
+            { x: 120, y: -200, d: 100, s: '🎉' },
+            { x: -150, y: 50, d: 200, s: '💫' },
+            { x: 140, y: 80, d: 300, s: '💖' },
+            { x: 0, y: -250, d: 400, s: '🎊' }
+          ].map((confetti, i) => (
+            <MotiView
+              key={i}
+              from={{ translateY: 0, translateX: 0, opacity: 1, scale: 0 }}
+              animate={{ 
+                translateY: confetti.y, 
+                translateX: confetti.x, 
+                opacity: 0, 
+                scale: 1.5,
+                rotate: `${confetti.x}deg` 
+              }}
+              transition={{ type: 'timing', duration: 1200, delay: confetti.d }}
+              style={{ position: 'absolute' }}
+            >
+              <Text style={{ fontSize: 28 }}>{confetti.s}</Text>
+            </MotiView>
+          ))}
+
+          {/* Main Animated Icon & Text */}
+          <MotiView
+            from={{ scale: 0.1, opacity: 0, rotate: '-20deg', translateY: 50 }}
+            animate={{ scale: [1.2, 2.2, 1.8], opacity: 1, rotate: '0deg', translateY: 0 }}
+            transition={{ type: 'spring', damping: 6, stiffness: 120 }}
+            style={{ alignItems: 'center' }}
+          >
+            <Text style={{ fontSize: 130, textShadowColor: 'rgba(255,255,255,0.4)', textShadowRadius: 30 }}>
+              {burstGift.icon}
+            </Text>
+            <MotiView
+              from={{ opacity: 0, translateY: 20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: 'timing', delay: 300, duration: 400 }}
+              style={{ alignItems: 'center' }}
+            >
+              <Text className="text-yellow-400 font-black text-4xl mt-6 uppercase tracking-widest text-shadow shadow-black">
+                GIFT SENT!
+              </Text>
+              <Text className="text-white font-bold text-sm tracking-widest mt-2 opacity-80">
+                AWESOME VIBES 🚀
+              </Text>
+            </MotiView>
+          </MotiView>
+        </View>
+      )}
+
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, Platform } from 'react-native';
-import { Home, Compass, Plus, MessageSquare, User, Award } from 'lucide-react-native';
+import { Home, Compass, Plus, MessageSquare, User, Award, PlaySquare } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_BAR_HEIGHT } from '../../components/layout/SafeScreen';
@@ -52,10 +52,16 @@ export default function TabLayout() {
       <Tabs.Screen
         name="discover"
         options={{
-          title: 'Discover',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="reels"
+        options={{
+          title: 'Reels',
           tabBarIcon: ({ color, focused }) => (
             <View className={`items-center justify-center ${focused ? 'scale-110' : ''}`}>
-              <Compass size={22} color={color} strokeWidth={focused ? 2.5 : 2} />
+              <PlaySquare size={22} color={color} strokeWidth={focused ? 2.5 : 2} />
               {focused && <View className="h-[3px] w-[3px] rounded-full bg-primary-pink mt-1" />}
             </View>
           ),

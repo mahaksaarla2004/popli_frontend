@@ -21,7 +21,7 @@ export default function PublicProfileScreen() {
   const [loading, setLoading] = useState(!cachedProfile);
   const [error, setError] = useState('');
   const [isLinksSheetOpen, setIsLinksSheetOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'reels' | 'awards'>('reels');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels'>('posts');
 
   const { followingIds, toggleFollow, userProfile, blockedUsers, toggleBlock } = useAuthStore();
   const isFollowing = profile ? followingIds.includes(profile.id) : false;
@@ -127,7 +127,7 @@ export default function PublicProfileScreen() {
                 <Text className="text-neutral-silver text-xs">Following</Text>
               </Pressable>
               <View className="items-center">
-                <Text className="text-white font-bold text-lg">₹{formatSocialCount(profile.coinsEarned || 0)}</Text>
+                <Text className="text-white font-bold text-lg">₹{formatSocialCount(profile.wallet?.totalEarnings ?? profile.coinsEarned ?? 0)}</Text>
                 <Text className="text-neutral-silver text-xs">Earnings</Text>
               </View>
             </View>
@@ -243,66 +243,87 @@ export default function PublicProfileScreen() {
           <View className="mt-4">
             <View className="flex-row border-t border-b border-white/5 py-2 mt-4">
               <Pressable 
+                onPress={() => setActiveTab('posts')} 
+                className={`flex-1 items-center justify-center py-2 ${activeTab === 'posts' ? 'border-b-2 border-[#A855F7]' : ''}`}
+              >
+                <LayoutGrid size={22} color={activeTab === 'posts' ? '#A855F7' : '#9CA3AF'} />
+              </Pressable>
+              <Pressable 
                 onPress={() => setActiveTab('reels')} 
                 className={`flex-1 items-center justify-center py-2 ${activeTab === 'reels' ? 'border-b-2 border-[#A855F7]' : ''}`}
               >
-                <LayoutGrid size={22} color={activeTab === 'reels' ? '#A855F7' : '#9CA3AF'} />
-              </Pressable>
-              <Pressable 
-                onPress={() => setActiveTab('awards')} 
-                className={`flex-1 items-center justify-center py-2 ${activeTab === 'awards' ? 'border-b-2 border-[#A855F7]' : ''}`}
-              >
-                <Award size={22} color={activeTab === 'awards' ? '#A855F7' : '#9CA3AF'} />
+                <Play size={24} color={activeTab === 'reels' ? '#A855F7' : '#9CA3AF'} />
               </Pressable>
             </View>
 
-            {activeTab === 'reels' ? (
-              <View className="flex-row flex-wrap">
-                {profile.reels && profile.reels.length > 0 ? (
-                  profile.reels.map((reel: any) => (
+            <View className="flex-row flex-wrap">
+              {(() => {
+                const activeData = activeTab === 'posts' 
+                  ? profile.reels?.filter((r: any) => r.mediaType !== 'VIDEO' && !(r.videoUrl && r.videoUrl.match(/\.(mp4|mov)$/i)))
+                  : profile.reels?.filter((r: any) => r.mediaType === 'VIDEO' || (r.videoUrl && r.videoUrl.match(/\.(mp4|mov)$/i)));
+                
+                if (activeData && activeData.length > 0) {
+                  return activeData.map((reel: any) => (
                     <Pressable 
                       key={reel.id} 
                       onPress={() => {
-                        router.push({
-                          pathname: `/reel/${reel.id}` as any,
-                          params: { source: 'profile', profileUsername: profile.username }
-                        });
+                        if (activeTab === 'posts') {
+                          router.push({
+                            pathname: `/post/${reel.id}` as any,
+                            params: { source: 'profile', profileUsername: profile.username }
+                          });
+                        } else {
+                          router.push({
+                            pathname: `/reel/${reel.id}` as any,
+                            params: { source: 'profile', profileUsername: profile.username }
+                          });
+                        }
                       }}
-                      className="w-[33.33%] h-44 border-[0.5px] border-black active:opacity-80 relative bg-neutral-grey"
+                      className={`w-[33.33%] border-[0.5px] border-black active:opacity-80 relative bg-neutral-grey ${activeTab === 'reels' ? 'h-60' : 'aspect-square'}`}
                     >
                       <Image 
-                        source={{ uri: reel.thumbnailUrl || reel.mediaUrl }} 
+                        source={{ uri: reel.thumbnailUrl || reel.mediaUrl || reel.videoUrl }} 
                         className="w-full h-full"
                         resizeMode="cover"
                       />
-                      <View className="absolute bottom-2 left-2 flex-row items-center gap-1">
-                        <Play size={10} color="#FFFFFF" fill="#FFFFFF" />
-                        <Text className="text-white text-[10px] font-bold drop-shadow-md">
-                          {formatSocialCount(reel.viewsCount || 0)}
-                        </Text>
-                      </View>
+                      {/* Icons based on content type */}
+                      {reel.mediaType === 'VIDEO' || (reel.videoUrl && reel.videoUrl.match(/\.(mp4|mov)$/i)) ? (
+                        <View className="absolute top-2 right-2 bg-black/40 rounded-full p-1">
+                          <Play size={12} color="white" />
+                        </View>
+                      ) : (
+                        <View className="absolute top-2 right-2 bg-black/40 rounded-full p-1">
+                          <LayoutGrid size={12} color="white" />
+                        </View>
+                      )}
+                      
+                      {activeTab !== 'posts' && (
+                        <View className="absolute bottom-2 left-2 flex-row items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded-full">
+                          <Play size={10} color="#FFFFFF" fill="#FFFFFF" />
+                          <Text className="text-white text-[10px] font-bold drop-shadow-md">
+                            {formatSocialCount(reel.viewsCount || 0)}
+                          </Text>
+                        </View>
+                      )}
                     </Pressable>
-                  ))
-                ) : (
-                  <View className="py-24 items-center justify-center w-full">
-                    <View className="w-20 h-20 rounded-full bg-white/5 items-center justify-center mb-4">
-                      <LayoutGrid size={32} color="#FFFFFF" opacity={0.5} />
+                  ));
+                } else {
+                  return (
+                    <View className="py-24 items-center justify-center w-full">
+                      <View className="w-20 h-20 rounded-full bg-white/5 items-center justify-center mb-4">
+                        {activeTab === 'posts' ? (
+                          <LayoutGrid size={32} color="#FFFFFF" opacity={0.5} />
+                        ) : (
+                          <Play size={32} color="#FFFFFF" opacity={0.5} />
+                        )}
+                      </View>
+                      <Text className="text-white font-bold text-lg mb-2">No {activeTab} yet</Text>
                     </View>
-                    <Text className="text-white font-bold text-lg mb-2">No reels yet</Text>
-                  </View>
-                )}
-              </View>
-            ) : (
-              <View className="py-24 items-center justify-center px-6">
-                <View className="w-16 h-16 rounded-full bg-white/5 items-center justify-center mb-4">
-                  <Award size={32} color="#D946EF" />
-                </View>
-                <Text className="text-white font-bold text-lg text-center mb-2">Awards & Gifts</Text>
-                <Text className="text-neutral-silver text-sm text-center">
-                  This user hasn&apos;t received any public awards or gifts yet.
-                </Text>
-              </View>
-            )}
+                  );
+                }
+              })()}
+            </View>
+
           </View>
         )}
         

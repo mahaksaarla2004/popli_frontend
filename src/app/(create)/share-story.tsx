@@ -386,7 +386,7 @@ export default function ShareStoryScreen() {
         >
           <ActivityIndicator size="large" color="#A855F7" />
           <Text className="text-white mt-4 font-bold text-lg">
-            {target === 'share' ? 'Sending...' : (mode === 'REEL' && isStory !== 'true' ? 'Posting Reel...' : 'Posting Story...')} {uploadProgress > 0 ? `${uploadProgress}%` : ''}
+            {target === 'share' ? 'Sending...' : (isStory === 'true' ? 'Posting Story...' : (mode === 'REEL' ? 'Posting Reel...' : 'Posting Post...'))} {uploadProgress > 0 ? `${uploadProgress}%` : ''}
           </Text>
           <View className="w-48 h-2 bg-white/10 rounded-full mt-4 overflow-hidden">
             <View className="h-full bg-[#A855F7] rounded-full" style={{ width: `${uploadProgress}%` }} />
@@ -394,9 +394,9 @@ export default function ShareStoryScreen() {
           <Text className="text-neutral-grey mt-4 text-sm text-center px-6">
             {target === 'share' 
               ? 'Sending direct messages to your friends'
-              : (mode === 'REEL' && isStory !== 'true'
-                ? 'Posting...' 
-                : (target === 'close_friends' ? 'Sharing with Close Friends' : 'Sharing to Your Story'))}
+              : (isStory === 'true' 
+                 ? (target === 'close_friends' ? 'Sharing with Close Friends' : 'Sharing to Your Story')
+                 : (mode === 'REEL' ? 'Posting to Reels...' : 'Posting to Feed...'))}
           </Text>
         </MotiView>
       ) : status === 'error' ? (
@@ -414,7 +414,7 @@ export default function ShareStoryScreen() {
             <CheckCircle size={40} color="#10B981" />
           </View>
           <Text className="text-white font-bold text-2xl">
-            {target === 'share' ? 'Sent!' : (mode === 'REEL' && isStory !== 'true' ? 'Reel Posted!' : 'Story Posted!')}
+            {target === 'share' ? 'Sent!' : (isStory === 'true' ? 'Story Posted!' : (mode === 'REEL' ? 'Reel Posted!' : 'Post Shared!'))}
           </Text>
         </MotiView>
       )}

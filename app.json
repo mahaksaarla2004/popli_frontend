@@ -4,11 +4,11 @@
     "slug": "PopliApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/popli_logo.png",
+    "icon": "./assets/images/popli_logo_padded.png",
     "scheme": "popliapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/images/popli_logo.png",
+      "icon": "./assets/images/popli_logo_padded.png",
       "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.mahak2004.popliapp",
       "infoPlist": {
@@ -18,7 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#12081E",
-        "foregroundImage": "./assets/images/popli_logo.png"
+        "foregroundImage": "./assets/images/popli_logo_padded.png"
       },
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",

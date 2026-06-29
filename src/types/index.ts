@@ -62,6 +62,7 @@ export interface Reel {
   distanceKm?: number; // Calculated dynamically via GPS
   city?: string;
   isMonetized?: boolean;
+  mediaType?: 'PHOTO' | 'VIDEO';
   taggedUsers?: { id: string; username: string }[];
   layersData?: any;
   createdAt?: string;
@@ -143,6 +144,8 @@ export interface NotificationItem {
   giftId?: string;
   giftType?: string;
   giftAmount?: number;
+  body?: string;
+  title?: string;
   createdAt: string;
   isRead: boolean;
   aggregatedCount?: number;

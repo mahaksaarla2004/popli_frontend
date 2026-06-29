@@ -77,7 +77,7 @@ export default function NetworkScreen() {
             return (
               <Pressable 
                 key={userData.id}
-                onPress={() => router.push(`/user/${userData.username}`)}
+                onPress={() => router.push(`/user/${userData.id}`)}
                 className="flex-row items-center justify-between py-3 mb-2 bg-[#1A0E2C] rounded-2xl px-3 border border-white/5"
               >
                 <View className="flex-row items-center gap-3">

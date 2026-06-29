@@ -7,6 +7,7 @@ import { useChatStore, useAuthStore } from '../store';
 import { NotificationItem } from '../types';
 import { FlashList } from '@shopify/flash-list';
 import { apiClient } from '../api/client';
+import { getDefaultAvatar } from '../utils';
 
 type ListItem = 
   | { type: 'header'; title: string; id: string }
@@ -123,7 +124,7 @@ export default function NotificationsScreen() {
       const type = n.type?.toLowerCase();
       
       if (type === 'follow') {
-        if (n.actorId) router.push(`/profile/${n.actorId}` as any);
+        if (n.actorId) router.push(`/user/${n.actorId}` as any);
       } else if (type === 'story_mention' && n.storyId) {
         router.push(`/story-viewer/${n.actorId}?storyId=${n.storyId}` as any);
       } else if (n.reelId || n.postId) {
@@ -167,7 +168,7 @@ export default function NotificationsScreen() {
 
     const t = n.postThumbnail || n.reelThumbnail || n.storyThumbnail;
     const isSystem = type === 'system';
-    const displayAvatar = isSystem ? 'https://ui-avatars.com/api/?name=Popli&background=1D1037&color=A855F7' : (n.actorAvatar || 'https://i.pravatar.cc/150');
+    const displayAvatar = isSystem ? 'https://ui-avatars.com/api/?name=Popli&background=1D1037&color=A855F7' : (n.actorAvatar || getDefaultAvatar(n.actorName || 'User'));
     const displayName = isSystem ? 'Popli System' : (n.actorName || 'User');
 
     return (
@@ -176,7 +177,7 @@ export default function NotificationsScreen() {
         className={`flex-row items-center justify-between p-3 active:bg-white/5 ${isNew ? 'bg-[#8B5CF6]/10' : 'bg-transparent'}`}
       >
         <View className="flex-row items-center gap-3 flex-1 pr-3">
-          <Pressable onPress={() => !isSystem && n.actorId && router.push(`/profile/${n.actorId}` as any)}>
+          <Pressable onPress={() => !isSystem && n.actorId && router.push(`/user/${n.actorId}` as any)}>
             <Image source={{ uri: displayAvatar }} className="w-11 h-11 rounded-full bg-white/10" />
           </Pressable>
           

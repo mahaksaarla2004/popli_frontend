@@ -149,6 +149,13 @@ export default function InboxScreen() {
       const textPart = msg.replace(/\[REEL:.*?\]\s*/, '').trim();
       return textPart ? `Shared a reel: ${textPart}` : 'Shared a reel';
     }
+    if (msg.includes('/reels/')) {
+      const textPart = msg.split('http')[0].trim();
+      return textPart || 'Shared a reel';
+    }
+    if (msg.startsWith('http')) {
+      return 'Sent a link';
+    }
     return msg;
   };
 
@@ -190,23 +197,7 @@ export default function InboxScreen() {
               </View>
             </View>
 
-            {/* Recent Friends Horizontal List */}
-            <View className="mb-6">
-              <Text className="text-white/60 text-[10px] font-bold uppercase tracking-widest px-4 mb-4">Recent</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
-                {activeFriends.map((friend) => (
-                  <View key={friend.id} className="items-center">
-                    <View className="relative">
-                      <StoryRing userId={friend.userId} avatarUrl={friend.avatar} size={56} />
-                      {friend.active && (
-                        <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#10B981] rounded-full border-[2.5px] border-[#12081E]" />
-                      )}
-                    </View>
-                    <Text className="text-white text-xs font-medium mt-2">{friend.name}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
+
 
             {/* Messages List */}
             <View className="px-4 gap-6">

@@ -14,6 +14,8 @@ import { mmkvStoreStorage } from './storage';
 export interface Story {
   id: string;
   creatorId: string;
+  creatorName?: string;
+  creatorUsername?: string;
   mediaUrl: string;
   mediaType: 'IMAGE' | 'VIDEO' | 'PHOTO';
   creatorAvatar?: string;

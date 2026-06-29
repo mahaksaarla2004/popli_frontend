@@ -11,7 +11,7 @@ import { SafeScreen } from '../../components/layout/SafeScreen';
 
 const { width } = Dimensions.get('window');
 
-type ProfileTabType = 'reels' | 'likes';
+type ProfileTabType = 'posts' | 'reels';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function ProfileScreen() {
   const { reels, userReels, likedReels, fetchUserReels, fetchLikedReels } = useFeedStore();
   const { highlights, fetchHighlights } = useStoryHighlightStore();
 
-  const [activeTab, setActiveTab] = useState<ProfileTabType>('reels');
+  const [activeTab, setActiveTab] = useState<ProfileTabType>('posts');
 
   useFocusEffect(
     React.useCallback(() => {
@@ -59,7 +59,9 @@ export default function ProfileScreen() {
 
   const displayReels = userReels;
 
-  const activeGridData = activeTab === 'reels' ? displayReels : likedReels;
+  const activeGridData = activeTab === 'posts' 
+    ? displayReels.filter(r => r.mediaType !== 'VIDEO' && !(r.videoUrl && r.videoUrl.match(/\.(mp4|mov)$/i)))
+    : displayReels.filter(r => r.mediaType === 'VIDEO' || (r.videoUrl && r.videoUrl.match(/\.(mp4|mov)$/i)));
 
   const handleLinkPress = () => {
     if (displayProfile.socialLinks.length === 1) {
@@ -196,86 +198,118 @@ export default function ProfileScreen() {
         </Pressable>
 
         {/* 2.5 STORY HIGHLIGHTS */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="py-2 px-4 mb-4" contentContainerStyle={{ gap: 16 }}>
-          <Pressable 
-            onPress={() => router.push('/story-archive' as any)}
-            className="items-center"
+        <View className="h-24 mb-4">
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            className="px-4" 
+            contentContainerStyle={{ gap: 16, alignItems: 'center' }}
           >
-            <View className="w-16 h-16 rounded-full border border-white/20 items-center justify-center mb-1">
-              <Plus size={24} color="#FFFFFF" />
-            </View>
-            <Text className="text-white text-[10px]">New</Text>
-          </Pressable>
-
-          {highlights.map(highlight => (
-            <Pressable key={highlight.id} className="items-center" onPress={() => router.push({ pathname: '/highlight-viewer/[id]', params: { id: highlight.id } } as any)}>
-              <View className="w-16 h-16 rounded-full border border-white/10 p-0.5 mb-1 bg-black/50">
-                <Image source={{ uri: highlight.coverUrl }} className="w-full h-full rounded-full" />
+            <Pressable 
+              onPress={() => router.push('/story-archive' as any)}
+              className="items-center"
+            >
+              <View className="w-16 h-16 rounded-full border border-white/20 items-center justify-center mb-1">
+                <Plus size={24} color="#FFFFFF" />
               </View>
-              <Text className="text-white text-[10px]">{highlight.title}</Text>
+              <Text className="text-white text-[10px]">New</Text>
             </Pressable>
-          ))}
-        </ScrollView>
+
+            {highlights.map(highlight => (
+              <Pressable key={highlight.id} className="items-center" onPress={() => router.push({ pathname: '/highlight-viewer/[id]', params: { id: highlight.id } } as any)}>
+                <View className="w-16 h-16 rounded-full border border-white/10 p-0.5 mb-1 bg-black/50 overflow-hidden">
+                  <Image source={{ uri: highlight.coverUrl }} className="w-full h-full rounded-full" />
+                </View>
+                <Text className="text-white text-[10px]">{highlight.title}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
 
         {/* 3. TABS SEGMENTS */}
         <View className="flex-row border-t border-b border-white/5 py-2">
           <Pressable
+            onPress={() => setActiveTab('posts')}
+            className={`flex-1 items-center justify-center py-2 ${activeTab === 'posts' ? 'border-b-2 border-[#A855F7]' : ''}`}
+          >
+            <LayoutGrid size={22} color={activeTab === 'posts' ? '#A855F7' : '#9CA3AF'} />
+          </Pressable>
+          <Pressable
             onPress={() => setActiveTab('reels')}
             className={`flex-1 items-center justify-center py-2 ${activeTab === 'reels' ? 'border-b-2 border-[#A855F7]' : ''}`}
           >
-            <LayoutGrid size={22} color={activeTab === 'reels' ? '#A855F7' : '#9CA3AF'} />
-          </Pressable>
-          <Pressable
-            onPress={() => setActiveTab('likes')}
-            className={`flex-1 items-center justify-center py-2 ${activeTab === 'likes' ? 'border-b-2 border-[#A855F7]' : ''}`}
-          >
-            <Heart size={22} color={activeTab === 'likes' ? '#A855F7' : '#9CA3AF'} />
+            <Play size={24} color={activeTab === 'reels' ? '#A855F7' : '#9CA3AF'} />
           </Pressable>
         </View>
 
-        {/* 4. GRID OF VIDEO PREVIEWS */}
+        {/* 4. GRID OF CONTENT */}
         {activeGridData.length === 0 ? (
           <View className="py-24 items-center justify-center">
             <View className="w-20 h-20 rounded-full bg-white/5 items-center justify-center mb-4">
-              <LayoutGrid size={32} color="#FFFFFF" opacity={0.5} />
+              {activeTab === 'posts' ? (
+                <LayoutGrid size={32} color="#FFFFFF" opacity={0.5} />
+              ) : (
+                <Play size={32} color="#FFFFFF" opacity={0.5} />
+              )}
             </View>
-            <Text className="text-white font-bold text-lg mb-2">No reels yet</Text>
+            <Text className="text-white font-bold text-lg mb-2">No {activeTab} yet</Text>
             <Text className="text-neutral-grey text-xs text-center px-10">
-              {activeTab === 'reels' ? 'When you post reels, they will appear here.' : 'When you like reels, they will appear here.'}
+              {activeTab === 'posts' ? 'When you share posts, they will appear here.' : 'When you post reels, they will appear here.'}
             </Text>
           </View>
         ) : (
           <View className="flex-row flex-wrap">
-            {activeGridData.map((reel, index) => (
+            {activeGridData.map((item) => (
               <Pressable
-                key={reel.id}
+                key={item.id}
                 onPress={() => {
-                  router.push({
-                    pathname: `/reel/${reel.id}` as any,
-                    params: { source: activeTab === 'reels' ? 'userReels' : 'likedReels' }
-                  });
+                  if (activeTab === 'posts') {
+                    router.push({
+                      pathname: `/post/${item.id}` as any,
+                      params: { source: 'userReels' }
+                    });
+                  } else {
+                    router.push({
+                      pathname: `/reel/${item.id}` as any,
+                      params: { source: 'userReels' }
+                    });
+                  }
                 }}
-                className="w-[33.33%] h-44 border-[0.5px] border-black active:opacity-80"
+                className={`w-[33.33%] border-[0.5px] border-black active:opacity-80 relative ${activeTab === 'reels' ? 'h-60' : 'aspect-square'}`}
               >
-                <Image source={{ uri: reel.thumbnailUrl }} className="w-full h-full" resizeMode="cover" />
-                <View className="absolute bottom-2 left-2 flex-row items-center gap-1">
-                  <Play size={10} color="#FFFFFF" fill="#FFFFFF" />
-                  <Text className="text-white text-[10px] font-bold drop-shadow-md">
-                    {formatSocialCount(reel.viewsCount || 0)}
-                  </Text>
-                </View>
-                {reel.isMonetized && activeTab === 'reels' && (
-                  <View className="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded flex-row items-center border border-white/10">
-                    <Text className="text-[#10B981] text-[9px] font-bold">
-                      ₹{calculateEstimatedVideoEarnings(reel.viewsCount || 0) > 0 ? calculateEstimatedVideoEarnings(reel.viewsCount || 0).toFixed(2) : '0'}
+                <Image source={{ uri: item.thumbnailUrl || item.mediaUrl || item.videoUrl }} className="w-full h-full bg-white/5" resizeMode="cover" />
+                
+                {/* Icons based on content type */}
+                {item.mediaType === 'VIDEO' || (item.videoUrl && item.videoUrl.match(/\.(mp4|mov)$/i)) ? (
+                  <View className="absolute top-2 right-2 bg-black/40 rounded-full p-1">
+                    <Play size={12} color="white" />
+                  </View>
+                ) : (
+                  <View className="absolute top-2 right-2 bg-black/40 rounded-full p-1">
+                    <LayoutGrid size={12} color="white" />
+                  </View>
+                )}
+
+                {activeTab !== 'posts' && (
+                  <View className="absolute bottom-2 left-2 flex-row items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded-full">
+                    <Play size={10} color="#FFFFFF" fill="#FFFFFF" />
+                    <Text className="text-white text-[10px] font-bold drop-shadow-md">
+                      {formatSocialCount(item.viewsCount || 0)}
                     </Text>
                   </View>
                 )}
-                {activeTab === 'reels' && (
+                {item.isMonetized && activeTab === 'reels' && (
+                  <View className="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded flex-row items-center border border-white/10">
+                    <Text className="text-[#10B981] text-[9px] font-bold">
+                      ₹{calculateEstimatedVideoEarnings(item.viewsCount || 0) > 0 ? calculateEstimatedVideoEarnings(item.viewsCount || 0).toFixed(2) : '0'}
+                    </Text>
+                  </View>
+                )}
+                {activeTab !== 'posts' && (
                   <Pressable 
                     onPress={(e) => {
                       e.stopPropagation();
-                      router.push(`/(creator)/reel-analytics/${reel.id}` as any);
+                      router.push(`/(creator)/reel-analytics/${item.id}` as any);
                     }}
                     className="absolute top-2 left-2 bg-black/70 w-6 h-6 rounded flex items-center justify-center border border-white/10"
                   >

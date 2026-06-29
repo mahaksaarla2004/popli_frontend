@@ -39,15 +39,12 @@ export default function AnalyticsScreen() {
   const comments = targetReels.reduce((sum, r) => sum + (r.commentsCount || 0), 0);
   const shares = targetReels.reduce((sum, r) => sum + (r.sharesCount || 0), 0);
 
-  // Dynamic earnings for the current context (overall or single video)
-  const viewEarnings = videoId 
-    ? calculateEstimatedVideoEarnings(allTimeViews) 
-    : (wallet?.viewEarnings ?? 0);
-    
+  // Use strictly backend values for consistency across the app
+  const viewEarnings = videoId ? (videoAnalytics?.earnings?.viewEarnings || 0) : (wallet?.viewEarnings ?? 0);
   const giftEarnings = videoId ? (videoAnalytics?.earnings?.giftEarnings || 0) : (wallet?.giftEarnings ?? 0);
   const referralEarnings = videoId ? 0 : (wallet?.referralEarnings ?? 0);
   const bonusEarnings = videoId ? 0 : (wallet?.bonusEarnings ?? 0);
-  const totalEarnings = viewEarnings + giftEarnings + referralEarnings + bonusEarnings;
+  const totalEarnings = videoId ? (viewEarnings + giftEarnings) : (wallet?.totalEarnings ?? 0);
 
   const sortedReels = [...targetReels].sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0));
   const allPerformingPosts = sortedReels.length > 0 ? sortedReels.map(r => ({
@@ -238,7 +235,7 @@ export default function AnalyticsScreen() {
         {/* Video Earnings Breakdown (Only show for overall analytics) */}
         {!videoId && (
           <View className="bg-[#1A0E2C] border border-white/5 rounded-[24px] p-5 mb-6">
-            <Text className="text-white font-bold text-lg mb-6">Video Earnings Breakdown</Text>
+            <Text className="text-white font-bold text-lg mb-6">Video Earnings Breakdown (Estimated)</Text>
           
           {allPerformingPosts.map((post: any, index: number) => (
             <View key={post.id || index} className={`flex-row items-center justify-between ${index < allPerformingPosts.length - 1 ? 'mb-6' : ''}`}>

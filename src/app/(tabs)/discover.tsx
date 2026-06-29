@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useFeedStore, useAuthStore } from '../../store';
 import { useChallengeStore } from '../../store/challengeStore';
 import { apiClient } from '../../api/client';
-import { formatSocialCount } from '../../utils';
+import { formatSocialCount, getDefaultAvatar } from '../../utils';
 import { MotiView } from 'moti';
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeScreen } from '../../components/layout/SafeScreen';
@@ -116,7 +116,7 @@ export default function DiscoverScreen() {
                         className="flex-row items-center justify-between bg-[#1D1037]/60 p-3 rounded-xl border border-white/5"
                       >
                         <View className="flex-row items-center gap-3">
-                          <Image source={{ uri: user.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full" />
+                          <Image source={{ uri: user.avatar || getDefaultAvatar(user.username) }} className="w-12 h-12 rounded-full" />
                           <View>
                             <View className="flex-row items-center gap-1">
                               <Text className="text-white font-bold text-sm">{user.name}</Text>
@@ -184,8 +184,8 @@ export default function DiscoverScreen() {
                           <View className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
                             <Text className="text-white text-xs font-bold" numberOfLines={2}>{reel.description || reel.category}</Text>
                             <View className="flex-row items-center gap-1 mt-1">
-                              <Image source={{ uri: reel.creator.avatar || 'https://i.pravatar.cc/150' }} className="w-4 h-4 rounded-full" />
-                              <Text className="text-white/70 text-[10px]">@{reel.creator.username}</Text>
+                              <Image source={{ uri: reel.creator?.avatar || getDefaultAvatar(reel.creator?.username) }} className="w-4 h-4 rounded-full" />
+                              <Text className="text-white/70 text-[10px]">@{reel.creator?.username || 'user'}</Text>
                             </View>
                           </View>
                         </Pressable>
@@ -340,7 +340,7 @@ export default function DiscoverScreen() {
                     className="w-[48%] h-60 rounded-2xl border border-white/5 relative overflow-hidden active:opacity-80 transition-opacity bg-[#1D1037]"
                   >
                     <Image
-                      source={{ uri: reel.thumbnailUrl || reel.creatorAvatar || 'https://i.pravatar.cc/150' }}
+                      source={{ uri: reel.thumbnailUrl || reel.creatorAvatar || getDefaultAvatar() }}
                       className="w-full h-full opacity-80"
                       resizeMode="cover"
                     />
@@ -348,7 +348,7 @@ export default function DiscoverScreen() {
                     <View className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/90 to-transparent justify-end p-3">
                       <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center gap-1">
-                          <Image source={{ uri: reel.creatorAvatar || 'https://i.pravatar.cc/150' }} className="w-4 h-4 rounded-full border border-white/20" />
+                          <Image source={{ uri: reel.creatorAvatar || getDefaultAvatar(reel.creatorUsername) }} className="w-4 h-4 rounded-full border border-white/20" />
                           <Text className="text-white/80 text-[10px] font-semibold">{formatSocialCount(reel.likesCount || 0)}</Text>
                         </View>
                       </View>
