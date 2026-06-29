@@ -93,7 +93,7 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
                     <Text className="text-green-500 text-[9px] font-bold mb-1">{pack.bonus}</Text>
                   )}
                   
-                  <Text className="text-[#A855F7] font-bold text-base mb-2">₹{pack.price}</Text>
+                  <Text className="text-[#A855F7] font-bold text-base mb-2">₹{pack.price.toFixed(2)}</Text>
                   
                   {pack.tag && (
                     <View className={`px-2 py-0.5 rounded-sm ${pack.tagColor}`}>
@@ -153,7 +153,7 @@ export default function RechargeCoinsSheet({ visible, onClose, onSuccess }: Rech
             >
               <Text className={`font-bold text-sm ${selectedPackId ? 'text-white' : 'text-white/50'}`}>
                 {isProcessing ? 'Processing...' : (selectedPackId 
-                  ? `Pay ₹${packs.find(p => p.id === selectedPackId)?.price} · Get ${(packs.find(p => p.id === selectedPackId)!.coins + (packs.find(p => p.id === selectedPackId)!.bonusCoins || 0)).toLocaleString()} Coins`
+                  ? `Pay ₹${(packs.find(p => p.id === selectedPackId)?.price || 0).toFixed(2)} · Get ${(packs.find(p => p.id === selectedPackId)!.coins + (packs.find(p => p.id === selectedPackId)!.bonusCoins || 0)).toLocaleString()} Coins`
                   : 'Select a Pack')}
               </Text>
             </Pressable>

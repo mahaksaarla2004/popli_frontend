@@ -222,7 +222,7 @@ export default function PostEditorScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                 {taggedUsers.map(u => (
                   <Pressable key={u.id} onPress={() => toggleTagUser(u)} className="mr-3 items-center bg-black/20 p-2 rounded-xl">
-                    <Image source={{ uri: u.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full mb-1" />
+                    <Image source={{ uri: u.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200' }} className="w-12 h-12 rounded-full mb-1" />
                     <Text className="text-white text-xs">@{u.username}</Text>
                   </Pressable>
                 ))}
@@ -242,7 +242,7 @@ export default function PostEditorScreen() {
                 return (
                   <Pressable onPress={() => toggleTagUser(item)} className="flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center">
-                      <Image source={{ uri: item.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full" />
+                      <Image source={{ uri: item.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200' }} className="w-12 h-12 rounded-full" />
                       <View className="ml-3">
                         <Text className="text-white font-bold">{item.name}</Text>
                         <Text className="text-neutral-grey">@{item.username}</Text>

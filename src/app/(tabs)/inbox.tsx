@@ -88,7 +88,7 @@ export default function InboxScreen() {
       id: chat.id,
       userId: chat.creatorId,
       name: chat.creatorName ? chat.creatorName.split(' ')[0] : 'Unknown',
-      avatar: chat.creatorAvatar || 'https://i.pravatar.cc/150',
+      avatar: chat.creatorAvatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200',
       active: (chat.creatorName ? chat.creatorName.length : 0) % 2 === 0, // Simulated online status
       hasStory: false // Will be updated if they have a story
     });
@@ -110,7 +110,7 @@ export default function InboxScreen() {
         id: 'story-' + storyUsername,
         userId: storyUsername,
         name: storyUsername, // Fallback to username
-        avatar: story.creatorAvatar || 'https://i.pravatar.cc/150',
+        avatar: story.creatorAvatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200',
         active: false,
         hasStory: true
       });
@@ -127,7 +127,7 @@ export default function InboxScreen() {
         id: 'self-' + userProfile.id,
         userId: userProfile.username,
         name: 'Your Story',
-        avatar: userProfile.avatar || 'https://i.pravatar.cc/150',
+        avatar: userProfile.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200',
         active: false,
         hasStory: hasOwnStory
       },

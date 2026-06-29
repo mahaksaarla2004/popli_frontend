@@ -121,7 +121,7 @@ export default function WalletScreen() {
               <TextInput
                 value={withdrawAmount}
                 onChangeText={setWithdrawAmount}
-                placeholder={`Max available: ₹${withdrawableBalance}`}
+                placeholder={`Max available: ₹${withdrawableBalance.toFixed(2)}`}
                 placeholderTextColor="rgba(255, 255, 255, 0.3)"
                 keyboardType="numeric"
                 className="bg-background-dark/50 border border-white/10 text-white rounded-2xl px-4 h-12 text-xs font-semibold"

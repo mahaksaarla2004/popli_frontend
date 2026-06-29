@@ -14,12 +14,19 @@ import { useAudioPlayer } from 'expo-audio';
 const { width, height } = Dimensions.get('window');
 
 const StoryVideo = ({ url, isPaused }: { url: string, isPaused: boolean }) => {
-  const player = useVideoPlayer(url, p => {
+  const [initialUrl] = useState(url);
+  const player = useVideoPlayer(initialUrl, p => {
     p.loop = true;
     p.muted = false;
     if (!isPaused) p.play();
     else p.pause();
   });
+
+  useEffect(() => {
+    try {
+      player.replace(url);
+    } catch (e) {}
+  }, [url, player]);
 
   useEffect(() => {
     if (!isPaused) player.play();
@@ -53,10 +60,18 @@ const MentionTag = React.memo(({ layer, onPress }: { layer: any, onPress: (userI
 MentionTag.displayName = 'MentionTag';
 
 const StoryAudio = ({ url, isPaused }: { url: string, isPaused: boolean }) => {
-  const player = useAudioPlayer(url);
+  const [initialUrl] = useState(url);
+  const player = useAudioPlayer(initialUrl);
+
   useEffect(() => {
-    if (!isPaused) player.play();
-    else player.pause();
+    try {
+      player?.replace(url);
+    } catch (e) {}
+  }, [url, player]);
+
+  useEffect(() => {
+    if (!isPaused) player?.play();
+    else player?.pause();
   }, [isPaused, player]);
   return null;
 };

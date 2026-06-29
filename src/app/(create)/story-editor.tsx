@@ -609,6 +609,7 @@ export default function StoryEditorScreen() {
             <Pressable 
               onPress={() => {
                 try { audioPlayer?.pause(); } catch(e) {}
+                // eslint-disable-next-line react-hooks/immutability
                 try { if (videoPlayer) { videoPlayer.pause(); videoPlayer.muted = true; } } catch(e) {}
                 setEditorData({ layers, timelineData, musicData: selectedMusic });
                 router.push({ pathname: '/(create)/share', params: { uri, type, mode, musicId: selectedMusic?.id || musicId, musicName: selectedMusic?.title || musicName, musicUrl: selectedMusic?.audioUrl || musicUrl, challengeId, isVideoMuted: isVideoMuted ? 'true' : 'false' } });

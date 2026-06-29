@@ -81,7 +81,7 @@ export default function NetworkScreen() {
                 className="flex-row items-center justify-between py-3 mb-2 bg-[#1A0E2C] rounded-2xl px-3 border border-white/5"
               >
                 <View className="flex-row items-center gap-3">
-                  <Image source={{ uri: userData.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full border border-white/10" />
+                  <Image source={{ uri: userData.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200' }} className="w-12 h-12 rounded-full border border-white/10" />
                   <View>
                     <Text className="text-white font-bold text-[15px]">{userData.name}</Text>
                     <Text className="text-neutral-grey text-xs mt-0.5">@{userData.username}</Text>

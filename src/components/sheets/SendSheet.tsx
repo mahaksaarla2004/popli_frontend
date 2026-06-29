@@ -124,7 +124,7 @@ export const SendSheet = ({ reelId, isOpen, onClose }: SendSheetProps) => {
                 return (
                   <View key={friend.id} className="flex-row items-center justify-between py-3 gap-3 border-b border-white/5">
                     <View className="flex-row items-center gap-3">
-                      <Image source={{ uri: friend.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full" />
+                      <Image source={{ uri: friend.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200' }} className="w-12 h-12 rounded-full" />
                       <View className="flex-col">
                         <Text className="text-white font-bold text-sm">{friend.name}</Text>
                         <Text className="text-white/60 text-xs">@{friend.username}</Text>

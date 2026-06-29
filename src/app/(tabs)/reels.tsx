@@ -273,13 +273,20 @@ export default function ReelsScreen() {
           </Pressable>
         </View>
 
-        <View className="flex-row items-center justify-center pointer-events-none absolute left-0 right-0 top-0 bottom-0">
-          <Text 
-            className="text-white text-[28px] tracking-wide text-shadow-md shadow-black" 
-            style={{ fontFamily: Platform.OS === 'ios' ? 'Snell Roundhand' : 'serif', fontStyle: 'italic', fontWeight: '800' }}
-          >
-            Popli
-          </Text>
+        <View className="flex-row items-center justify-center gap-5 absolute left-0 right-0 bottom-0 top-0" pointerEvents="box-none">
+          <Pressable onPress={() => setActiveTab('following')} className="items-center justify-center h-full px-2" hitSlop={10}>
+            <Text className={`text-[17px] font-bold text-shadow-md shadow-black ${activeTab === 'following' ? 'text-white' : 'text-white/60'}`}>
+              Following
+            </Text>
+            {activeTab === 'following' && <View className="h-[3px] w-6 bg-white rounded-full absolute bottom-1" />}
+          </Pressable>
+          
+          <Pressable onPress={() => setActiveTab('for_you')} className="items-center justify-center h-full px-2" hitSlop={10}>
+            <Text className={`text-[17px] font-bold text-shadow-md shadow-black ${activeTab === 'for_you' ? 'text-white' : 'text-white/60'}`}>
+              For You
+            </Text>
+            {activeTab === 'for_you' && <View className="h-[3px] w-6 bg-white rounded-full absolute bottom-1" />}
+          </Pressable>
         </View>
 
         <View className="flex-1 flex-row items-center justify-end gap-1.5 sm:gap-2">

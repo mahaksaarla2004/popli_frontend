@@ -190,7 +190,7 @@ export default function ShareStoryScreen() {
             creatorId: userProfile.id,
             creatorName: userProfile.name || 'User',
             creatorUsername: userProfile.username || 'user',
-            creatorAvatar: userProfile.avatar || 'https://i.pravatar.cc/150',
+            creatorAvatar: userProfile.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200',
             creatorIsVerified: userProfile.isVerified || false,
             videoUrl: backendReel.mediaUrl, // Android .mov handling is done in feed fetch, but here it's freshly uploaded mp4/mov
             thumbnailUrl: backendReel.thumbnailUrl || backendReel.mediaUrl,

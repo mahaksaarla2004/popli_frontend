@@ -53,7 +53,7 @@ export const useHashtagStore = create<HashtagState>((set, get) => ({
         creatorId: backendReel.creator.id,
         creatorName: backendReel.creator.name,
         creatorUsername: backendReel.creator.username,
-        creatorAvatar: backendReel.creator.avatar || 'https://i.pravatar.cc/150',
+        creatorAvatar: backendReel.creator.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200',
         creatorIsVerified: backendReel.creator.isVerified || false,
         videoUrl: backendReel.mediaUrl,
         thumbnailUrl: backendReel.thumbnailUrl || backendReel.mediaUrl,

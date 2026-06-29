@@ -35,7 +35,7 @@ export default function ChatScreen() {
   
   const chat = chats.find(c => c.id === id);
 
-  const displayAvatar = chat?.creatorAvatar || (creatorAvatar as string) || 'https://i.pravatar.cc/150';
+  const displayAvatar = chat?.creatorAvatar || (creatorAvatar as string) || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200';
   const displayName = chat?.creatorName || (creatorName as string) || 'Unknown User';
   const displayUsername = chat?.creatorUsername || (creatorUsername as string) || 'user';
   

@@ -30,10 +30,10 @@ export default function MusicEditorOverlay({ song, onComplete }: MusicEditorOver
   const SELECTOR_WIDTH = 96;
   const MAX_TRANSLATE_X = SLIDER_WIDTH - SELECTOR_WIDTH;
   
-  const panX = useRef(new Animated.Value(0)).current;
+  const [panX] = useState(() => new Animated.Value(0));
   const totalDuration = 60; // Mock 60 seconds length for calculation
 
-  const panResponder = useRef(
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: Animated.event([null, { dx: panX }], { useNativeDriver: false }),
@@ -62,7 +62,7 @@ export default function MusicEditorOverlay({ song, onComplete }: MusicEditorOver
         }
       }
     })
-  ).current;
+  );
 
   useEffect(() => {
     if (player) {

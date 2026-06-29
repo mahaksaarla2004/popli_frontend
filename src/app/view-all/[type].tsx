@@ -27,7 +27,7 @@ export default function ViewAllScreen() {
               className="flex-row items-center justify-between bg-[#1D1037]/60 p-4 rounded-xl border border-white/5 active:scale-95 transition-transform"
             >
               <View className="flex-row items-center gap-3">
-                <Image source={{ uri: creator.avatar || 'https://i.pravatar.cc/150' }} className="w-14 h-14 rounded-full" />
+                <Image source={{ uri: creator.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200' }} className="w-14 h-14 rounded-full" />
                 <View>
                   <View className="flex-row items-center gap-1">
                     <Text className="text-white font-bold text-base">{creator.name}</Text>

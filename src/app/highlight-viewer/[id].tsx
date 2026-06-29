@@ -10,12 +10,19 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 const { width } = Dimensions.get('window');
 
 const StoryVideo = ({ url, isPaused }: { url: string, isPaused: boolean }) => {
-  const player = useVideoPlayer(url, p => {
+  const [initialUrl] = useState(url);
+  const player = useVideoPlayer(initialUrl, p => {
     p.loop = true;
     p.muted = false;
     if (!isPaused) p.play();
     else p.pause();
   });
+
+  useEffect(() => {
+    try {
+      player.replace(url);
+    } catch (e) {}
+  }, [url, player]);
 
   useEffect(() => {
     if (!isPaused) player.play();

@@ -44,7 +44,7 @@ export default function BlockedUsersScreen() {
               <View key={user.id} className="flex-row items-center justify-between bg-[#1A0E2C] p-4 rounded-2xl border border-white/5">
                 <View className="flex-row items-center gap-3">
                   <Image 
-                    source={{ uri: user.avatar || 'https://i.pravatar.cc/150' }}
+                    source={{ uri: user.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200' }}
                     style={{ width: 48, height: 48, borderRadius: 24 }}
                     contentFit="cover"
                   />

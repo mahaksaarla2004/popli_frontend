@@ -139,7 +139,7 @@ export default function WithdrawScreen() {
                 <TextInput 
                   value={amount}
                   onChangeText={setAmount}
-                  placeholder={`Max available: ₹${withdrawable.toFixed(0)}`}
+                  placeholder={`Max available: ₹${withdrawable.toFixed(2)}`}
                   placeholderTextColor="rgba(255, 255, 255, 0.2)"
                   keyboardType="numeric"
                   className="bg-[#12081E] border border-[#3E2B5C] rounded-xl px-4 h-14 text-white font-medium"
@@ -203,7 +203,11 @@ export default function WithdrawScreen() {
                {filteredLedgers.length === 0 ? (
                  <Text className="text-gray-500 text-center font-medium">No transactions found.</Text>
                ) : (
-                 filteredLedgers.map((l: any, i: number) => (
+                 filteredLedgers.map((l: any, i: number) => {
+                   const amt = Math.abs(l.credit > 0 ? l.credit : l.debit);
+                   const isMicro = amt > 0 && amt.toFixed(2) === '0.00';
+                   const displayAmt = isMicro ? '<₹0.01' : `₹${amt.toFixed(2)}`;
+                   return (
                    <View key={i} className="flex-row justify-between items-center mb-4 last:mb-0 border-b border-[#3E2B5C] pb-4 last:border-0 last:pb-0">
                      <View>
                        <Text className="text-white font-bold text-sm">{l.source}</Text>
@@ -211,12 +215,12 @@ export default function WithdrawScreen() {
                      </View>
                      <View className="items-end">
                        <Text className={`${l.credit > 0 ? 'text-[#10B981]' : 'text-red-400'} font-black text-sm`}>
-                         {l.credit > 0 ? '+' : '-'}₹{Math.abs(l.credit > 0 ? l.credit : l.debit).toFixed(2)}
+                         {l.credit > 0 ? '+' : '-'}{displayAmt}
                        </Text>
                        <Text className="text-gray-500 text-[10px] mt-0.5">Bal: ₹{l.balanceAfter?.toFixed(2)}</Text>
                      </View>
                    </View>
-                 ))
+                 )})
                )}
             </View>
 

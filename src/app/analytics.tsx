@@ -222,7 +222,7 @@ export default function AnalyticsScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
               {videoAnalytics.topGifters.map((gifter: any, index: number) => (
                 <View key={index} className="bg-[#1A0E2C] p-4 rounded-2xl border border-white/5 items-center w-32">
-                  <Image source={{ uri: gifter.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full mb-2" />
+                  <Image source={{ uri: gifter.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200' }} className="w-12 h-12 rounded-full mb-2" />
                   <Text className="text-white font-bold text-sm text-center" numberOfLines={1}>{gifter.username}</Text>
                   <Text className="text-[#F59E0B] font-bold text-xs mt-1">{gifter.totalGiftCoins} Coins</Text>
                   <Text className="text-white/40 text-[10px] mt-0.5">{gifter.giftCount} Gifts sent</Text>

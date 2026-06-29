@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, Pressable, Dimensions, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Settings, AlignLeft, LayoutGrid, Heart, Play, Plus, BarChart2 } from 'lucide-react-native';
-import { useAuthStore, useFeedStore, useStoryHighlightStore } from '../../store';
+import { useAuthStore, useFeedStore, useStoryHighlightStore, useStoryStore } from '../../store';
 import { formatSocialCount, getDefaultAvatar } from '../../utils';
 import { calculateEstimatedVideoEarnings } from '../../utils/earnings';
 import StoryRing from '../../components/StoryRing';
 import { LinksSheet } from '../../components/sheets/LinksSheet';
+import { ProfileOptionsSheet } from '../../components/sheets/ProfileOptionsSheet';
 import { SafeScreen } from '../../components/layout/SafeScreen';
 
 const { width } = Dimensions.get('window');
@@ -18,6 +19,7 @@ export default function ProfileScreen() {
   const { userProfile } = useAuthStore();
   const { reels, userReels, likedReels, fetchUserReels, fetchLikedReels } = useFeedStore();
   const { highlights, fetchHighlights } = useStoryHighlightStore();
+  const stories = useStoryStore(state => state.stories);
 
   const [activeTab, setActiveTab] = useState<ProfileTabType>('posts');
 
@@ -42,6 +44,9 @@ export default function ProfileScreen() {
   const totalLikes = userReels.reduce((acc, reel) => acc + reel.likesCount, 0);
 
   const [isLinksSheetOpen, setIsLinksSheetOpen] = useState(false);
+  const [isProfileOptionsOpen, setIsProfileOptionsOpen] = useState(false);
+
+  const hasStory = stories.some(s => s.creatorId === userProfile.username);
 
   const displayProfile = {
     username: userProfile.username,
@@ -119,23 +124,7 @@ export default function ProfileScreen() {
       userId={displayProfile.username} 
       avatarUrl={displayProfile.avatar} 
       size={96} 
-      onPress={() => {
-        Alert.alert(
-          "Profile Options",
-          "What would you like to do?",
-          [
-            { 
-              text: "View Story", 
-              onPress: () => router.push(`/story-viewer/${displayProfile.username}`) 
-            },
-            { 
-              text: "Edit Profile", 
-              onPress: () => router.push('/edit-profile') 
-            },
-            { text: "Cancel", style: "cancel" }
-          ]
-        );
-      }}
+      onPress={() => setIsProfileOptionsOpen(true)}
     />
 
           <Text className="text-white font-bold text-lg mb-1">@{displayProfile.username}</Text>
@@ -298,13 +287,7 @@ export default function ProfileScreen() {
                     </Text>
                   </View>
                 )}
-                {item.isMonetized && activeTab === 'reels' && (
-                  <View className="absolute top-2 right-2 bg-black/70 px-1.5 py-0.5 rounded flex-row items-center border border-white/10">
-                    <Text className="text-[#10B981] text-[9px] font-bold">
-                      ₹{calculateEstimatedVideoEarnings(item.viewsCount || 0) > 0 ? calculateEstimatedVideoEarnings(item.viewsCount || 0).toFixed(2) : '0'}
-                    </Text>
-                  </View>
-                )}
+
                 {activeTab !== 'posts' && (
                   <Pressable 
                     onPress={(e) => {
@@ -326,6 +309,13 @@ export default function ProfileScreen() {
         isVisible={isLinksSheetOpen} 
         onClose={() => setIsLinksSheetOpen(false)} 
         links={displayProfile.socialLinks} 
+      />
+
+      <ProfileOptionsSheet
+        isVisible={isProfileOptionsOpen}
+        onClose={() => setIsProfileOptionsOpen(false)}
+        username={displayProfile.username}
+        hasStory={hasStory}
       />
     </SafeScreen>
   );

@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { View, Text, Pressable, Dimensions, Animated, Modal, TouchableOpacity } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -10,7 +10,8 @@ import { useFeedStore, useAuthStore } from '../../store';
 import * as Clipboard from 'expo-clipboard';
 
 const VideoPlayerComponent = React.memo(({ videoUrl, isActive }: { videoUrl: string, isActive: boolean }) => {
-  const player = useVideoPlayer(videoUrl, player => {
+  const [initialUrl] = useState(videoUrl);
+  const player = useVideoPlayer(initialUrl, player => {
     player.loop = true;
     player.muted = true;
     if (isActive) {
@@ -19,6 +20,14 @@ const VideoPlayerComponent = React.memo(({ videoUrl, isActive }: { videoUrl: str
       player.pause();
     }
   });
+
+  useEffect(() => {
+    try {
+      player.replace(videoUrl);
+    } catch (e) {
+      console.log('Error replacing post video url:', e);
+    }
+  }, [videoUrl, player]);
 
   return (
     <VideoView 
@@ -29,6 +38,8 @@ const VideoPlayerComponent = React.memo(({ videoUrl, isActive }: { videoUrl: str
     />
   );
 });
+
+VideoPlayerComponent.displayName = 'VideoPlayerComponent';
 
 interface PostItemProps {
   item: Reel;
@@ -254,7 +265,7 @@ export const PostItem = React.memo(({ item, isActive, onOpenComments, onOpenSend
                   <Flag size={20} color="#EF4444" />
                   <View className="ml-3">
                     <Text className="text-[#EF4444] font-semibold text-base">Report Post</Text>
-                    <Text className="text-neutral-grey text-xs mt-0.5">I'm concerned about this post</Text>
+                    <Text className="text-neutral-grey text-xs mt-0.5">I&apos;m concerned about this post</Text>
                   </View>
                 </Pressable>
               )}

@@ -251,7 +251,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
                       <Text className="text-[#10B981] text-[9px] font-bold mb-1">{pack.bonus}</Text>
                     )}
                     
-                    <Text className="text-[#D8B4FE] font-bold text-base mb-2">₹{pack.price}</Text>
+                    <Text className="text-[#D8B4FE] font-bold text-base mb-2">₹{pack.price.toFixed(2)}</Text>
                     
                     {pack.tag && (
                       <View className={`px-2 py-0.5 rounded-sm ${pack.tagColor === 'bg-purple-100 text-purple-600' ? 'bg-[#A855F7]/20' : 'bg-[#10B981]/20'}`}>
@@ -281,7 +281,7 @@ export const GiftSheet = ({ reel, isOpen, onClose, onSendSuccess }: GiftSheetPro
               >
                 <Text className={`text-sm font-bold ${!selectedRechargePack ? 'text-white/30' : 'text-white'}`}>
                   {selectedRechargePack 
-                    ? `Pay ₹${RECHARGE_PACKS.find(p => p.coins === selectedRechargePack)?.price} · Get ${(selectedRechargePack + (RECHARGE_PACKS.find(p => p.coins === selectedRechargePack)?.bonusCoins || 0)).toLocaleString()} Coins` 
+                    ? `Pay ₹${(RECHARGE_PACKS.find(p => p.coins === selectedRechargePack)?.price || 0).toFixed(2)} · Get ${(selectedRechargePack + (RECHARGE_PACKS.find(p => p.coins === selectedRechargePack)?.bonusCoins || 0)).toLocaleString()} Coins` 
                     : 'Select a Pack'}
                 </Text>
               </TouchableOpacity>

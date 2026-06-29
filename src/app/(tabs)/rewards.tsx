@@ -49,7 +49,9 @@ export default function RewardsScreen() {
   const historyItems = [
     ...(wallet?.ledgers || []).map((l: any) => {
       const isDebit = l.debit > 0;
-      const amountVal = Math.abs(isDebit ? l.debit : l.credit).toFixed(2);
+      const amt = Math.abs(isDebit ? l.debit : l.credit);
+      const isMicro = amt > 0 && amt.toFixed(2) === '0.00';
+      const amountVal = isMicro ? '<0.01' : amt.toFixed(2);
       return {
         id: l.id,
         title: l.source === 'WITHDRAWAL' ? 'Withdrawal' : l.source === 'GIFT_RECEIVED' ? 'Gift Received' : l.description || l.source.replace('_', ' '),
@@ -65,7 +67,7 @@ export default function RewardsScreen() {
       const isEarning = t.type === 'AD_REVENUE' || t.type === 'GIFT_RECEIVE' || t.type === 'REFERRAL_BONUS' || t.type === 'CHALLENGE_REWARD';
       let amountStr = '';
       if (t.type === 'COIN_RECHARGE') {
-         amountStr = `-₹${(t.amount / 10).toFixed(0)}`;
+         amountStr = `-₹${(t.amount / 10).toFixed(2)}`;
       } else if (isEarning) {
          amountStr = `+${Math.abs(t.amount)} coins`;
       } else {
@@ -119,7 +121,7 @@ export default function RewardsScreen() {
           {/* TOTAL BALANCE CARD */}
           <View className="bg-[#1D1037] rounded-[24px] p-6 mb-8 border border-[#3E2B5C] shadow-lg">
             <Text className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-1">Total Balance</Text>
-            <Text className="text-[#FBBF24] font-black text-5xl mb-3 tracking-tighter">₹{totalEarnings.toFixed(0)}</Text>
+            <Text className="text-[#FBBF24] font-black text-5xl mb-3 tracking-tighter">₹{totalEarnings.toFixed(2)}</Text>
             
             <View className="bg-green-900/30 self-start px-3 py-1.5 rounded-full flex-row items-center gap-1.5 mb-6 border border-green-500/20">
               <TrendingUp size={14} color="#4ade80" />

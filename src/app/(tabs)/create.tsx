@@ -14,6 +14,8 @@ import Svg, { Circle, Line } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
+const ITEM_WIDTH = 80;
+const PADDING_H = (width - ITEM_WIDTH) / 2;
 
 type CameraMode = 'POST' | 'STORY' | 'REEL';
 
@@ -53,7 +55,8 @@ export default function CreateScreen() {
   const recordingInterval = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Music state from params
-  const { selectedMusicId, selectedMusicTitle, selectedMusicArtist, selectedMusicUrl, challengeId } = useLocalSearchParams<{ 
+  const { mode: paramMode, selectedMusicId, selectedMusicTitle, selectedMusicArtist, selectedMusicUrl, challengeId } = useLocalSearchParams<{ 
+    mode?: CameraMode,
     selectedMusicId?: string, 
     selectedMusicTitle?: string, 
     selectedMusicArtist?: string,
@@ -73,6 +76,13 @@ export default function CreateScreen() {
       const onFocus = () => {
         setCameraKey(Date.now());
         setIsFocused(true);
+        if (paramMode && MODES.includes(paramMode)) {
+          setActiveMode(paramMode);
+          setTimeout(() => {
+            const index = MODES.indexOf(paramMode);
+            scrollViewRef.current?.scrollTo({ x: index * ITEM_WIDTH, animated: true });
+          }, 100);
+        }
       };
       
       const timer = setTimeout(onFocus, 400);
@@ -82,7 +92,7 @@ export default function CreateScreen() {
         setIsFocused(false);
         try { player?.pause(); } catch(e) {}
       };
-    }, [player])
+    }, [player, paramMode])
   );
 
   useEffect(() => {
@@ -96,7 +106,7 @@ export default function CreateScreen() {
     // Snap scroll to STORY mode on mount
     setTimeout(() => {
       const storyIndex = MODES.indexOf('STORY');
-      scrollViewRef.current?.scrollTo({ x: storyIndex * (width / 3), animated: false });
+      scrollViewRef.current?.scrollTo({ x: storyIndex * ITEM_WIDTH, animated: false });
     }, 100);
   }, [cameraPermission, micPermission]);
 
@@ -118,9 +128,6 @@ export default function CreateScreen() {
       router.replace('/(tabs)');
     }
   };
-
-  const ITEM_WIDTH = 80;
-  const PADDING_H = (width - ITEM_WIDTH) / 2;
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;

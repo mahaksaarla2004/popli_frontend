@@ -403,7 +403,7 @@ export const useChatStore = create<ChatState>()(
               creatorId: chat.participants?.[0]?.user?.id || 'unknown',
               creatorName: chat.participants?.[0]?.user?.name || 'Unknown',
               creatorUsername: chat.participants?.[0]?.user?.username || 'user',
-              creatorAvatar: chat.participants?.[0]?.user?.avatar || 'https://i.pravatar.cc/150',
+              creatorAvatar: chat.participants?.[0]?.user?.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200',
               lastMessage: chat.lastMessage || 'No messages yet',
               lastMessageTime: chat.lastMessageAt 
                 ? formatRelativeTime(chat.lastMessageAt)

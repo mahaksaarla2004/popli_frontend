@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, Eye, Heart, MessageCircle, Share2, MapPin, Coins, Trophy } from 'lucide-react-native';
 import { apiClient } from '../../../api/client';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getDefaultAvatar } from '../../../utils';
 
 export default function ReelAnalyticsScreen() {
   const { id } = useLocalSearchParams();
@@ -125,7 +126,7 @@ export default function ReelAnalyticsScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
             {data.topGifters.map((gifter: any, index: number) => (
               <View key={index} className="bg-[#12081E] p-4 rounded-2xl border border-white/5 items-center w-32">
-                <Image source={{ uri: gifter.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full mb-2" />
+                <Image source={{ uri: gifter.avatar || getDefaultAvatar(gifter.username) }} className="w-12 h-12 rounded-full mb-2" />
                 <Text className="text-white font-bold text-sm text-center" numberOfLines={1}>{gifter.username}</Text>
                 <Text className="text-[#EAB308] font-bold text-xs mt-1">{gifter.totalGiftCoins} Coins</Text>
                 <Text className="text-white/40 text-[10px] mt-0.5">{gifter.giftCount} Gifts sent</Text>

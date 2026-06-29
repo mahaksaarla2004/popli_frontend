@@ -90,7 +90,7 @@ export default function SendToSheet({ onClose, onSend }: SendToSheetProps) {
             className="flex-row items-center justify-between mb-4 bg-black/20 p-3 rounded-2xl"
           >
             <View className="flex-row items-center gap-3">
-              <Image source={{ uri: user.avatar || 'https://i.pravatar.cc/150' }} className="w-12 h-12 rounded-full" />
+              <Image source={{ uri: user.avatar || 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200' }} className="w-12 h-12 rounded-full" />
               <View>
                 <Text className="text-white font-bold text-sm">{user.name}</Text>
                 <Text className="text-neutral-grey text-xs">@{user.username}</Text>

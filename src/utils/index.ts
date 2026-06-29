@@ -52,5 +52,5 @@ export function getDefaultAvatar(username?: string): string {
   if (username) {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1D1037&color=fff&size=200`;
   }
-  return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=250&auto=format&fit=crop';
+  return 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200';
 }

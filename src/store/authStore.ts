@@ -164,7 +164,7 @@ export const useAuthStore = create<AuthState>()(
             return { blockedUsers: state.blockedUsers.filter(u => u.id !== creatorId) };
           } else {
             // Add a mock object so it appears instantly; fetchBlockedUsers will correct it later
-            return { blockedUsers: [...state.blockedUsers, { id: creatorId, name: 'Blocked User', username: 'blocked', avatar: 'https://i.pravatar.cc/150' } as any] };
+            return { blockedUsers: [...state.blockedUsers, { id: creatorId, name: 'Blocked User', username: 'blocked', avatar: 'https://ui-avatars.com/api/?name=U&background=1D1037&color=fff&size=200' } as any] };
           }
         });
 

@@ -168,7 +168,14 @@ export default function NotificationsScreen() {
 
     const t = n.postThumbnail || n.reelThumbnail || n.storyThumbnail;
     const isSystem = type === 'system';
-    const displayAvatar = isSystem ? 'https://ui-avatars.com/api/?name=Popli&background=1D1037&color=A855F7' : (n.actorAvatar || getDefaultAvatar(n.actorName || 'User'));
+    
+    // Clean up backend hardcoded placeholders for existing notifications
+    let validActorAvatar = n.actorAvatar;
+    if (validActorAvatar && (validActorAvatar.includes('pravatar.cc') || validActorAvatar.includes('unsplash.com'))) {
+      validActorAvatar = null;
+    }
+    
+    const displayAvatar = isSystem ? 'https://ui-avatars.com/api/?name=Popli&background=1D1037&color=A855F7' : (validActorAvatar || getDefaultAvatar(n.actorName || 'User'));
     const displayName = isSystem ? 'Popli System' : (n.actorName || 'User');
 
     return (

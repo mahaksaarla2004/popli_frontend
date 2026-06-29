@@ -88,7 +88,8 @@ interface ReelItemProps {
 }
 
 const ActiveVideoPlayer = ({ url, isMuted, isActive, isHeldPaused, width, height, onLoaded, hasMusicOverlay }: { url: string, isMuted: boolean, isActive: boolean, isHeldPaused: boolean, width: number, height: number, onLoaded: () => void, hasMusicOverlay?: boolean }) => {
-  const player = useVideoPlayer(url, player => {
+  const [initialUrl] = useState(url);
+  const player = useVideoPlayer(initialUrl, player => {
     player.loop = true;
     player.muted = isMuted || !!hasMusicOverlay;
     if (isActive && !isHeldPaused) {
@@ -97,6 +98,14 @@ const ActiveVideoPlayer = ({ url, isMuted, isActive, isHeldPaused, width, height
       player.pause();
     }
   });
+
+  useEffect(() => {
+    try {
+      player.replace(url);
+    } catch (e) {
+      console.log('Error replacing video url:', e);
+    }
+  }, [url, player]);
 
   useEventListener(player, 'statusChange', ({ status }) => {
     if (status === 'readyToPlay') {

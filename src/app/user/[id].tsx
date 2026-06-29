@@ -127,7 +127,7 @@ export default function PublicProfileScreen() {
                 <Text className="text-neutral-silver text-xs">Following</Text>
               </Pressable>
               <View className="items-center">
-                <Text className="text-white font-bold text-lg">₹{formatSocialCount(profile.wallet?.totalEarnings ?? profile.coinsEarned ?? 0)}</Text>
+                <Text className="text-white font-bold text-lg">₹{Number(profile.wallet?.totalEarnings ?? profile.coinsEarned ?? 0).toFixed(2)}</Text>
                 <Text className="text-neutral-silver text-xs">Earnings</Text>
               </View>
             </View>
