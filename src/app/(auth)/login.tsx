@@ -114,7 +114,7 @@ export default function LoginScreen() {
         <View style={{ alignItems: 'center', marginBottom: 24, marginTop: -20 }}>
           <Image 
             source={require('../../../assets/images/custom_logo.png')} 
-            style={{ width: 140, height: 50, resizeMode: 'contain' }}
+            style={{ width: 220, height: 80, resizeMode: 'contain' }}
           />
         </View>
 

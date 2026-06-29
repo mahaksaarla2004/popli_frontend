@@ -248,14 +248,20 @@ export default function HomeFeedScreen() {
       }}
     >
       
-      {/* Top Segmented Tabs Overlay & Notification Bell */}
+      {/* Top Header with Solid Background */}
       <View 
-        className="absolute left-0 right-0 z-50 flex-row justify-between items-center px-3"
-        style={{ top: insets.top > 0 ? insets.top + 10 : 30, elevation: 10 }}
-        pointerEvents="box-none"
+        className="absolute left-0 right-0 z-50 flex-row justify-between items-center px-3 pb-3"
+        style={{ 
+          top: 0,
+          paddingTop: insets.top > 0 ? insets.top + 10 : 30,
+          backgroundColor: '#12081E',
+          elevation: 10,
+          borderBottomWidth: 1,
+          borderBottomColor: 'rgba(255,255,255,0.05)'
+        }}
       >
         <View className="flex-1 items-start">
-          <Pressable onPress={() => router.push('/(tabs)/discover')} className="w-9 sm:w-10 h-9 sm:h-10 bg-black/40 rounded-full items-center justify-center active:scale-95">
+          <Pressable onPress={() => router.push('/(tabs)/discover')} className="w-9 sm:w-10 h-9 sm:h-10 bg-white/10 rounded-full items-center justify-center active:scale-95">
             <Search size={20} color="#FFFFFF" strokeWidth={2.5} />
           </Pressable>
         </View>
@@ -276,7 +282,7 @@ export default function HomeFeedScreen() {
               <View className="absolute top-[6px] right-[6px] w-2.5 h-2.5 bg-[#D946EF] rounded-full border border-black" />
             )}
           </Pressable>
-          <Pressable onPress={() => router.push('/(tabs)/inbox')} className="w-9 sm:w-10 h-9 sm:h-10 bg-black/40 rounded-full items-center justify-center active:scale-95">
+          <Pressable onPress={() => router.push('/(tabs)/inbox')} className="w-9 sm:w-10 h-9 sm:h-10 bg-white/10 rounded-full items-center justify-center active:scale-95">
             <MessageSquare size={20} color="#FFFFFF" strokeWidth={2.5} className="mr-0.5 mt-0.5" />
             {unreadChatsCount > 0 && (
               <View className="absolute top-0 right-0 bg-[#D946EF] rounded-full px-[5px] py-[1px] border-[1.5px] border-black">
