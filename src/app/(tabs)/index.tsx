@@ -35,6 +35,16 @@ export default function HomeFeedScreen() {
   const flashListRef = useRef<any>(null);
   
   const [refreshCount, setRefreshCount] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const handleScroll = useCallback((e: any) => {
+    const offsetY = e.nativeEvent.contentOffset.y;
+    if (offsetY > 20 && !isScrolled) {
+      setIsScrolled(true);
+    } else if (offsetY <= 20 && isScrolled) {
+      setIsScrolled(false);
+    }
+  }, [isScrolled]);
 
   useFocusEffect(
     useCallback(() => {
@@ -266,14 +276,18 @@ export default function HomeFeedScreen() {
           </Pressable>
         </View>
 
-        <View className="flex-row items-center justify-center pointer-events-none absolute left-0 right-0 top-0 bottom-0">
+        <MotiView 
+          className="flex-row items-center justify-center pointer-events-none absolute left-0 right-0 top-0 bottom-0"
+          animate={{ opacity: isScrolled ? 0 : 1 }}
+          transition={{ type: 'timing', duration: 250 }}
+        >
           <Text 
             className="text-white text-[28px] tracking-wide" 
             style={{ fontFamily: Platform.OS === 'ios' ? 'Snell Roundhand' : 'serif', fontStyle: 'italic', fontWeight: '800' }}
           >
             Popli
           </Text>
-        </View>
+        </MotiView>
 
         <View className="flex-1 flex-row items-center justify-end gap-1.5 sm:gap-2">
           <Pressable onPress={() => router.push('/notifications')} className="w-9 sm:w-10 h-9 sm:h-10 items-center justify-center active:scale-95">
@@ -307,6 +321,8 @@ export default function HomeFeedScreen() {
           pagingEnabled={false}
           showsVerticalScrollIndicator={false}
           bounces={true}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           // @ts-ignore
