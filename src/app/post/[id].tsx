@@ -159,7 +159,7 @@ export default function PostViewerScreen() {
         ref={flashListRef}
         data={swipableReels}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: Reel) => item.id}
         showsVerticalScrollIndicator={false}
         {...({ estimatedItemSize: 600 } as any)}
         initialScrollIndex={initialIndex > 0 ? initialIndex : 0}
