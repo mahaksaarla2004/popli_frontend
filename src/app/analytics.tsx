@@ -33,7 +33,7 @@ export default function AnalyticsScreen() {
   );
 
   // If videoId is provided, focus only on that video
-  const targetReels = videoId ? userReels.filter(r => r.id === videoId) : userReels;
+  const targetReels = videoId ? userReels.filter(r => r.id === videoId) : userReels.filter(r => r.mediaType === 'VIDEO' || (r.videoUrl && r.videoUrl.match(/\.(mp4|mov)$/i)));
 
   // Calculate real metrics
   const allTimeViews = targetReels.reduce((sum, r) => sum + (r.viewsCount || 0), 0);
