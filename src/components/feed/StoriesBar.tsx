@@ -58,7 +58,7 @@ export const StoriesBar = () => {
           <StoryRing
             userId={userProfile.username}
             name={userProfile.name}
-            avatarUrl={userProfile.avatar || getDefaultAvatar(userProfile.name)}
+            avatarUrl={userProfile.avatar || getDefaultAvatar(userProfile.name || userProfile.username)}
             size={68}
             showName={true}
           />
@@ -69,7 +69,7 @@ export const StoriesBar = () => {
             key={group.creatorId}
             userId={group.creatorId}
             name={group.creatorUsername || group.creatorName}
-            avatarUrl={group.creatorAvatar || getDefaultAvatar(group.creatorName)}
+            avatarUrl={group.creatorAvatar || getDefaultAvatar(group.creatorName || group.creatorUsername)}
             size={68}
             showName={true}
           />
