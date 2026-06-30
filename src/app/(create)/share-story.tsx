@@ -194,6 +194,7 @@ export default function ShareStoryScreen() {
             creatorIsVerified: userProfile.isVerified || false,
             videoUrl: backendReel.mediaUrl, // Android .mov handling is done in feed fetch, but here it's freshly uploaded mp4/mov
             thumbnailUrl: backendReel.thumbnailUrl || backendReel.mediaUrl,
+            mediaType: (type === 'video' ? 'VIDEO' : 'PHOTO') as 'VIDEO' | 'PHOTO',
             description: backendReel.description || '',
             musicName: backendReel.musicName || 'Original Audio',
             likesCount: 0,

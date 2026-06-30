@@ -72,10 +72,16 @@ export default function OTPScreen() {
           await SecureStore.setItemAsync('deviceId', deviceId);
         }
 
-        // 3. Authenticate with backend using the bypass
-        const response = await apiClient.post('/auth/demo-login', {
-          otp: otpString,
+        // 3. Authenticate with backend using the bypass via verify-firebase
+        const response = await apiClient.post('/auth/verify-firebase', {
+          idToken: 'bypass_1234',
           phone: params.phone || params.target,
+          deviceId: deviceId,
+          name: params.name,
+          username: params.username,
+          email: params.email,
+          dob: params.dob,
+          referredByCode: params.referredByCode
         });
 
         if (response.data.accessToken) {
