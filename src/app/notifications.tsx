@@ -147,7 +147,8 @@ export default function NotificationsScreen() {
     if (type === 'system') {
       actionText = `: ${n.body || n.title || 'sent you a system notification.'}`;
     } else if (type === 'like') {
-      actionText = ' liked your reel.';
+      const suffix = n.body ? ` ${n.body}` : ' liked your reel';
+      actionText = suffix.endsWith('.') ? suffix : `${suffix}.`;
     } else if (type === 'comment_like') {
       actionText = ' liked your comment.';
     } else if (type === 'comment') {
@@ -161,7 +162,8 @@ export default function NotificationsScreen() {
     } else if (type === 'follow') {
       actionText = ' started following you.';
     } else if (type === 'gift') {
-      actionText = ` sent you a ${n.giftType || 'gift'} on your reel.`;
+      const target = (n.metaData as any)?.targetType === 'POST' ? 'post' : 'reel';
+      actionText = ` sent you a ${n.giftType || 'gift'} on your ${target}.`;
     } else {
       actionText = ` ${n.type || 'interacted with you'}.`;
     }

@@ -293,7 +293,7 @@ const [headerOpacity] = useState(() => new Animated.Value(1));
       <Animated.View style={{ opacity: headerOpacity }} className="flex-row items-center justify-center pointer-events-none absolute left-0 right-0 top-0 bottom-0">
           <Image 
             source={require('../../../assets/images/popli_logo.png')} 
-            style={{ height: 32, width: 120 }}
+            style={{ height: 50, width: 160 }}
             resizeMode="contain"
           />
         </Animated.View>
