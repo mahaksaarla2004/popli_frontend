@@ -57,8 +57,11 @@ export default function PostViewerScreen() {
       hasSource = true;
     }
 
-    if (hasSource) {
-      setSwipableReels(sourceReels);
+       if (hasSource) {
+      const tappedItem = sourceReels.find(r => r.id === id);
+      const targetType = tappedItem?.mediaType || 'PHOTO';
+      const filteredReels = sourceReels.filter(r => r.mediaType === targetType);
+      setSwipableReels(filteredReels);
       setLoading(false);
     } else {
       const fetchReel = async () => {

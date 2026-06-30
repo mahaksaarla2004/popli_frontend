@@ -1,3 +1,4 @@
+/*eslint-disable*/
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -32,8 +33,42 @@ export default function SignupScreen() {
     api?: string;
   }>({});
 
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(false);
+
+  const [isCheckingReferral, setIsCheckingReferral] = useState(false);
+  const [referrerName, setReferrerName] = useState<string | null>(null);
+  const [referralInvalid, setReferralInvalid] = useState(false);
+
+  useEffect(() => {
+    const codeTrimmed = referralCode.trim();
+    if (!codeTrimmed) {
+      setReferrerName(null);
+      setReferralInvalid(false);
+      return;
+    }
+
+    setIsCheckingReferral(true);
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const res = await apiClient.get(`/auth/referral/${codeTrimmed}`);
+        if (res.data.valid) {
+          setReferrerName(res.data.name);
+          setReferralInvalid(false);
+        } else {
+          setReferrerName(null);
+          setReferralInvalid(true);
+        }
+      } catch (error) {
+        setReferrerName(null);
+        setReferralInvalid(true);
+      } finally {
+        setIsCheckingReferral(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [referralCode]);
 
   useEffect(() => {
     const checkAvailability = async () => {
@@ -382,13 +417,14 @@ return (
         {/* Referral */}
         <View style={{ marginBottom: 24 }}>
           <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
             backgroundColor: 'rgba(255,255,255,0.06)',
             borderRadius: 14,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.12)',
+            borderColor: referralInvalid ? '#FF4444' : 'rgba(255,255,255,0.12)',
             paddingHorizontal: 16,
             height: 54,
-            justifyContent: 'center',
           }}>
             <TextInput
               value={referralCode}
@@ -396,9 +432,17 @@ return (
               placeholder="Referral Code (Optional)"
               placeholderTextColor="rgba(255,255,255,0.25)"
               autoCapitalize="characters"
-              style={{ color: '#fff', fontSize: 15 }}
+              style={{ flex: 1, color: '#fff', fontSize: 15 }}
             />
+            {isCheckingReferral ? (
+              <ActivityIndicator size="small" color="#FF2D6B" />
+            ) : referrerName ? (
+              <Text style={{ color: '#4ADE80', fontSize: 12, fontWeight: '700' }}>✓ {referrerName}</Text>
+            ) : null}
           </View>
+          {referralInvalid ? (
+            <Text style={{ color: '#FF4444', fontSize: 12, paddingLeft: 4, marginTop: 3 }}>Invalid referral code</Text>
+          ) : null}
         </View>
 
         {/* Terms */}

@@ -430,6 +430,7 @@ export const useFeedStore = create<FeedState>()(
           const fetchedReels = res.data.map((r: any) => ({
             id: r.id,
             creatorId: r.creatorId,
+            mediaType: r.mediaType,
             creatorUsername: r.creator?.username || 'user',
             creatorAvatar: r.creator?.avatar || getDefaultAvatar(r.creator?.username || 'user'),
             creatorIsVerified: r.creator?.isVerified || false,
@@ -488,8 +489,9 @@ export const useFeedStore = create<FeedState>()(
           };
 
           const fetchedReels = res.data.map((r: any) => ({
-            id: r.id,
+           id: r.id,
             creatorId: r.creatorId,
+            mediaType: r.mediaType,
             creatorUsername: r.creator?.username || 'user',
             creatorAvatar: r.creator?.avatar || getDefaultAvatar(r.creator?.username || 'user'),
             creatorIsVerified: r.creator?.isVerified || false,
@@ -642,9 +644,10 @@ export const useFeedStore = create<FeedState>()(
             return finalUrl;
           };
 
-          const fetchedReels = res.data.map((r: any) => ({
+       const fetchedReels = res.data.map((r: any) => ({
             id: r.id,
             creatorId: r.creatorId,
+            mediaType: r.mediaType,
             creatorName: r.creator?.name || 'User',
             creatorUsername: r.creator?.username || 'user',
             creatorAvatar: r.creator?.avatar || getDefaultAvatar(r.creator?.username || 'user'),
@@ -718,8 +721,8 @@ export const useFeedStore = create<FeedState>()(
         }));
       },
     }),
-    {
-      name: 'popli-feed-store-v2',
+   {
+      name: 'popli-feed-store-v3',
       storage: createJSONStorage(() => mmkvStoreStorage),
       partialize: (state) => Object.fromEntries(
         Object.entries(state).filter(([key]) => !['userReels', 'isFetchingFeed'].includes(key))

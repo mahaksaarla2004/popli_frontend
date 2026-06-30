@@ -62,8 +62,11 @@ export default function ReelViewerScreen() {
       hasSource = true;
     }
 
-    if (hasSource) {
-      setSwipableReels(sourceReels);
+   if (hasSource) {
+      const tappedItem = sourceReels.find(r => r.id === id);
+      const targetType = tappedItem?.mediaType || 'VIDEO';
+      const filteredReels = sourceReels.filter(r => r.mediaType === targetType);
+      setSwipableReels(filteredReels);
       setLoading(false);
     } else {
       // Fallback: fetch single reel if not in store (e.g. from a deep link)
