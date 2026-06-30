@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, Dimensions, ViewToken, StyleSheet, useWindowDimensions, ScrollView, RefreshControl, Platform } from 'react-native';
+import { View, Text, Pressable, Dimensions, ViewToken, StyleSheet, useWindowDimensions, ScrollView, RefreshControl, Platform, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { Bell, MessageSquare, Send, Search } from 'lucide-react-native';
@@ -281,12 +281,10 @@ export default function HomeFeedScreen() {
           animate={{ opacity: isScrolled ? 0 : 1 }}
           transition={{ type: 'timing', duration: 250 }}
         >
-          <Text 
-            className="text-white text-[28px] tracking-wide" 
-            style={{ fontFamily: Platform.OS === 'ios' ? 'Snell Roundhand' : 'serif', fontStyle: 'italic', fontWeight: '800' }}
-          >
-            Popli
-          </Text>
+          <Image 
+            source={require('../../../assets/images/custom_logo.png')} 
+            style={{ height: 28, width: 90, resizeMode: 'contain' }}
+          />
         </MotiView>
 
         <View className="flex-1 flex-row items-center justify-end gap-1.5 sm:gap-2">
