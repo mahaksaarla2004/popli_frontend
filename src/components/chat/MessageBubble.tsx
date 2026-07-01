@@ -137,7 +137,7 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
       return (
         <View className="flex-col">
           <Pressable 
-            onPress={() => storyId ? router.push(`/story-viewer/${msg.senderUsername || ''}?storyId=${storyId}`) : null}
+            onPress={() => storyId ? router.push(`/story-viewer/${msg.receiverUsername || ''}?storyId=${storyId}`) : null}
             className="rounded-lg overflow-hidden bg-black/20 px-3 py-2 mb-2 border border-white/5 flex-row items-center gap-2"
           >
             <View className="w-6 h-8 rounded bg-[#1A0E2C] items-center justify-center">
