@@ -667,11 +667,19 @@ export default function StoryViewerScreen() {
                 onChangeText={setReplyText}
                 placeholder="Send message"
                 placeholderTextColor="rgba(255,255,255,0.6)"
-                className="flex-1 text-white text-sm"
+                className="flex-1 text-white text-sm pr-10"
                 onFocus={() => setIsPaused(true)}
                 onBlur={() => setIsPaused(false)}
                 onSubmitEditing={handleReply}
               />
+              {replyText.trim().length > 0 && (
+                <Pressable 
+                  onPress={handleReply} 
+                  className="absolute right-2 bg-white w-8 h-8 rounded-full items-center justify-center"
+                >
+                  <Send size={16} color="#000000" style={{ transform: [{ rotate: '45deg' }, { translateY: -1 }, { translateX: -1 }] }} />
+                </Pressable>
+              )}
             </View>
           </View>
         ) : null}
