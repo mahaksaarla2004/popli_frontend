@@ -67,8 +67,10 @@ export default function WithdrawScreen() {
       setUpiId('');
       const res = await apiClient.get('/wallet');
       setWallet(res.data);
-    } catch (e: any) {
-      showAlert('Error', e.response?.data?.message || 'Failed to withdraw', 'error');
+  } catch (e: any) {
+      const msg = e.response?.data?.message || 'Failed to withdraw';
+      setAlertConfig({ title: 'Error', message: msg, type: 'error' });
+      setAlertVisible(true);
     } finally {
       setWithdrawing(false);
     }
@@ -241,7 +243,7 @@ export default function WithdrawScreen() {
                 <CheckCircle2 size={32} color="#10B981" />
               </View>
             )}
-            <Text className="text-white font-bold text-xl mb-2 text-center">{alertConfig.title}</Text>
+          <Text className="text-white font-bold text-xl mb-2 text-center">{alertConfig.title}</Text>
             <Text className="text-white/70 text-center mb-6 leading-5">{alertConfig.message}</Text>
             <Pressable 
               onPress={() => setAlertVisible(false)}
@@ -249,6 +251,17 @@ export default function WithdrawScreen() {
             >
               <Text className="text-white font-bold uppercase tracking-wider">OK</Text>
             </Pressable>
+            {alertConfig.message.toLowerCase().includes('kyc') && (
+              <Pressable 
+                onPress={() => {
+                  setAlertVisible(false);
+                  router.push('/kyc' as any);
+                }}
+                className="bg-transparent border border-[#A855F7] w-full py-4 rounded-xl items-center active:scale-[0.98] mt-3"
+              >
+                <Text className="text-[#A855F7] font-bold uppercase tracking-wider">Complete KYC</Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </Modal>

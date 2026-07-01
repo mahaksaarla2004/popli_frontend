@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Dimensions, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Eye, Gift, Users, ChevronRight, TrendingUp, UserRound, ArrowRight, Activity, LineChart, Banknote } from 'lucide-react-native';
 import RechargeCoinsSheet from '../../components/RechargeCoinsSheet';
@@ -15,30 +15,36 @@ export default function RewardsScreen() {
   const [rechargeVisible, setRechargeVisible] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const [wallet, setWallet] = useState<any>(null);
+const [wallet, setWallet] = useState<any>(null);
   const [kycStatus, setKycStatus] = useState<string>('PENDING');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [walletRes, kycRes] = await Promise.all([
+        apiClient.get('/wallet'),
+        apiClient.get('/kyc/status')
+      ]);
+      setWallet(walletRes.data);
+      setKycStatus(kycRes.data?.status || 'PENDING');
+    } catch (error) {
+      console.error('Failed to fetch rewards data', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      const fetchData = async () => {
-        try {
-          const [walletRes, kycRes] = await Promise.all([
-            apiClient.get('/wallet'),
-            apiClient.get('/kyc/status')
-          ]);
-          console.log("==== WALLET TRANSACTIONS FETCHED ====", JSON.stringify(walletRes.data.transactions, null, 2));
-          setWallet(walletRes.data);
-          setKycStatus(kycRes.data?.status || 'PENDING');
-        } catch (error) {
-          console.error('Failed to fetch rewards data', error);
-        } finally {
-          setLoading(false);
-        }
-      };
       fetchData();
-    }, [])
+    }, [fetchData])
   );
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  }, [fetchData]);
   const viewEarnings = wallet?.viewEarnings ?? 0;
   const giftEarnings = wallet?.giftEarnings ?? 0;
   const referralEarnings = wallet?.referralEarnings ?? 0;
@@ -115,7 +121,14 @@ export default function RewardsScreen() {
         </Pressable>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+     <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#A855F7" colors={["#A855F7"]} />
+        }
+      >
         <View className="px-5">
           
           {/* TOTAL BALANCE CARD */}
