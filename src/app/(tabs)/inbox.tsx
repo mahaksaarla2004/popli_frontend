@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Image, Pressable, TextInput, Platform, Modal, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, Image, Pressable, TextInput, Platform, Modal, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
   ArrowLeft, Edit, Search, MessageSquare, Bell, 
@@ -23,11 +23,18 @@ export default function InboxScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     connectSocket();
     fetchChats();
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchChats();
+    setRefreshing(false);
+  }, [fetchChats]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -179,6 +186,9 @@ export default function InboxScreen() {
         className="flex-1" 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D946EF" />
+        }
       >
         
         {/* ==========================================
