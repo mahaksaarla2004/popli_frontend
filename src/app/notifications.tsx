@@ -163,7 +163,7 @@ export default function NotificationsScreen() {
     } else if (type === 'follow') {
       actionText = ' started following you.';
     } else if (type === 'gift') {
-      const target = (n.metaData as any)?.targetType === 'POST' ? 'post' : 'reel';
+      const target = (n as any).metaData?.targetType === 'POST' ? 'post' : 'reel';
       actionText = ` sent you a ${n.giftType || 'gift'} on your ${target}.`;
    } else if (type === 'challenge_approved') {
       actionText = `: ${n.body || 'Your challenge entry has been approved!'}`;
@@ -179,7 +179,7 @@ export default function NotificationsScreen() {
     // Clean up backend hardcoded placeholders for existing notifications
     let validActorAvatar = n.actorAvatar;
     if (validActorAvatar && (validActorAvatar.includes('pravatar.cc') || validActorAvatar.includes('unsplash.com'))) {
-      validActorAvatar = null;
+      validActorAvatar = undefined;
     }
     
     const displayAvatar = isSystem ? 'https://ui-avatars.com/api/?name=Popli&background=1D1037&color=A855F7' : (validActorAvatar || getDefaultAvatar(n.actorName || 'User'));
