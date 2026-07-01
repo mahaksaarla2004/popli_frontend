@@ -127,6 +127,31 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
       );
     }
 
+    const isStoryReply = msg.text && msg.text.startsWith('[STORY:');
+
+    if (isStoryReply) {
+      const match = msg.text.match(/^\[STORY:([^\]]+)\]\s*(.*)$/);
+      const storyId = match ? match[1] : null;
+      const actualText = match ? match[2] : msg.text;
+
+      return (
+        <View className="flex-col">
+          <Pressable 
+            onPress={() => storyId ? router.push(`/story-viewer/${msg.senderUsername || ''}?storyId=${storyId}`) : null}
+            className="rounded-lg overflow-hidden bg-black/20 px-3 py-2 mb-2 border border-white/5 flex-row items-center gap-2"
+          >
+            <View className="w-6 h-8 rounded bg-[#1A0E2C] items-center justify-center">
+              <Text style={{fontSize: 12}}>📱</Text>
+            </View>
+            <Text className="text-white/70 text-xs font-medium">Replied to story</Text>
+          </Pressable>
+          <Text className={`text-[15px] leading-5 ${isSent ? 'text-white' : 'text-white/90'} px-1`}>
+            {actualText}
+          </Text>
+        </View>
+      );
+    }
+
     if (msg.mediaUrl && !msg.isStoryMention) {
       const isVideo = msg.mediaUrl.endsWith('.mp4') || msg.mediaUrl.endsWith('.mov');
       return (
