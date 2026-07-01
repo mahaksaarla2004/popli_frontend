@@ -364,7 +364,7 @@ export default function ShareStoryScreen() {
         }, 1500);
 
       } catch (err: any) {
-        console.error("Upload error details:", err.response?.data || err);
+        
         setStatus('error');
         const detailedError = err.response?.data?.message || err.response?.data?.error?.message || err.message;
         Alert.alert('Upload Failed', typeof detailedError === 'object' ? JSON.stringify(detailedError) : detailedError);

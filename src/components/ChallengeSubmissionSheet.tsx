@@ -27,7 +27,7 @@ export default function ChallengeSubmissionSheet({ visible, onClose, onSubmit, c
         const alreadySubmitted = res.data.some((r: any) => r.challengeId === challengeId);
         if (alreadySubmitted) {
           Alert.alert(
-            "Already Participated", 
+            "Already Participated",
             "You can only submit one reel per challenge.",
             [{ text: "OK" }]
           );

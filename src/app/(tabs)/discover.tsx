@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Image, ScrollView, Pressable, Dimensions, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Image, ScrollView, Pressable, Dimensions, Platform, ActivityIndicator, RefreshControl } from 'react-native';
 import { Search, QrCode, TrendingUp, Compass, Award, ShieldAlert, Sparkles, Zap, Users, Trophy, ChevronLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useFeedStore, useAuthStore } from '../../store';
@@ -17,7 +17,14 @@ export default function DiscoverScreen() {
   const { creators, reels, fetchCreators, fetchExploreReels } = useFeedStore();
   const { followingIds, toggleFollow, userProfile } = useAuthStore();
   const { activeChallenges, fetchActiveChallenges } = useChallengeStore();
-  const [searchQuery, setSearchQuery] = useState('');
+ const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchCreators(), fetchActiveChallenges(), fetchExploreReels()]);
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     fetchCreators();
@@ -88,10 +95,13 @@ export default function DiscoverScreen() {
         </View>
       </View>
 
-      <ScrollView
+  <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 150, gap: 24 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#D946EF" colors={['#D946EF']} />
+        }
       >
         {searchQuery.trim().length > 0 ? (
           /* ==================================
