@@ -28,7 +28,7 @@ export default function ChallengeSubmissionSheet({ visible, onClose, onSubmit, c
         if (alreadySubmitted) {
           Alert.alert(
             "Already Participated", 
-            "Aap ek challenge mein sirf ek hi baar reel post kar sakti hain.",
+            "You can submit only one reel per challenge.",
             [{ text: "OK" }]
           );
           setIsChecking(false);

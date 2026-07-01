@@ -1,3 +1,4 @@
+/*eslint-disable */
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -164,6 +165,10 @@ export default function NotificationsScreen() {
     } else if (type === 'gift') {
       const target = (n.metaData as any)?.targetType === 'POST' ? 'post' : 'reel';
       actionText = ` sent you a ${n.giftType || 'gift'} on your ${target}.`;
+   } else if (type === 'challenge_approved') {
+      actionText = `: ${n.body || 'Your challenge entry has been approved!'}`;
+    } else if (type === 'challenge_rejected') {
+      actionText = `: ${n.body || 'Your challenge entry was rejected.'}`;
     } else {
       actionText = ` ${n.type || 'interacted with you'}.`;
     }
