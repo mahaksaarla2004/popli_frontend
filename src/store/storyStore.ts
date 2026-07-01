@@ -12,7 +12,7 @@ import { mmkvStoreStorage } from './storage';
 // ==========================================
 
 export interface Story {
-  id: string;
+  id: string; 
   creatorId: string;
   creatorName?: string;
   creatorUsername?: string;
@@ -100,13 +100,14 @@ export const useStoryStore = create<StoryState>()(
         set({ isFetchingStories: true });
         try {
           const res = await apiClient.get('/stories');
+          if (res.data[0]?.viewers?.length > 0) console.log('[VIEWERS-DEBUG]', res.data[0].viewers[0]);
           const formattedStories = res.data.map((s: any) => ({
             id: s.id,
             creatorId: s.creator?.username || s.creatorId,
             creatorAvatar: s.creator?.avatar,
             mediaUrl: s.mediaUrl,
             mediaType: s.mediaType || 'IMAGE', // Provide default just in case
-            viewers: (s.viewers || []).map((v: any) => v.id || v.userId), // The backend only returns the viewer record ID right now if viewed
+           viewers: (s.viewers || []).map((v: any) => v.user?.username || v.username || v.id || v.userId),
             viewsCount: s._count?.viewers || 0,
             isCloseFriends: s.isCloseFriends,
             repliesAllowed: s.repliesAllowed,
@@ -138,7 +139,7 @@ export const useStoryStore = create<StoryState>()(
             creatorAvatar: s.creator?.avatar,
             mediaUrl: s.mediaUrl,
             mediaType: s.mediaType || 'IMAGE',
-            viewers: (s.viewers || []).map((v: any) => v.id || v.userId),
+            viewers: (s.viewers || []).map((v: any) => v.user?.username || v.username || v.id || v.userId),
             viewsCount: s._count?.viewers || 0,
             isCloseFriends: s.isCloseFriends,
             repliesAllowed: s.repliesAllowed,

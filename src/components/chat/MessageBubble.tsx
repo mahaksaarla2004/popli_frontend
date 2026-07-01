@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, Image, Pressable, Animated as RNAnimated } from 'react-native';
+import { View, Text, Image, Pressable, TouchableOpacity, Animated as RNAnimated } from 'react-native';
 import { Swipeable, TapGestureHandler } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withSequence, runOnJS } from 'react-native-reanimated';
 import { Play, CheckCheck, Reply } from 'lucide-react-native';
@@ -8,7 +8,7 @@ import { useAuthStore, useChatStore } from '../../store';
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
-export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any, onReply: (msg: any) => void, onImagePress?: (url: string) => void }) {
+export default function MessageBubble({ msg, onReply, onImagePress, otherUsername }: { msg: any, onReply: (msg: any) => void, onImagePress?: (url: string) => void, otherUsername?: string }) {
   const router = useRouter();
   const { userProfile } = useAuthStore();
   const { reactToMessage } = useChatStore();
@@ -130,21 +130,31 @@ export default function MessageBubble({ msg, onReply, onImagePress }: { msg: any
     const isStoryReply = msg.text && msg.text.startsWith('[STORY:');
 
     if (isStoryReply) {
-      const match = msg.text.match(/^\[STORY:([^\]]+)\]\s*(.*)$/);
+     const match = msg.text.match(/^\[STORY:([^:\]]+):?([^\]]*)\]\s*(.*)$/);
       const storyId = match ? match[1] : null;
-      const actualText = match ? match[2] : msg.text;
+      const storyCreator = match && match[2] ? match[2] : null;
+      const actualText = match ? match[3] : msg.text;
 
       return (
         <View className="flex-col">
-          <Pressable 
-            onPress={() => storyId ? router.push(`/story-viewer/${msg.receiverUsername || ''}?storyId=${storyId}`) : null}
+          <TouchableOpacity 
+            onPress={() => {
+              if (!storyId) return;
+              const owner = msg.receiverUsername || storyCreator || (isSent ? otherUsername : userProfile?.username) || msg.senderUsername;
+              router.push(`/story-viewer/${owner}?storyId=${storyId}`);
+            }}
+            activeOpacity={0.7}
             className="rounded-lg overflow-hidden bg-black/20 px-3 py-2 mb-2 border border-white/5 flex-row items-center gap-2"
           >
-            <View className="w-6 h-8 rounded bg-[#1A0E2C] items-center justify-center">
-              <Text style={{fontSize: 12}}>📱</Text>
+           <View className="w-6 h-8 rounded bg-[#1A0E2C] items-center justify-center overflow-hidden">
+              {msg.mediaUrl ? (
+                <Image source={{ uri: getThumbnailUrl(msg.mediaUrl) }} style={{ width: 24, height: 32 }} resizeMode="cover" />
+              ) : (
+                <Text style={{fontSize: 12}}>📱</Text>
+              )}
             </View>
-            <Text className="text-white/70 text-xs font-medium">Replied to story</Text>
-          </Pressable>
+           <Text className="text-white/70 text-xs font-medium">Replied to story</Text>
+          </TouchableOpacity>
           <Text className={`text-[15px] leading-5 ${isSent ? 'text-white' : 'text-white/90'} px-1`}>
             {actualText}
           </Text>

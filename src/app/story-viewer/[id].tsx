@@ -190,10 +190,12 @@ export default function StoryViewerScreen() {
         const res = await apiClient.get(`/users/creator/${currentStory.creatorId}`);
         if (res.data && res.data.id) {
           // Import useChatStore dynamically to avoid require cycles if any, or just get state
-          const { useChatStore } = require('../../store');
+        const { useChatStore } = require('../../store');
+          console.log('[STORY-REPLY-MEDIA]', { mediaUrl: currentStory.mediaUrl, storyId: currentStory.id });
           await useChatStore.getState().sendDirectMessage(
             { id: res.data.id }, 
-            `[STORY:${currentStory.id}] ${textToSend}`
+            `[STORY:${currentStory.id}] ${textToSend}`,
+            currentStory.mediaUrl || undefined
           );
         }
       } catch (err) {
