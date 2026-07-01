@@ -157,10 +157,11 @@ export default function ChatScreen() {
             </View>
           )}
           renderItem={({ item }: any) => (
-            <MessageBubble 
+           <MessageBubble 
               msg={item} 
               onReply={(msg: any) => setReplyingTo(msg)} 
               onImagePress={(url: string) => setViewerImage(url)}
+              otherUsername={displayUsername}
             />
           )}
         />
