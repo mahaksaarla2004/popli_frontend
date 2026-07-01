@@ -578,9 +578,15 @@ export default function StoryViewerScreen() {
             </View>
             
             <View className="flex-row gap-4 items-center">
-              {activeStory.creatorId === userProfile.username && (
+              {activeStory.creatorId === userProfile.username ? (
                 <Pressable onPress={handleDelete} className="p-2" hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
                   <Trash2 size={24} color="#EF4444" />
+                </Pressable>
+              ) : (
+                <Pressable onPress={() => {
+                  // Options (Report, Mute, etc.)
+                }} className="p-2" hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
+                  <MoreHorizontal size={24} color="#FFFFFF" />
                 </Pressable>
               )}
               <Pressable onPress={() => router.back()} className="p-2" hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
@@ -659,22 +665,36 @@ export default function StoryViewerScreen() {
               </Text>
             </Pressable>
           </View>
-        ) : activeStory.repliesAllowed ? (
+        ) : (
           <View className="absolute bottom-4 left-4 right-4 flex-row items-center gap-3 z-30">
-            <View className="flex-1 border border-white/30 rounded-full px-4 py-3 bg-black/20 backdrop-blur-md flex-row items-center">
-              <TextInput
-                value={replyText}
-                onChangeText={setReplyText}
-                placeholder="Send message"
-                placeholderTextColor="rgba(255,255,255,0.6)"
-                className="flex-1 text-white text-sm"
-                onFocus={() => setIsPaused(true)}
-                onBlur={() => setIsPaused(false)}
-                onSubmitEditing={handleReply}
-              />
-            </View>
+            {activeStory.repliesAllowed ? (
+              <View className="flex-1 border border-white/30 rounded-full px-4 py-3 bg-black/20 backdrop-blur-md flex-row items-center">
+                <TextInput
+                  value={replyText}
+                  onChangeText={setReplyText}
+                  placeholder="Send message"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  className="flex-1 text-white text-sm"
+                  onFocus={() => setIsPaused(true)}
+                  onBlur={() => setIsPaused(false)}
+                  onSubmitEditing={handleReply}
+                />
+              </View>
+            ) : (
+              <View className="flex-1" />
+            )}
+            <Pressable onPress={() => {
+              addReaction(activeStory.id, userProfile.id, '❤️');
+            }} className="p-2">
+              <Heart size={28} color="#FFFFFF" />
+            </Pressable>
+            <Pressable onPress={() => {
+              // Future: Open Share Modal
+            }} className="p-2 -ml-1">
+              <Send size={28} color="#FFFFFF" style={{ transform: [{ rotate: '45deg' }, { translateY: -2 }, { translateX: -2 }] }} />
+            </Pressable>
           </View>
-        ) : null}
+        )}
 
       </View>
 
