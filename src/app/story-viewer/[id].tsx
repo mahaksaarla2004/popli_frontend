@@ -177,11 +177,29 @@ export default function StoryViewerScreen() {
   const [initialStoryLoaded, setInitialStoryLoaded] = useState(false);
   const [isFetchingSingleStory, setIsFetchingSingleStory] = useState(false);
 
-  const handleReply = () => {
+  const handleReply = async () => {
     if (!replyText.trim()) return;
+    const textToSend = replyText.trim();
     setReplyText('');
     setIsPaused(false);
-    // Send reply to API logic can go here
+    
+    const currentStory = userStories[currentIndex];
+    if (currentStory && currentStory.creatorId) {
+      try {
+        // creatorId is actually the username in the frontend story object
+        const res = await apiClient.get(`/users/${currentStory.creatorId}`);
+        if (res.data && res.data.id) {
+          // Import useChatStore dynamically to avoid require cycles if any, or just get state
+          const { useChatStore } = require('../../store');
+          await useChatStore.getState().sendDirectMessage(
+            { id: res.data.id }, 
+            `[STORY:${currentStory.id}] ${textToSend}`
+          );
+        }
+      } catch (err) {
+        console.error("Failed to send story reply:", err);
+      }
+    }
   };
 
   const [showViewersSheet, setShowViewersSheet] = useState(false);
