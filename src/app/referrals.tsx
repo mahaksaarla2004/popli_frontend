@@ -11,19 +11,22 @@ const { width } = Dimensions.get('window');
 export default function ReferralsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [profile, setProfile] = useState<any>(null);
+ const [profile, setProfile] = useState<any>(null);
   const [configs, setConfigs] = useState<any>({});
+  const [referrals, setReferrals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileRes, configRes] = await Promise.all([
+        const [profileRes, configRes, referralsRes] = await Promise.all([
           apiClient.get('/users/me'),
-          apiClient.get('/system/configs?keys=REFERRAL_CREATOR_REWARD,REFERRAL_STANDARD_REWARD,REFERRAL_SUPER_REWARD')
+          apiClient.get('/system/configs?keys=REFERRAL_CREATOR_REWARD,REFERRAL_STANDARD_REWARD,REFERRAL_SUPER_REWARD'),
+          apiClient.get('/users/me/referrals')
         ]);
         setProfile(profileRes.data);
         setConfigs(configRes.data);
+        setReferrals(referralsRes.data || []);
       } catch (error) {
         console.error('Failed to fetch data', error);
       } finally {
@@ -102,15 +105,37 @@ export default function ReferralsScreen() {
           </Pressable>
         </View>
 
-        {/* Your Referred Friends */}
-        <Text className="text-white font-bold text-base mb-3">Your Referred Friends</Text>
-        <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-6 items-center mb-6">
-          <User size={32} color="#6B7280" className="mb-3" />
-          <Text className="text-white font-bold text-lg mb-2">No referrals yet</Text>
-          <Text className="text-gray-400 text-center text-sm leading-5">
-            Share your code below to start earning bonus rewards for each friend who joins Popli.
-          </Text>
-        </View>
+      {/* Your Referred Friends */}
+        <Text className="text-white font-bold text-base mb-3">Your Referred Friends ({referrals.length})</Text>
+        {referrals.length === 0 ? (
+          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl p-6 items-center mb-6">
+            <User size={32} color="#6B7280" className="mb-3" />
+            <Text className="text-white font-bold text-lg mb-2">No referrals yet</Text>
+            <Text className="text-gray-400 text-center text-sm leading-5">
+              Share your code below to start earning bonus rewards for each friend who joins Popli.
+            </Text>
+          </View>
+        ) : (
+          <View className="bg-[#1D1037] border border-[#3E2B5C] rounded-2xl mb-6 overflow-hidden">
+            {referrals.map((r: any, idx: number) => (
+              <View
+                key={r.id}
+                className={`flex-row items-center p-4 ${idx !== referrals.length - 1 ? 'border-b border-[#3E2B5C]' : ''}`}
+              >
+                <View className="w-10 h-10 rounded-full bg-[#2D1B4E] items-center justify-center mr-3 overflow-hidden">
+                  <User size={20} color="#A855F7" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-white font-bold text-sm">{r.name}</Text>
+                  <Text className="text-gray-400 text-xs mt-0.5">@{r.username}</Text>
+                </View>
+                <Text className="text-gray-500 text-[10px]">
+                  {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Reward Tiers */}
         <Text className="text-white font-bold text-base mb-3">Reward Tiers</Text>

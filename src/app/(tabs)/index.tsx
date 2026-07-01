@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, Dimensions, ViewToken, StyleSheet, useWindowDimensions, ScrollView, RefreshControl, Platform } from 'react-native';
+import { View, Text, Pressable, Dimensions, ViewToken, StyleSheet, useWindowDimensions, ScrollView, RefreshControl, Platform, Image, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { Bell, MessageSquare, Send, Search } from 'lucide-react-native';
@@ -34,7 +34,28 @@ export default function HomeFeedScreen() {
   const [hasMoreReels, setHasMoreReels] = useState(true);
   const flashListRef = useRef<any>(null);
   
-  const [refreshCount, setRefreshCount] = useState(0);
+ const [refreshCount, setRefreshCount] = useState(0);
+const [headerOpacity] = useState(() => new Animated.Value(1));
+  const lastScrollY = useRef(0);
+  const headerVisible = useRef(true);
+
+  const handleScroll = useCallback((e: any) => {
+    const currentY = e.nativeEvent.contentOffset.y;
+    const diff = currentY - lastScrollY.current;
+
+    if (currentY <= 10 && !headerVisible.current) {
+      headerVisible.current = true;
+      Animated.timing(headerOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    } else if (diff > 5 && headerVisible.current && currentY > 10) {
+      headerVisible.current = false;
+      Animated.timing(headerOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+    } else if (diff < -5 && !headerVisible.current) {
+      headerVisible.current = true;
+      Animated.timing(headerOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    }
+
+    lastScrollY.current = currentY;
+  }, [headerOpacity]);
 
   useFocusEffect(
     useCallback(() => {
@@ -157,12 +178,15 @@ export default function HomeFeedScreen() {
     }
   }, [activeTab, followingIds.length]);
 
-  const getFilteredReels = () => {
+ const getFilteredReels = () => {
+    // Home feed shows ONLY image posts, not video reels (their covers don't belong here)
+    const baseReels = reels.filter(r => r.mediaType === 'PHOTO');
+
     switch (activeTab) {
-      case 'following': return reels.filter((r) => followingIds.includes(r.creatorId));
-      case 'nearby': return reels.filter((r) => r.location?.city === (useFeedStore.getState().gpsCity || 'Indore'));
-      case 'trending': return reels.filter((r) => r.likesCount > 40000);
-      case 'for_you': default: return reels;
+      case 'following': return baseReels.filter((r) => followingIds.includes(r.creatorId));
+      case 'nearby': return baseReels.filter((r) => r.location?.city === (useFeedStore.getState().gpsCity || 'Indore'));
+      case 'trending': return baseReels.filter((r) => r.likesCount > 40000);
+      case 'for_you': default: return baseReels;
     }
   };
 
@@ -266,14 +290,13 @@ export default function HomeFeedScreen() {
           </Pressable>
         </View>
 
-        <View className="flex-row items-center justify-center pointer-events-none absolute left-0 right-0 top-0 bottom-0">
-          <Text 
-            className="text-white text-[28px] tracking-wide" 
-            style={{ fontFamily: Platform.OS === 'ios' ? 'Snell Roundhand' : 'serif', fontStyle: 'italic', fontWeight: '800' }}
-          >
-            Popli
-          </Text>
-        </View>
+      <Animated.View style={{ opacity: headerOpacity }} className="flex-row items-center justify-center pointer-events-none absolute left-0 right-0 top-0 bottom-0">
+          <Image 
+            source={require('../../../assets/images/popli_logo.png')} 
+            style={{ height: 50, width: 160 }}
+            resizeMode="contain"
+          />
+        </Animated.View>
 
         <View className="flex-1 flex-row items-center justify-end gap-1.5 sm:gap-2">
           <Pressable onPress={() => router.push('/notifications')} className="w-9 sm:w-10 h-9 sm:h-10 items-center justify-center active:scale-95">
@@ -309,6 +332,8 @@ export default function HomeFeedScreen() {
           bounces={true}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
           // @ts-ignore
           estimatedItemSize={width * 1.5}
           // @ts-ignore

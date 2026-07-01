@@ -113,7 +113,7 @@ export const PostItem = React.memo(({ item, isActive, onOpenComments, onOpenSend
           className="flex-row items-center"
         >
           <ExpoImage 
-            source={{ uri: item.creatorAvatar || getDefaultAvatar(item.creatorName) }}
+            source={{ uri: item.creatorAvatar || getDefaultAvatar(item.creatorName || item.creatorUsername) }}
             style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: '#3E2B5C' }}
             contentFit="cover"
             cachePolicy="memory-disk"

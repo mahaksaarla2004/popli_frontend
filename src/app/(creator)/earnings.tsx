@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Calendar, TrendingUp, PieChart, Download } from 'lucide-react-native';
+import { ArrowLeft, Calendar, TrendingUp, PieChart, Download, Lock } from 'lucide-react-native';
 import { useWalletStore } from '../../store/walletStore';
 
 export default function EarningsHistoryScreen() {
   const router = useRouter();
-  const { totalEarnings, viewEarnings, giftEarnings, referralEarnings, ledgers, fetchWallet } = useWalletStore();
+ const { totalEarnings, viewEarnings, giftEarnings, referralEarnings, referralLockedBalance, ledgers, fetchWallet } = useWalletStore();
 
   useEffect(() => {
     fetchWallet();
@@ -48,10 +48,24 @@ export default function EarningsHistoryScreen() {
               <Text className="text-neutral-grey text-xs font-medium">Lifetime Earnings</Text>
               <Text className="text-white text-3xl font-black mt-1">₹{totalEarnings.toFixed(2)}</Text>
             </View>
-            <View className="w-12 h-12 rounded-full bg-[#3B82F6]/10 items-center justify-center border border-[#3B82F6]/20">
+           <View className="w-12 h-12 rounded-full bg-[#3B82F6]/10 items-center justify-center border border-[#3B82F6]/20">
               <TrendingUp size={24} color="#3B82F6" />
             </View>
           </View>
+
+       {referralLockedBalance > 0 && (
+            <View className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-2xl p-4">
+              <View className="flex-row items-center gap-2">
+                <Lock size={14} color="#F59E0B" />
+                <Text className="text-[#F59E0B] text-xs font-bold">
+                  ₹{referralLockedBalance.toFixed(2)} locked
+                </Text>
+              </View>
+              <Text className="text-neutral-grey text-[10px] mt-1">
+                Complete 1 reel + KYC (both you and your referral partner) to unlock this amount for withdrawal.
+              </Text>
+            </View>
+          )}
           
           <View className="flex-row gap-4 border-t border-white/5 pt-4">
             <View className="flex-1">

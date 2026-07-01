@@ -54,7 +54,7 @@ export default function AnalyticsScreen() {
     earnings: calculateEstimatedVideoEarnings(r.viewsCount || 0).toFixed(2),
     isMonetized: r.isMonetized !== false
   })) : [
-    { id: '1', title: 'No posts yet', views: 0, earnings: '0.00', isMonetized: false }
+    { id: '1', title: 'No reels yet', views: 0, earnings: '0.00', isMonetized: false }
   ];
 
   if (loading) {

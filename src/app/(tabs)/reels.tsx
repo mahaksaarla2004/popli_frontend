@@ -8,7 +8,7 @@ import { CommentsSheet } from '../../components/sheets/CommentsSheet';
 import { GiftSheet } from '../../components/sheets/GiftSheet';
 import { SendSheet } from '../../components/sheets/SendSheet';
 import { useFeedStore, useAuthStore, useStoryStore, useChatStore } from '../../store';
-import { requestGPSLocation } from '../../services/geoService';
+import { requestGPSLocation } from '../../services/geoService'; 
 import { Reel } from '../../types';
 import { MotiView } from 'moti';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -149,10 +149,13 @@ export default function ReelsScreen() {
     }
   }, [userProfile?.id]);
 
-  useEffect(() => {
+   useEffect(() => {
     if (activeTab === 'following') {
       const { fetchFollowingReels } = useFeedStore.getState();
       fetchFollowingReels(1, 10);
+    } else if (activeTab === 'for_you') {
+      const { fetchExploreReels } = useFeedStore.getState();
+      fetchExploreReels(1, 10, 'all');
     }
   }, [activeTab, followingIds.length]);
 

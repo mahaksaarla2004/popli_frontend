@@ -560,12 +560,10 @@ export default function StoryViewerScreen() {
             </View>
             
             <View className="flex-row gap-4 items-center">
-              {activeStory.creatorId === userProfile.username ? (
+              {activeStory.creatorId === userProfile.username && (
                 <Pressable onPress={handleDelete} className="p-2" hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
                   <Trash2 size={24} color="#EF4444" />
                 </Pressable>
-              ) : (
-                <MoreHorizontal size={24} color="#FFFFFF" />
               )}
               <Pressable onPress={() => router.back()} className="p-2" hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
                 <X size={26} color="#FFFFFF" />
@@ -657,12 +655,6 @@ export default function StoryViewerScreen() {
                 onSubmitEditing={handleReply}
               />
             </View>
-            <Pressable onPress={() => {}} hitSlop={10}>
-              <Heart size={28} color="#FFFFFF" />
-            </Pressable>
-            <Pressable onPress={() => {}} hitSlop={10}>
-              <Send size={28} color="#FFFFFF" />
-            </Pressable>
           </View>
         ) : null}
 

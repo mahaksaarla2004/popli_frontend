@@ -73,9 +73,11 @@ export default function OTPScreen() {
         }
 
         // 3. Authenticate with backend using the bypass
+   console.log('=== OTP SCREEN PARAMS ===', JSON.stringify(params));
         const response = await apiClient.post('/auth/demo-login', {
           otp: otpString,
           phone: params.phone || params.target,
+          referredByCode: params.referredByCode || undefined,
         });
 
         if (response.data.accessToken) {
