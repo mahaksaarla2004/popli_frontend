@@ -187,7 +187,7 @@ export default function StoryViewerScreen() {
     if (currentStory && currentStory.creatorId) {
       try {
         // creatorId is actually the username in the frontend story object
-        const res = await apiClient.get(`/users/${currentStory.creatorId}`);
+        const res = await apiClient.get(`/users/creator/${currentStory.creatorId}`);
         if (res.data && res.data.id) {
           // Import useChatStore dynamically to avoid require cycles if any, or just get state
           const { useChatStore } = require('../../store');
