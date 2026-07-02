@@ -2,18 +2,18 @@ import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { View, Text, Pressable, Dimensions, Animated, Modal, TouchableOpacity } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Flag, Link as LinkIcon, X, Trash2 } from 'lucide-react-native';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Flag, Link as LinkIcon, X, Trash2, Volume2, VolumeX } from 'lucide-react-native';
 import { Reel } from '../../types';
 import { formatSocialCount, formatRelativeTime, getDefaultAvatar } from '../../utils';
 import { useRouter } from 'expo-router';
 import { useFeedStore, useAuthStore } from '../../store';
 import * as Clipboard from 'expo-clipboard';
 
-const VideoPlayerComponent = React.memo(({ videoUrl, isActive }: { videoUrl: string, isActive: boolean }) => {
+const VideoPlayerComponent = React.memo(({ videoUrl, isActive, isMuted }: { videoUrl: string, isActive: boolean, isMuted: boolean }) => {
   const [initialUrl] = useState(videoUrl);
   const player = useVideoPlayer(initialUrl, player => {
     player.loop = true;
-    player.muted = true;
+    player.muted = isMuted;
     if (isActive) {
       player.play();
     } else {
@@ -28,6 +28,18 @@ const VideoPlayerComponent = React.memo(({ videoUrl, isActive }: { videoUrl: str
       console.log('Error replacing post video url:', e);
     }
   }, [videoUrl, player]);
+
+  useEffect(() => {
+    player.muted = isMuted;
+  }, [isMuted, player]);
+
+  useEffect(() => {
+    if (isActive) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [isActive, player]);
 
   return (
     <VideoView 
@@ -51,29 +63,33 @@ interface PostItemProps {
 
 export const PostItem = React.memo(({ item, isActive, onOpenComments, onOpenSend, windowWidth }: PostItemProps) => {
   const router = useRouter();
-  const toggleLikeReel = useFeedStore(state => state.toggleLikeReel);
+ const toggleLikeReel = useFeedStore(state => state.toggleLikeReel);
   const deleteReel = useFeedStore(state => state.deleteReel);
+  const isGlobalMuted = useFeedStore(state => state.isGlobalMuted);
+  const toggleGlobalMute = useFeedStore(state => state.toggleGlobalMute);
   const currentUser = useAuthStore(state => state.userProfile);
 
   const isOwner = currentUser?.id === item.creatorId;
 
-  const isVideo = item.mediaType === 'VIDEO' || (item.videoUrl && item.videoUrl.match(/\.(mp4|mov)$/i));
+ const isVideo = item.mediaType === 'VIDEO';
 
+// Use global mute state from store
   const [showBigHeart, setShowBigHeart] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const heartScale = useRef(new Animated.Value(0.5)).current;
   const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleDoubleTap = useCallback(() => {
-    const DOUBLE_PRESS_DELAY = 450;
+const handleDoubleTap = useCallback(() => {
+    const DOUBLE_PRESS_DELAY = 300;
     if (tapTimeoutRef.current) {
       clearTimeout(tapTimeoutRef.current);
       tapTimeoutRef.current = null;
-      
+
+     // Double tap — only like, never unlike
       if (!item.isLiked) {
         toggleLikeReel(item.id);
       }
-      
+
       setShowBigHeart(true);
       heartScale.setValue(0.5);
       Animated.spring(heartScale, {
@@ -92,10 +108,12 @@ export const PostItem = React.memo(({ item, isActive, onOpenComments, onOpenSend
     } else {
       tapTimeoutRef.current = setTimeout(() => {
         tapTimeoutRef.current = null;
-        // Optional: Single tap could pause/play if we exposed the player ref
+        if (isVideo) {
+          router.push({ pathname: '/(tabs)/reels', params: { startReelId: item.id } } as any);
+        }
       }, DOUBLE_PRESS_DELAY);
     }
-  }, [item.isLiked, item.id, toggleLikeReel, isVideo]);
+ }, [item.id, item.isLiked, toggleLikeReel, isVideo, router]);
 
   const copyLink = async () => {
     // In a real app, you'd use deep links. Assuming web fallback here.
@@ -133,28 +151,45 @@ export const PostItem = React.memo(({ item, isActive, onOpenComments, onOpenSend
         </Pressable>
       </View>
 
-      {/* Post Media (4:5 Aspect Ratio like Insta) */}
-      <Pressable onPress={handleDoubleTap}>
-        <View style={{ width: windowWidth, height: windowWidth * 1.25, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
-          {isVideo ? (
-            <VideoPlayerComponent videoUrl={item.videoUrl} isActive={isActive} />
-          ) : (
+   {/* Post Media (4:5 Aspect Ratio like Insta) */}
+      <View style={{ width: windowWidth, height: windowWidth * 1.25, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+         {isVideo ? (
+          <>
+         <VideoPlayerComponent videoUrl={item.videoUrl || item.thumbnailUrl} isActive={isActive} isMuted={isGlobalMuted} />
+            {/* Tap overlay over video */}
+            <Pressable
+              onPress={handleDoubleTap}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            />
+            <Pressable
+              onPress={toggleGlobalMute}
+              style={{ position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20, padding: 6 }}
+            >
+              {isGlobalMuted ? <VolumeX size={18} color="#fff" /> : <Volume2 size={18} color="#fff" />}
+            </Pressable>
+          </>
+     ) : (
+          <>
             <ExpoImage 
               source={{ uri: item.videoUrl || item.thumbnailUrl }}
               style={{ width: '100%', height: '100%' }}
               contentFit="cover"
               cachePolicy="memory-disk"
             />
+            <Pressable
+              onPress={handleDoubleTap}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            />
+          </>
           )}
 
-          {/* Double Tap Heart Animation */}
+       {/* Double Tap Heart Animation */}
           {showBigHeart && (
             <Animated.View style={{ position: 'absolute', transform: [{ scale: heartScale }] }}>
               <Heart size={100} color="white" fill="white" />
             </Animated.View>
           )}
         </View>
-      </Pressable>
 
       {/* Action Bar */}
       <View className="flex-row items-center justify-between px-4 py-3">

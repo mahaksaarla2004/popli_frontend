@@ -4,7 +4,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAudioPlayer } from 'expo-audio';
 import { useEventListener } from 'expo';
-import { Heart, MessageCircle, Share2, Award, Music, Plus, Send, Check, Eye, VolumeX, Volume2, Users, MapPin, Bookmark, TrendingUp, Trash2 } from 'lucide-react-native';
+import { Heart, MessageCircle, Share2, Award, Music, Plus, Send, Check, Eye, VolumeX, Volume2, Users, MapPin, Bookmark, TrendingUp, Trash2, Gift } from 'lucide-react-native';
 import { Reel } from '../../types';
 import { useFeedStore, useAuthStore, useWalletStore } from '../../store';
 import { formatSocialCount, formatRelativeTime, getDefaultAvatar } from '../../utils';
@@ -250,56 +250,9 @@ export const ReelItem = React.memo(({
     };
   }, [isActive, hasRegisteredView, item.id, safeCreatorUsername, registerValidView, userProfile.username]);
 
-  const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+ const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleDoubleTap = useCallback((e: any) => {
-    const DOUBLE_PRESS_DELAY = 450;
-    
-    // Extract coordinates safely
-    const locationX = e.nativeEvent?.locationX || width / 2;
-    const locationY = e.nativeEvent?.locationY || height / 2;
-
-    if (tapTimeoutRef.current) {
-      // It's a double tap!
-      clearTimeout(tapTimeoutRef.current);
-      tapTimeoutRef.current = null;
-
-      // Trigger like state
-      if (!item.isLiked) {
-        toggleLikeReel(item.id);
-      }
-      
-      // Heart burst positions from touch coordinate
-      const newHeart = {
-        id: Date.now(),
-        x: locationX - 40, // offset half size
-        y: locationY - 40
-      };
-      
-      setDoubleTapHearts((prev) => [...prev, newHeart]);
-      
-      // Clean up heart after animation completes
-      setTimeout(() => {
-        setDoubleTapHearts((prev) => prev.filter((h) => h.id !== newHeart.id));
-      }, 800);
-    } else {
-      // It's the first tap
-      tapTimeoutRef.current = setTimeout(() => {
-        // Single tap confirmed
-        tapTimeoutRef.current = null;
-        
-        // Toggle mute on single tap
-        toggleGlobalMute();
-        const newMutedState = !isGlobalMuted;
-        
-        // Show mute indicator briefly
-        setMuteIndicator(newMutedState ? 'muted' : 'unmuted');
-        setTimeout(() => {
-          setMuteIndicator(null);
-        }, 1000);
-      }, DOUBLE_PRESS_DELAY);
-    }
-  }, [item.isLiked, item.id, toggleLikeReel, isGlobalMuted, toggleGlobalMute, width, height]);
+const handleTap = useCallback(() => {}, []);
 
   const isFollowing = followingIds.includes(item.creatorId);
   
@@ -373,8 +326,8 @@ export const ReelItem = React.memo(({
 
 
       {/* 1. EXPO AV VIDEO PLAYER CELL OR IMAGE CELL */}
-      <Pressable 
-        onPress={handleDoubleTap}
+    <Pressable 
+        onPress={handleTap}
         onLongPress={() => setIsHeldPaused(true)}
         delayLongPress={400}
         onPressOut={() => setIsHeldPaused(false)}
@@ -437,10 +390,10 @@ export const ReelItem = React.memo(({
             transition={{ type: 'spring', damping: 20 }}
             style={{ backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 9999, padding: 16, alignItems: 'center', justifyContent: 'center' }}
           >
-            {muteIndicator === 'muted' ? (
-              <VolumeX color="white" size={32} strokeWidth={2.5} />
-            ) : (
+        {muteIndicator === 'muted' ? (
               <Volume2 color="white" size={32} strokeWidth={2.5} />
+            ) : (
+              <VolumeX color="white" size={32} strokeWidth={2.5} />
             )}
           </MotiView>
         </View>
@@ -627,6 +580,20 @@ export const ReelItem = React.memo(({
             <Text className="text-white text-xs font-bold -mt-0.5">{isFollowing ? '✓' : '+'}</Text>
           </Pressable>
         </View>
+
+      {/* Mute/Unmute Button */}
+        <Pressable onPress={() => {
+          toggleGlobalMute();
+          const newMutedState = !useFeedStore.getState().isGlobalMuted;
+          setMuteIndicator(newMutedState ? 'muted' : 'unmuted');
+          setTimeout(() => setMuteIndicator(null), 800);
+        }} className="items-center mb-6">
+          {isGlobalMuted ? (
+            <VolumeX size={28} color="#FFFFFF" />
+          ) : (
+            <Volume2 size={28} color="#FFFFFF" />
+          )}
+        </Pressable>
 
         {/* View Count */}
         <View className="items-center mb-6">

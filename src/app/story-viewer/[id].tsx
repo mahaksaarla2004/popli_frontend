@@ -679,7 +679,7 @@ export default function StoryViewerScreen() {
                   onPress={handleReply} 
                   className="absolute right-2 bg-white w-8 h-8 rounded-full items-center justify-center"
                 >
-                  <Send size={16} color="#000000" style={{ transform: [{ rotate: '45deg' }, { translateY: -1 }, { translateX: -1 }] }} />
+             <Send size={16} color="#000000" />
                 </Pressable>
               )}
             </View>

@@ -21,7 +21,7 @@ export default function HomeFeedScreen() {
   const { targetUsername } = useLocalSearchParams<{ targetUsername?: string }>();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { reels, setGPS } = useFeedStore();
+const { homeFeedReels = [], setGPS } = useFeedStore();
   const { userProfile, followingIds } = useAuthStore();
   const { stories } = useStoryStore();
   
@@ -75,8 +75,10 @@ const [headerOpacity] = useState(() => new Animated.Value(1));
   const [isSendOpen, setIsSendOpen] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState<string>('');
   
-  const [isGiftsOpen, setIsGiftsOpen] = useState(false);
+ const [isGiftsOpen, setIsGiftsOpen] = useState(false);
   const [selectedReel, setSelectedReel] = useState<Reel | null>(null);
+  const handleOpenGifts = useCallback((reel: Reel) => { setSelectedReel(reel); setIsGiftsOpen(true); }, []);
+  const handleOpenProfile = useCallback((creatorUsername: string) => { router.push(`/user/${creatorUsername}`); }, [router]);
 
   // Success Burst Haptic overlay
   const [burstGift, setBurstGift] = useState<{ visible: boolean; icon: string }>({ visible: false, icon: '' });
@@ -96,14 +98,13 @@ const [headerOpacity] = useState(() => new Animated.Value(1));
     }
     initLocation();
     
-    // Fetch real reels on mount
-    const { fetchExploreReels } = useFeedStore.getState();
+   // Fetch real reels on mount
+    const { fetchFollowingReels } = useFeedStore.getState();
     const { fetchStories } = useStoryStore.getState();
     const { fetchNotifications, fetchChats } = useChatStore.getState();
     
-    fetchExploreReels(1, 10, 'all').then(() => {
-      // If we got less than 10, there might not be more
-      const currentReels = useFeedStore.getState().reels;
+   fetchFollowingReels(1, 10).then(() => {
+      const currentReels = useFeedStore.getState().homeFeedReels;
       if (currentReels.length < 10) setHasMoreReels(false);
     }).catch(console.error);
     fetchStories();
@@ -114,23 +115,17 @@ const [headerOpacity] = useState(() => new Animated.Value(1));
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    const { fetchExploreReels, fetchFollowingReels } = useFeedStore.getState();
+   const { fetchFollowingReels } = useFeedStore.getState();
     const { fetchStories } = useStoryStore.getState();
     
-    // Fetch stories and page 1 of reels to reset the feed
     fetchStories();
-
-    if (activeTab === 'following') {
-      await fetchFollowingReels(1, 10);
-    } else {
-      await fetchExploreReels(1, 10, 'all');
-    }
+    await fetchFollowingReels(1, 10);
     
     setHasMoreReels(true);
     setPage(1);
     
     // Reset active reel and scroll to top
-    const newReels = useFeedStore.getState().reels;
+  const newReels = useFeedStore.getState().homeFeedReels;
     if (newReels.length > 0) {
       setActiveReelId(newReels[0].id);
       flashListRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -145,16 +140,12 @@ const [headerOpacity] = useState(() => new Animated.Value(1));
     const { fetchExploreReels, fetchFollowingReels } = useFeedStore.getState();
     
     setIsLoadingMore(true);
-    const beforeCount = useFeedStore.getState().reels.length;
+    const beforeCount = useFeedStore.getState().homeFeedReels.length;
     const nextPage = page + 1;
     
-    if (activeTab === 'following') {
-      await fetchFollowingReels(nextPage, 10);
-    } else {
-      await fetchExploreReels(nextPage, 10, 'all');
-    }
+   await fetchFollowingReels(nextPage, 10);
     
-    const afterCount = useFeedStore.getState().reels.length;
+   const afterCount = useFeedStore.getState().homeFeedReels.length;
     
     if (afterCount === beforeCount) {
       setHasMoreReels(false); // No new reels added
@@ -178,18 +169,14 @@ const [headerOpacity] = useState(() => new Animated.Value(1));
     }
   }, [activeTab, followingIds.length]);
 
- const getFilteredReels = () => {
-    // Home feed shows ONLY image posts, not video reels (their covers don't belong here)
-    const baseReels = reels.filter(r => r.mediaType === 'PHOTO');
-
+const getFilteredReels = () => {
     switch (activeTab) {
-      case 'following': return baseReels.filter((r) => followingIds.includes(r.creatorId));
-      case 'nearby': return baseReels.filter((r) => r.location?.city === (useFeedStore.getState().gpsCity || 'Indore'));
-      case 'trending': return baseReels.filter((r) => r.likesCount > 40000);
-      case 'for_you': default: return baseReels;
+      case 'following': return homeFeedReels;
+      case 'nearby': return homeFeedReels.filter((r) => r.location?.city === (useFeedStore.getState().gpsCity || 'Indore'));
+      case 'trending': return homeFeedReels.filter((r) => r.likesCount > 40000);
+      case 'for_you': default: return homeFeedReels;
     }
   };
-
   const filteredReels = getFilteredReels();
 
   useEffect(() => {
@@ -210,16 +197,16 @@ const [headerOpacity] = useState(() => new Animated.Value(1));
     }
   }, [activeTab]);
 
-  // Handle Initial Target User Navigation
+// Handle Initial Target User Navigation
   useEffect(() => {
-    if (targetUsername && reels.length > 0 && userProfile) {
-      const firstReel = reels[0];
+    if (targetUsername && homeFeedReels.length > 0 && userProfile) {
+      const firstReel = homeFeedReels[0];
       if (firstReel.creatorUsername === userProfile.username && activeReelId !== firstReel.id) {
         setTimeout(() => setActiveReelId(firstReel.id), 0);
         flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
       }
     }
-  }, [reels.length]);
+  }, [homeFeedReels.length]);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].isViewable) {
@@ -232,23 +219,17 @@ const [headerOpacity] = useState(() => new Animated.Value(1));
     minimumViewTime: 50
   }));
 
-  const handleOpenComments = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsCommentsOpen(true); }, []);
+ const handleOpenComments = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsCommentsOpen(true); }, []);
   const handleOpenSend = useCallback((reelId: string) => { setSelectedReelId(reelId); setIsSendOpen(true); }, []);
-  const handleOpenProfile = useCallback((creatorUsername: string) => { router.push(`/user/${creatorUsername}`); }, [router]);
-
-  const renderItem = useCallback(({ item, index, extraData }: { item: Reel; index: number, extraData?: any }) => {
-    // CRITICAL FIX: FlashList requires using extraData instead of closure variables to trigger re-renders!
+const renderItem = useCallback(({ item, index, extraData }: { item: Reel; index: number, extraData?: any }) => {
     const currentActiveId = extraData?.activeReelId || activeReelId;
     const currentIsFocused = extraData?.isFocused ?? isFocused;
-    
-    const activeIndex = filteredReels.findIndex(r => r.id === currentActiveId);
-    // Keep ONLY current and next video loaded to prevent OOM
-    const isAdjacent = currentIsFocused && (index === activeIndex || index === activeIndex + 1);
+    const isActive = currentIsFocused && item.id === currentActiveId;
 
     return (
       <PostItem
         item={item}
-        isActive={currentIsFocused && item.id === currentActiveId}
+        isActive={isActive}
         onOpenComments={handleOpenComments}
         onOpenSend={handleOpenSend}
         windowWidth={extraData?.width || width}
@@ -317,10 +298,48 @@ const [headerOpacity] = useState(() => new Animated.Value(1));
       </View>
 
       {/* Vertical Reels List */}
-      {filteredReels.length === 0 ? (
-        <View className="flex-1 items-center justify-center bg-background-plum">
-          <Text className="text-white/60 text-sm font-semibold">No reels available in this tab yet.</Text>
-        </View>
+    {filteredReels.length === 0 ? (
+<ScrollView
+          contentContainerStyle={{ flexGrow: 1, backgroundColor: '#12081E' }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#A855F7" colors={['#A855F7']} progressViewOffset={insets.top + 60} />
+          }
+        >
+          {/* Stories Bar */}
+          <StoriesBar />
+
+    {/* Empty State */}
+          <View className="flex-1 items-center justify-center px-8 bg-[#12081E]" style={{ minHeight: height * 0.75 }}>
+            {/* User Story Icon */}
+            <View className="items-center mb-8">
+              <View className="w-20 h-20 rounded-full border-2 border-[#8B5CF6] p-0.5 mb-2">
+                {userProfile?.avatar ? (
+                  <Image
+                    source={{ uri: userProfile.avatar }}
+                    style={{ width: '100%', height: '100%', borderRadius: 999 }}
+                  />
+                ) : (
+                  <View className="w-full h-full rounded-full bg-[#3B1F6A] items-center justify-center">
+                    <Text className="text-white font-bold text-2xl">
+                      {userProfile?.name?.[0]?.toUpperCase() || userProfile?.username?.[0]?.toUpperCase() || 'U'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text className="text-white/60 text-xs">{userProfile?.name || userProfile?.username || 'You'}</Text>
+            </View>
+
+            <Text className="text-white/50 text-sm font-medium text-center mb-6">
+              Start following people to see their content.
+            </Text>
+            <Pressable
+              onPress={() => router.push('/(tabs)/discover')}
+              className="bg-[#8B5CF6] px-8 py-3 rounded-full active:opacity-80"
+            >
+              <Text className="text-white font-bold text-sm">Discover</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
       ) : (
         <FlashList
           ref={flashListRef}
@@ -354,9 +373,10 @@ const [headerOpacity] = useState(() => new Animated.Value(1));
         />
       )}
 
-      {/* Sheets & Overlays */}
+    {/* Sheets & Overlays */}
       <CommentsSheet reelId={selectedReelId} isOpen={isCommentsOpen} onClose={() => setIsCommentsOpen(false)} />
       <SendSheet reelId={selectedReelId} isOpen={isSendOpen} onClose={() => setIsSendOpen(false)} />
+      <GiftSheet reel={selectedReel} isOpen={isGiftsOpen} onClose={() => setIsGiftsOpen(false)} onSendSuccess={() => {}} />
     </View>
   );
 }

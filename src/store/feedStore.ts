@@ -50,6 +50,7 @@ interface FeedState {
   clearSeenReels: () => void;
   homeNextCursor: string | null;
   exploreNextCursor: string | null;
+  homeFeedReels: Reel[];
   isFetchingFeed: boolean;
   clearCache: () => void;
   _inFlightComments?: string[];
@@ -60,8 +61,9 @@ const inFlightComments = new Set<string>();
 export const useFeedStore = create<FeedState>()(
   persist(
     (set, get) => ({
-      creators: [],
-      reels: [], // Start with empty, let fetchReels populate it
+     creators: [],
+      reels: [],
+      homeFeedReels: [],
       likedReels: [],
       watchHistory: [],
       userReels: [],
@@ -78,8 +80,9 @@ export const useFeedStore = create<FeedState>()(
       isGlobalMuted: false,
       isFetchingFeed: false,
       clearSeenReels: () => set({ seenReelIds: [] }),
-      clearCache: () => set({
+    clearCache: () => set({
         reels: [],
+        homeFeedReels: [],
         userReels: [],
         likedReels: [],
         profileReels: {},
@@ -108,11 +111,9 @@ export const useFeedStore = create<FeedState>()(
         });
       },
       setNearbyEnabled: (enabled) => set({ nearbyEnabled: enabled }),
-      toggleLikeReel: async (reelId) => {
-        if (inFlightLikes.has(reelId)) return;
-        inFlightLikes.add(reelId);
-
+    toggleLikeReel: async (reelId) => {
         const backupReels = get().reels;
+        const backupHomeFeedReels = get().homeFeedReels || [];
         const backupUserReels = get().userReels;
         const backupLikedReels = get().likedReels;
         const backupWatchHistory = get().watchHistory;
@@ -130,7 +131,7 @@ export const useFeedStore = create<FeedState>()(
           return r;
         });
 
-        // Optimistic UI update
+        // Optimistic UI update — instant
         set((state) => {
           const newProfileReels: Record<string, Reel[]> = {};
           Object.keys(state.profileReels).forEach(key => {
@@ -139,6 +140,7 @@ export const useFeedStore = create<FeedState>()(
 
           return { 
             reels: updateReelArray(state.reels),
+            homeFeedReels: updateReelArray(state.homeFeedReels || []),
             userReels: updateReelArray(state.userReels),
             likedReels: updateReelArray(state.likedReels),
             watchHistory: updateReelArray(state.watchHistory),
@@ -146,24 +148,22 @@ export const useFeedStore = create<FeedState>()(
           };
         });
 
-        // Backend sync
-        try {
-          await apiClient.post(`/reels/${reelId}/like`);
-        } catch (e) {
+        // Backend sync — fire and forget, rollback only on error
+        apiClient.post(`/reels/${reelId}/like`).catch((e) => {
           console.error("Failed to toggle like, rolling back:", e);
           set({ 
             reels: backupReels,
+            homeFeedReels: backupHomeFeedReels,
             userReels: backupUserReels,
             likedReels: backupLikedReels,
             watchHistory: backupWatchHistory,
             profileReels: backupProfileReels
           });
-        } finally {
-          inFlightLikes.delete(reelId);
-        }
+        });
       },
       toggleSaveReel: async (reelId) => {
-        const backupReels = get().reels;
+      const backupReels = get().reels;
+        const backupHomeFeedReels = get().homeFeedReels || [];
         const backupUserReels = get().userReels;
         const backupLikedReels = get().likedReels;
         const backupWatchHistory = get().watchHistory;
@@ -204,6 +204,7 @@ export const useFeedStore = create<FeedState>()(
           console.error("Failed to toggle save, rolling back:", e);
           set({ 
             reels: backupReels,
+            homeFeedReels: backupHomeFeedReels,
             userReels: backupUserReels,
             likedReels: backupLikedReels,
             watchHistory: backupWatchHistory,
@@ -512,10 +513,10 @@ export const useFeedStore = create<FeedState>()(
             location: r.location || (r.city ? { city: r.city, latitude: r.latitude, longitude: r.longitude } : null)
           }));
 
-          set((state) => {
-            const existingIds = new Set(state.reels.map(r => r.id));
+       set((state) => {
+            const existingIds = new Set(state.homeFeedReels.map(r => r.id));
             const newReels = fetchedReels.filter((r: any) => !existingIds.has(r.id));
-            return { reels: page === 1 ? fetchedReels : [...state.reels, ...newReels] };
+            return { homeFeedReels: page === 1 ? fetchedReels : [...state.homeFeedReels, ...newReels] };
           });
         } catch (error) {
           console.error("Error fetching following reels:", error);
@@ -722,7 +723,7 @@ export const useFeedStore = create<FeedState>()(
       },
     }),
    {
-      name: 'popli-feed-store-v3',
+      name: 'popli-feed-store-v5',
       storage: createJSONStorage(() => mmkvStoreStorage),
       partialize: (state) => Object.fromEntries(
         Object.entries(state).filter(([key]) => !['userReels', 'isFetchingFeed'].includes(key))

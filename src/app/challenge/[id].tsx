@@ -101,14 +101,33 @@ export default function ChallengeDetailScreen() {
     };
   }, [challengeId, userProfile?.id]);
 
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
     setSheetVisible(false);
-    // Join the challenge automatically
-    await joinChallenge(challengeId);
-    
+    try {
+      await joinChallenge(challengeId);
+    } catch (e) {
+      console.log('joinChallenge error (ignored):', e);
+    }
     setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 4000);
-    // You would normally trigger a refetch here
+    setTimeout(() => setToastVisible(false), 6000);
+
+    // Refetch submissions after submit
+    try {
+      const reelsRes = await apiClient.get(`/challenges/${challengeId}/reels?sort=top`);
+      const mappedSubmissions = reelsRes.data.map((reel: any, index: number) => ({
+        id: reel.id,
+        rank: index + 1,
+        type: reel.videoUrl ? 'video' : 'photo',
+        username: reel.creator?.username || 'user',
+        location: reel.location?.city || 'India',
+        views: reel.viewsCount || 0,
+        thumbnail: reel.thumbnailUrl || reel.creator?.avatar || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop',
+        isYou: userProfile?.id === reel.creatorId
+      }));
+      setSubmissions(mappedSubmissions);
+    } catch (e) {
+      console.log('Refetch error:', e);
+    }
   };
 
   if (isLoading || !challengeData) {
@@ -122,23 +141,21 @@ export default function ChallengeDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-[#0D0518]">
       {/* Header */}
-      <View className="flex-row justify-between items-center px-4 pt-4 pb-2">
-        <View className="flex-row items-center flex-1">
-          <Pressable onPress={() => router.back()} className="mr-4 active:opacity-70 p-2 -ml-2">
+     <View className="px-4 pt-4 pb-2">
+        <View className="flex-row items-center justify-between mb-1">
+          <Pressable onPress={() => router.back()} className="mr-2 active:opacity-70 p-2 -ml-2">
             <ChevronLeft color="white" size={28} />
           </Pressable>
-          <View>
-            <Text className="text-[#A855F7] font-bold text-xs">{challengeData.hashtagName}</Text>
-            <Text className="text-white font-bold text-xl">{challengeData.title}</Text>
+          <View className="bg-[#1D1037] border border-[#3E2B5C] px-3 py-1.5 rounded-full flex-row items-center gap-1.5">
+            <View className="w-2 h-2 rounded-full bg-[#A855F7]" />
+            <Text className="text-[#A855F7] text-xs font-bold">{challengeData.status}</Text>
           </View>
         </View>
-        <View className="bg-[#1D1037] border border-[#3E2B5C] px-3 py-1.5 rounded-full flex-row items-center gap-1.5">
-          <View className="w-2 h-2 rounded-full bg-[#A855F7]" />
-          <Text className="text-[#A855F7] text-xs font-bold">{challengeData.status}</Text>
-        </View>
+        <Text className="text-[#A855F7] font-bold text-xs ml-2">{challengeData.hashtagName}</Text>
+        <Text className="text-white font-bold text-xl ml-2">{challengeData.title}</Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }}>
+   <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
         {/* Stats */}
         <View className="bg-[#1D1037]/60 rounded-2xl mx-4 mt-4 p-5 flex-row justify-between border border-[#3E2B5C]/50">
           <View className="items-center flex-1">

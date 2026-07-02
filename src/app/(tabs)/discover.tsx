@@ -61,9 +61,10 @@ export default function DiscoverScreen() {
   const nearbyCreators = creators.slice(0, 10);
 
   // 2. Filter Suggested reels list (Sort by newest first)
-  const suggestedReels = [...reels]
+ const suggestedReels = [...reels]
+    .filter(r => r.mediaType === 'VIDEO' || (r.videoUrl && r.videoUrl.match(/\.(mp4|mov)$/i)))
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-    .slice(0, 8); // seed suggested grid
+    .slice(0, 8);
 
   const handleJoinChallenge = () => {
     alert('Joined Challenge! 🏆 Win up to ₹50,000. Start recording your Cinematic City Walk now.');
@@ -344,9 +345,9 @@ export default function DiscoverScreen() {
 
               <View className="flex-row flex-wrap justify-between gap-y-4">
                 {suggestedReels.map((reel, index) => (
-                  <Pressable
+                 <Pressable
                     key={reel.id}
-                    onPress={() => router.push(`/reel/${reel.id}`)}
+                onPress={() => router.push({ pathname: '/(tabs)/reels' as any, params: { startReelId: reel.id } })}
                     className="w-[48%] h-60 rounded-2xl border border-white/5 relative overflow-hidden active:opacity-80 transition-opacity bg-[#1D1037]"
                   >
                     <Image

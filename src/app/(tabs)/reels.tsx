@@ -15,12 +15,12 @@ import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 type TopTabType = 'for_you' | 'following' | 'nearby' | 'trending';
 
-export default function ReelsScreen() {
-  const router = useRouter();
-  const { targetUsername } = useLocalSearchParams<{ targetUsername?: string }>();
+export default function ReelsScreen() { 
+ const router = useRouter();
+  const { targetUsername, startReelId } = useLocalSearchParams<{ targetUsername?: string; startReelId?: string }>();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { reels, setGPS } = useFeedStore();
+ const { reels, homeFeedReels = [], setGPS } = useFeedStore();
   const { userProfile, followingIds } = useAuthStore();
   const { stories } = useStoryStore();
   
@@ -35,7 +35,7 @@ export default function ReelsScreen() {
   
   const [refreshCount, setRefreshCount] = useState(0);
 
-  useFocusEffect(
+useFocusEffect(
     useCallback(() => {
       let mounted = true;
       setTimeout(() => {
@@ -47,6 +47,7 @@ export default function ReelsScreen() {
       };
     }, [])
   );
+
   
   // Sheet Overlays States
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
@@ -118,29 +119,38 @@ export default function ReelsScreen() {
     setRefreshing(false);
   }, [activeTab]);
 
+const [extraReels, setExtraReels] = useState<Reel[]>([]);
+
   const loadMoreReels = useCallback(async () => {
-    if (isLoadingMore || !hasMoreReels || refreshing) return;
+    if (isLoadingMore || refreshing) return;
     const { fetchExploreReels, fetchFollowingReels } = useFeedStore.getState();
-    
+
     setIsLoadingMore(true);
     const beforeCount = useFeedStore.getState().reels.length;
     const nextPage = page + 1;
-    
+
     if (activeTab === 'following') {
       await fetchFollowingReels(nextPage, 10);
     } else {
       await fetchExploreReels(nextPage, 10, 'all');
     }
-    
+
     const afterCount = useFeedStore.getState().reels.length;
-    
+
     if (afterCount === beforeCount) {
-      setHasMoreReels(false); // No new reels added
+      // No new reels from backend — reshuffle existing and append
+      const currentReels = useFeedStore.getState().reels.filter(
+        r => r.mediaType === 'VIDEO' || r.videoUrl?.match(/\.(mp4|mov)$/i)
+      );
+     const shuffled = [...currentReels]
+        .sort(() => Math.random() - 0.5)
+        .map(r => ({ ...r, id: `${r.id}_x${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }));
+      setExtraReels(prev => [...prev, ...shuffled]);
     } else {
       setPage(nextPage);
     }
     setIsLoadingMore(false);
-  }, [isLoadingMore, hasMoreReels, refreshing, activeTab, page]);
+  }, [isLoadingMore, refreshing, activeTab, page]);
 
   useEffect(() => {
     if (userProfile?.id) {
@@ -159,10 +169,15 @@ export default function ReelsScreen() {
     }
   }, [activeTab, followingIds.length]);
 
-  const getFilteredReels = () => {
-    let baseReels = reels;
-    // In Reels tab, we ONLY want to show videos.
-    baseReels = reels.filter(r => r.mediaType === 'VIDEO' || (r.videoUrl && r.videoUrl.match(/\.(mp4|mov)$/i)));
+ const getFilteredReels = () => {
+    const videoFilter = (r: Reel) => r.mediaType === 'VIDEO' || !!(r.videoUrl?.match(/\.(mp4|mov)$/i));
+    let baseReels = [...reels.filter(videoFilter), ...extraReels.filter(videoFilter)];
+
+    // Prepend tapped reel from Home feed if not already in explore feed
+    if (startReelId && !baseReels.find(r => r.id === startReelId)) {
+      const tappedReel = homeFeedReels.find(r => r.id === startReelId);
+      if (tappedReel) baseReels = [tappedReel, ...baseReels];
+    }
 
     switch (activeTab) {
       case 'following': return baseReels.filter((r) => followingIds.includes(r.creatorId));
@@ -172,7 +187,19 @@ export default function ReelsScreen() {
     }
   };
 
-  const filteredReels = getFilteredReels();
+const filteredReels = getFilteredReels();
+
+  // Scroll to startReelId when coming from Home feed tap
+  useEffect(() => {
+    if (!startReelId || filteredReels.length === 0) return;
+    const idx = filteredReels.findIndex(r => r.id === startReelId);
+    if (idx >= 0) {
+      setActiveReelId(startReelId);
+      setTimeout(() => {
+        flashListRef.current?.scrollToIndex({ index: idx, animated: false });
+      }, 150);
+    }
+  }, [startReelId, filteredReels.length]);
 
   useEffect(() => {
     if (filteredReels.length > 0) {
@@ -248,7 +275,7 @@ export default function ReelsScreen() {
     );
   }, [filteredReels, handleOpenComments, handleOpenSend, handleOpenGifts, handleOpenProfile]);
 
-  const keyExtractor = useCallback((item: Reel) => `${item.id}-${refreshCount}`, [refreshCount]);
+const keyExtractor = useCallback((item: Reel, index: number) => `${item.id}-${index}-${refreshCount}`, [refreshCount]);
 
   // Removed getItemLayout as FlashList handles it efficiently with estimatedItemSize
 
@@ -331,7 +358,7 @@ export default function ReelsScreen() {
           // @ts-ignore
           extraData={{ activeReelId, isFocused, listHeight, width }}
           onEndReached={loadMoreReels}
-          onEndReachedThreshold={0.5}
+         onEndReachedThreshold={2}
           contentContainerStyle={{ backgroundColor: '#000' }}
           refreshControl={
             <RefreshControl

@@ -16,7 +16,7 @@ import { MotiView } from 'moti';
 const { height, width } = Dimensions.get('window');
 
 export default function ReelViewerScreen() {
-  const { id, commentId, source, hashtagName, profileUsername } = useLocalSearchParams<{ id: string, commentId?: string, source?: string, hashtagName?: string, profileUsername?: string }>();
+ const { id, commentId, source, hashtagName, profileUsername, shuffledIds } = useLocalSearchParams<{ id: string, commentId?: string, source?: string, hashtagName?: string, profileUsername?: string, shuffledIds?: string }>();
   const router = useRouter();
   
   const { reels: mainReels, profileReels, userReels, likedReels } = useFeedStore();
@@ -48,7 +48,7 @@ export default function ReelViewerScreen() {
     let sourceReels = mainReels;
     let hasSource = false;
     
-    if (source === 'hashtag' && hashtagName) {
+  if (source === 'hashtag' && hashtagName) {
       sourceReels = hashtagReels[hashtagName] || [];
       hasSource = true;
     } else if (source === 'profile' && profileUsername) {
@@ -59,6 +59,15 @@ export default function ReelViewerScreen() {
       hasSource = true;
     } else if (source === 'likedReels') {
       sourceReels = likedReels;
+      hasSource = true;
+ } else if (source === 'mainReels') {
+      if (shuffledIds) {
+        const order = JSON.parse(shuffledIds) as string[];
+        const reelMap = new Map(mainReels.map(r => [r.id, r]));
+        sourceReels = order.map(rid => reelMap.get(rid)).filter(Boolean) as Reel[];
+      } else {
+        sourceReels = mainReels.filter(r => r.mediaType === 'VIDEO');
+      }
       hasSource = true;
     }
 
