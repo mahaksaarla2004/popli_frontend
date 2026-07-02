@@ -31,7 +31,14 @@ export default function AnalyticsScreen() {
   );
 
   // If videoId is provided, focus only on that video
-  const targetReels = videoId ? userReels.filter(r => r.id === videoId) : userReels;
+  let targetReels = videoId ? userReels.filter(r => r.id === videoId) : userReels;
+  
+  // Filter out photos so they don't show up in Video Earnings
+  targetReels = targetReels.filter(r => {
+    const safeVideoUrl = r.videoUrl || r.mediaUrl || '';
+    const isPhotoPost = safeVideoUrl === '' || safeVideoUrl.includes('unsplash.com') || safeVideoUrl.includes('picsum.photos') || safeVideoUrl.match(/\.(jpeg|jpg|gif|png)$/i) != null || r.mediaType === 'PHOTO';
+    return !isPhotoPost;
+  });
 
   // Calculate real metrics
   const allTimeViews = targetReels.reduce((sum, r) => sum + (r.viewsCount || 0), 0);

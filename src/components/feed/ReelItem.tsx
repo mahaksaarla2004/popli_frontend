@@ -663,14 +663,14 @@ export const ReelItem = React.memo(({
           <Text className="text-white text-xs font-semibold mt-1">Send</Text>
         </Pressable>
 
-        {/* Gift Button - Glowing Gold Figma Element (Only visible if not own reel) */}
-        {!isOwnReel && (
+        {/* Gift Button - Glowing Gold Figma Element (Only visible if not own reel AND is a VIDEO) */}
+        {userProfile?.id !== item.creatorId && !isPhotoPost && (
           <View className="items-center mb-6">
             <Pressable 
               onPress={() => onOpenGifts(item)} 
-              className="w-12 h-12 bg-yellow-500 border-2 border-yellow-400 rounded-full items-center justify-center shadow-lg shadow-yellow-500/50"
+              className="bg-gradient-to-tr from-yellow-600 via-yellow-400 to-yellow-200 w-12 h-12 rounded-full items-center justify-center shadow-lg shadow-yellow-500/50 active:scale-90"
             >
-              <Award size={24} color="#0B001A" fill="#0B001A" strokeWidth={2} />
+              <Gift color="#1D1037" size={24} strokeWidth={2.5} />
             </Pressable>
             <Text className="text-yellow-400 text-xs font-bold mt-1 shadow-sm shadow-black">Gift</Text>
           </View>
