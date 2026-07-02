@@ -101,13 +101,23 @@ export const useStoryStore = create<StoryState>()(
         try {
           const res = await apiClient.get('/stories');
           if (res.data[0]?.viewers?.length > 0) console.log('[VIEWERS-DEBUG]', res.data[0].viewers[0]);
+          
+          const formatMediaUrl = (url: string) => {
+            if (!url) return '';
+            let finalUrl = url;
+            if (finalUrl.includes('res.cloudinary.com') && !finalUrl.includes('q_auto')) {
+              finalUrl = finalUrl.replace('/upload/', '/upload/q_auto,f_auto,w_720,c_limit/');
+            }
+            return finalUrl;
+          };
+
           const formattedStories = res.data.map((s: any) => ({
             id: s.id,
             creatorId: s.creator?.username || s.creatorId,
             creatorAvatar: s.creator?.avatar,
-            mediaUrl: s.mediaUrl,
+            mediaUrl: formatMediaUrl(s.mediaUrl),
             mediaType: s.mediaType || 'IMAGE', // Provide default just in case
-           viewers: (s.viewers || []).map((v: any) => v.user?.username || v.username || v.id || v.userId),
+            viewers: (s.viewers || []).map((v: any) => v.user?.username || v.username || v.id || v.userId),
             viewsCount: s._count?.viewers || 0,
             isCloseFriends: s.isCloseFriends,
             repliesAllowed: s.repliesAllowed,
@@ -133,11 +143,21 @@ export const useStoryStore = create<StoryState>()(
         try {
           const res = await apiClient.get(`/stories/story/${storyId}`);
           const s = res.data;
+          
+          const formatMediaUrl = (url: string) => {
+            if (!url) return '';
+            let finalUrl = url;
+            if (finalUrl.includes('res.cloudinary.com') && !finalUrl.includes('q_auto')) {
+              finalUrl = finalUrl.replace('/upload/', '/upload/q_auto,f_auto,w_720,c_limit/');
+            }
+            return finalUrl;
+          };
+
           const formattedStory: Story = {
             id: s.id,
             creatorId: s.creator?.username || s.creatorId,
             creatorAvatar: s.creator?.avatar,
-            mediaUrl: s.mediaUrl,
+            mediaUrl: formatMediaUrl(s.mediaUrl),
             mediaType: s.mediaType || 'IMAGE',
             viewers: (s.viewers || []).map((v: any) => v.user?.username || v.username || v.id || v.userId),
             viewsCount: s._count?.viewers || 0,
